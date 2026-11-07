@@ -98,13 +98,13 @@
         </div>
 
         <div class="field" id="m-photo-field">
-          <span class="field__label" id="m-photo-label">포장 사진으로 전성분 채우기</span>
-          <p class="hint" id="m-photo-hint">제품 뒷면의 전성분 표기가 잘 보이게 찍은 사진을 고르면, 포장 OCR 모델이 글자를 읽어 아래 전성분 칸을 채웁니다. 채운 내용은 사진과 대조해 확인하세요.</p>
-          <input class="sr-only" id="m-photo" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1" aria-hidden="true">
+          <span class="field__label" id="m-photo-label">포장 사진·전성분표 PDF로 전성분 채우기</span>
+          <p class="hint" id="m-photo-hint">제품 뒷면의 전성분 표기가 잘 보이게 찍은 사진이나 전성분표 PDF(앞 4쪽까지)를 고르면, 포장 OCR 모델이 글자를 읽어 아래 전성분 칸을 채웁니다. 채운 내용은 사진과 대조해 확인하세요.</p>
+          <input class="sr-only" id="m-photo" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,.pdf" tabindex="-1" aria-hidden="true">
           <button class="btn btn--secondary btn--sm" type="button" id="m-photo-btn" aria-describedby="m-photo-label m-photo-hint">
             <svg class="ic btn__icon" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg>
             <svg class="ic btn__spin" aria-hidden="true" focusable="false"><use href="#i-loader"/></svg>
-            <span class="btn__text">사진 고르기</span>
+            <span class="btn__text">사진·PDF 고르기</span>
           </button>
           <div class="ocr-out" id="m-photo-out" aria-live="polite" hidden></div>
           <p class="hint" id="m-photo-src">OCR 모델 학습 데이터: 과학기술정보통신부·한국지능정보사회진흥원 AI Hub '의약품, 화장품 패키징 OCR 데이터'(<a href="https://aihub.or.kr" target="_blank" rel="noopener">aihub.or.kr</a>). 성분명 표준화: 식약처 화장품 원료성분정보(공공데이터포털).</p>

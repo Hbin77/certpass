@@ -25,7 +25,7 @@ from starlette.datastructures import MutableHeaders
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import STATUS_ORDER
-from . import llm_client, ml_client, ocr_client
+from . import llm_client, ml_client, ocr_client, ocr_pdf
 from .names import convert_korean_names
 from .classify import evaluate, evaluate_company, gap_type
 from .data import DATA, load_attributes, load_cards, load_reg_index
@@ -34,7 +34,8 @@ from .schemas import CertIds, CompanyIn, Product, Short
 
 MAX_BODY_BYTES = 1024 * 1024  # 요청 본문 상한 1 MiB(성분 500개 제품도 수십 KB)
 OCR_MAX_BYTES = 8 * 1024 * 1024  # 포장 사진(/api/ocr)만 8 MiB. 화면이 긴 변 2400px JPEG로 줄여 보내므로 보통 1~2 MB
-OCR_TYPES = {"image/jpeg": b"\xff\xd8", "image/png": b"\x89PNG", "image/webp": b"RIFF"}  # 형식별 파일 첫 바이트
+OCR_TYPES = {"image/jpeg": b"\xff\xd8", "image/png": b"\x89PNG", "image/webp": b"RIFF",
+             "application/pdf": b"%PDF-"}  # 형식별 파일 첫 바이트
 # CSP·X-Frame-Options는 넣지 않는다: 화면을 깨거나 대회 플랫폼의 iframe 임베드를 막을 수 있다.
 SECURITY_HEADERS = {"X-Content-Type-Options": "nosniff", "Referrer-Policy": "same-origin"}
 
@@ -289,17 +290,22 @@ def ai_alert(verdict, card: dict, p: dict, reg) -> dict | None:
 
 @app.post("/api/ocr")
 async def ocr(request: Request):
-    """포장 사진(본문 그대로, Content-Type image/jpeg·png·webp) → 전성분 목록과 표준 성분명 맞추기."""
+    """포장 사진(본문 그대로, Content-Type image/jpeg·png·webp) 또는 전성분표 PDF(application/pdf)
+    → 전성분 목록과 표준 성분명 맞추기. PDF는 글자 정보가 있는 쪽은 그대로, 이미지 쪽은 OCR(ocr_pdf)."""
     if not ocr_client.enabled():
         raise HTTPException(503, "포장 사진 인식(OCR) 서빙이 아직 연결되지 않았습니다. 전성분을 직접 입력해 주세요.")
     ctype = request.headers.get("content-type", "").split(";")[0].strip().lower()
     if ctype not in OCR_TYPES:
-        raise HTTPException(415, "JPEG·PNG·WebP 사진만 올릴 수 있습니다.")
+        raise HTTPException(415, "JPEG·PNG·WebP 사진이나 PDF만 올릴 수 있습니다.")
     data = await request.body()
     if not data.startswith(OCR_TYPES[ctype]):
         raise HTTPException(415, "사진 파일이 아니거나 형식이 맞지 않습니다.")
     try:
+        if ctype == "application/pdf":
+            return await run_in_threadpool(ocr_pdf.read_pdf, data)
         return await run_in_threadpool(ocr_client.read_package, data, ctype)
+    except ocr_pdf.PdfError as e:
+        raise HTTPException(422, "PDF를 열지 못했습니다. 암호가 걸렸거나 손상된 파일인지 확인해 주세요.") from e
     except (urllib.error.URLError, TimeoutError, ValueError) as e:
         raise HTTPException(502, "OCR 서빙이 응답하지 않습니다. 잠시 뒤 다시 시도하거나 전성분을 직접 입력해 주세요.") from e
 

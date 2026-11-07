@@ -196,3 +196,47 @@ def test_photo_quality_flags_blurry_photos():
     q = ocr_client.photo_quality(blurry)
     assert q["blurry"] is True and q["low_conf_share"] == 0.62 and q["text_px"] == 8
     assert ocr_client.photo_quality(blurry[:10])["blurry"] is False  # 단어가 적으면 판단하지 않는다
+
+
+def _text_pdf(text: str) -> bytes:
+    """글자 정보가 있는 한 쪽짜리 PDF(기본 글꼴 Helvetica, 영문)."""
+    stream = f"BT /F1 12 Tf 40 760 Td ({text}) Tj ET".encode()
+    objs = [b"<< /Type /Catalog /Pages 2 0 R >>", b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+            b"<< /Length %d >>\nstream\n" % len(stream) + stream + b"\nendstream",
+            b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"]
+    out, offs = bytearray(b"%PDF-1.4\n"), []
+    for i, o in enumerate(objs, 1):
+        offs.append(len(out))
+        out += b"%d 0 obj\n" % i + o + b"\nendobj\n"
+    x = len(out)
+    out += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objs) + 1) + b"".join(b"%010d 00000 n \n" % o for o in offs)
+    out += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (len(objs) + 1, x)
+    return bytes(out)
+
+
+def test_pdf_with_text_layer_needs_no_ocr(monkeypatch):
+    monkeypatch.setenv("CERTCHECK_OCR_URL", "http://127.0.0.1:9/predict")  # 부르면 실패하는 주소: 글자 정보 쪽은 OCR을 안 부른다
+    pdf = _text_pdf("INGREDIENTS: Water, Glycerin, Butylene Glycol, Niacinamide, Xanthan Gum. Caution: for external use")
+    status, body = call("/api/ocr", pdf, "application/pdf")
+    assert status == 200
+    r = json.loads(body)
+    assert [i["kr"] for i in r["ingredients"]] == ["정제수", "글리세린", "부틸렌글라이콜", "나이아신아마이드", "잔탄검"]
+    assert r["pdf"]["pages"] == [{"page": 1, "source": "text"}]
+
+
+def test_pdf_image_pages_go_to_ocr(fake_ocr):
+    from PIL import Image
+    import io as _io
+    b = _io.BytesIO()
+    Image.new("L", (600, 800), 255).save(b, "PDF")  # 글자 정보 없는 그림 PDF(스캔본과 같음)
+    status, body = call("/api/ocr", b.getvalue(), "application/pdf")
+    assert status == 200
+    r = json.loads(body)
+    assert r["pdf"]["pages"][0]["source"] == "ocr" and r["counts"]["exact"] == 4
+    assert fake_ocr["ctype"].startswith("multipart/form-data") and b"\xff\xd8" in fake_ocr["body"]  # 쪽 그림을 JPEG로 보냄
+
+
+def test_pdf_broken_is_422(fake_ocr):
+    assert call("/api/ocr", b"%PDF-1.4 broken", "application/pdf")[0] == 422
+    assert call("/api/ocr", b"not a pdf", "application/pdf")[0] == 415

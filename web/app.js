@@ -1291,6 +1291,7 @@
   const OCR_ENOUGH = 3; // 사전과 정확히 맞은 성분이 이 개수 이상이면 더 돌려 보지 않는다
   const OCR_SKEW_MIN = 1; // 글자 줄이 이 각도(도) 이상 기울면 반대로 돌려 한 번 더 읽는다(2~4°만 기울어도 줄 묶기가 틀어진다)
   const OCR_SKEW_MAX = 20;
+  const OCR_PDF_MAX = 8 * 1024 * 1024; // 서버 /api/ocr 본문 상한과 같게
   const OCR_FEW_LINES = 10; // 표의 줄 대조로 이보다 적게 찾으면 전성분 표가 아닐 수 있다고 알린다(리플렛·기획서의 광고 성분)
   function shrinkPhoto(file, deg = 0) {
     return new Promise((resolve, reject) => {
@@ -1317,6 +1318,13 @@
       img.src = url;
     });
   }
+  function pdfNote(p) {
+    if (!p) return '';
+    const ocr = (p.pages || []).filter((x) => x.source === 'ocr').length;
+    const parts = [`PDF ${p.pages_total}쪽 중 ${p.pages_read}쪽을 읽었습니다(글자 정보 ${p.pages_read - ocr}쪽, 그림으로 읽은 쪽 ${ocr}쪽).`];
+    if (p.partial) parts.push('시간·쪽 수 제한으로 뒤쪽은 읽지 않았습니다. 전성분표가 뒤에 있으면 그 쪽만 따로 올려 주세요.');
+    return parts.join(' ');
+  }
   const tiltOf = (deg) => (deg || 0) - Math.round((deg || 0) / 90) * 90; // 90° 단위 회전을 뺀 기울기 보정 각
   function blurryHTML(r) {
     return r.quality && r.quality.blurry
@@ -1337,7 +1345,8 @@
       : `<li><span class="ocr-out__tag ocr-out__tag--unknown">확인 필요</span> <q>${esc(i.raw)}</q> — 사전에 없는 이름입니다. 사진과 대조해 고쳐 주세요.</li>`)).join('');
     const how = [r.method === 'lines' ? '"전성분" 표기 대신 표의 줄마다 성분명을 사전과 대조해 찾았습니다.' : '',
       Math.round((r.angle || 0) / 90) % 4 ? '사진이 옆으로 누워 있어 돌려 읽었습니다.' : '',
-      Math.abs(tiltOf(r.angle)) >= 0.5 ? `사진이 ${Math.abs(tiltOf(r.angle)).toFixed(1)}° 기울어 있어 바로 세워 읽었습니다.` : ''].filter(Boolean).join(' ');
+      Math.abs(tiltOf(r.angle)) >= 0.5 ? `사진이 ${Math.abs(tiltOf(r.angle)).toFixed(1)}° 기울어 있어 바로 세워 읽었습니다.` : '',
+      pdfNote(r.pdf)].filter(Boolean).join(' ');
     const few = r.method === 'lines' && items.length < OCR_FEW_LINES
       ? `<p class="parse parse--warn">${icon('i-cond', 'ic--sm')}<span>"전성분" 표기가 없는 문서에서 성분 이름 ${items.length}개만 찾았습니다. 리플렛·기획서처럼 일부 성분만 소개한 문서일 수 있으니 전성분 표와 대조해 주세요.</span></p>`
       : '';
@@ -1350,10 +1359,19 @@
     btn.setAttribute('aria-busy', 'true');
     btn.disabled = true;
     out.hidden = false;
-    out.innerHTML = `<p class="parse">${icon('i-clock', 'ic--sm')}<span>사진을 읽는 중입니다. 서빙이 쉬고 있었다면 첫 응답에 시간이 더 걸립니다.</span></p>`;
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+    out.innerHTML = `<p class="parse">${icon('i-clock', 'ic--sm')}<span>${isPdf
+      ? 'PDF를 읽는 중입니다. 글자 정보가 없는 쪽은 그림으로 바꿔 읽어서 쪽마다 몇 초씩 걸립니다.'
+      : '사진을 읽는 중입니다. 서빙이 쉬고 있었다면 첫 응답에 시간이 더 걸립니다.'}</span></p>`;
     try {
       let r = null;
-      for (const deg of OCR_ANGLES) {
+      if (isPdf) { // 쪽 그림 만들기·돌려 읽기·바로 세우기는 서버(ocr_pdf)가 쪽마다 한다
+        if (file.size > OCR_PDF_MAX) throw new Error('PDF는 8MB까지 올릴 수 있습니다. 전성분표가 있는 쪽만 따로 저장해 올려 주세요.');
+        const res = await fetch('api/ocr', { method: 'POST', headers: { 'Content-Type': 'application/pdf', Accept: 'application/json' }, body: file });
+        if (!res.ok) throw await readError(res);
+        r = await res.json();
+      }
+      for (const deg of isPdf ? [] : OCR_ANGLES) {
         if (deg) out.innerHTML = `<p class="parse">${icon('i-clock', 'ic--sm')}<span>성분을 거의 찾지 못해 사진을 ${deg}° 돌려 다시 읽는 중입니다.</span></p>`;
         const blob = await shrinkPhoto(file, deg);
         const res = await fetch('api/ocr', { method: 'POST', headers: { 'Content-Type': 'image/jpeg', Accept: 'application/json' }, body: blob });
@@ -1364,7 +1382,7 @@
       }
       // 기울기 보정: 서버가 글자 상자로 잰 기울기만큼 반대로 돌려 다시 읽는다. 상자가 축 정렬이라 조금 덜 재므로
       // 남은 기울기가 0.5° 이상이면 한 번 더(최대 2번). 정확 일치가 줄면 앞 결과를 쓴다
-      for (const min of [OCR_SKEW_MIN, OCR_SKEW_MIN / 2]) {
+      for (const min of isPdf ? [] : [OCR_SKEW_MIN, OCR_SKEW_MIN / 2]) {
         const skew = r.skew;
         if (typeof skew !== 'number' || Math.abs(skew) < min || Math.abs(skew) > OCR_SKEW_MAX) break;
         out.innerHTML = `<p class="parse">${icon('i-clock', 'ic--sm')}<span>사진이 ${Math.abs(skew).toFixed(1)}° 기울어 있어 바로 세워 다시 읽는 중입니다.</span></p>`;
