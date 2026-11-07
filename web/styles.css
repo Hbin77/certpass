@@ -391,6 +391,27 @@ code {
 .mlalert__title { font-weight: 700; color: var(--c-ink-900); }
 .mlalert__text { margin-top: 2px; font-size: var(--fs-14); color: var(--c-ink-700); }
 .vrow__detail > .mlalert { margin-bottom: var(--sp-4); }
+/* AgentStream 판정 설명 */
+.aiexp {
+  max-width: 46em; margin-top: var(--sp-4); padding: var(--sp-3) var(--sp-4);
+  background: var(--c-brand-050); border: 1px solid var(--c-brand-100); border-left: 3px solid var(--c-brand-700); border-radius: var(--r-sm);
+}
+.aiexp__title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); font-size: var(--fs-14); font-weight: 600; color: var(--c-ink-900); }
+.aiexp__title .ic { color: var(--c-brand-700); }
+.aiexp__by { font-weight: 400; font-size: var(--fs-12); color: var(--c-ink-600); }
+.aiexp__state { display: flex; gap: var(--sp-2); align-items: flex-start; margin: var(--sp-2) 0; font-size: var(--fs-14); color: var(--c-ink-700); }
+.aiexp__state .ic { margin-top: 2px; flex: none; }
+.aiexp__spin { animation: spin .8s linear infinite; color: var(--c-brand-700); }
+.aiexp__text { margin-top: var(--sp-2); font-size: var(--fs-16); line-height: 1.6; color: var(--c-ink-900); }
+.aiexp__text p + p, .aiexp__text p + .aiexp__list, .aiexp__list + p { margin-top: var(--sp-2); }
+.aiexp__list { padding-left: var(--sp-5); list-style: disc; }
+.aiexp__list li + li { margin-top: var(--sp-1); }
+.aiexp__rag { margin-top: var(--sp-2); font-size: var(--fs-12); }
+.aiexp__src { margin-top: var(--sp-2); }
+.aiexp__n { font-variant-numeric: tabular-nums; color: var(--c-ink-600); }
+.aiexp__notice { display: flex; gap: var(--sp-1); align-items: flex-start; margin-top: var(--sp-3); font-size: var(--fs-12); color: var(--c-ink-600); }
+.aiexp__notice .ic { margin-top: 2px; flex: none; }
+.aiexp .btn { margin-top: var(--sp-1); }
 .mlgrade {
   display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;
   font-size: var(--fs-12); font-weight: 600; line-height: 1.3; font-variant-numeric: tabular-nums; color: var(--c-ink-600);
@@ -446,6 +467,16 @@ code {
 .todo__certs { margin-top: var(--sp-1); font-size: var(--fs-14); color: var(--c-ink-600); }
 .todo__certs strong { color: var(--c-ink-900); font-weight: 600; }
 .todo__act { margin-top: var(--sp-2); }
+
+/* 함량을 넣으면 확정되는 성분(조건부의 원인이 함량 누락일 때) */
+.pctask { margin-bottom: var(--sp-8); padding-left: var(--sp-4); border-left: 3px solid var(--c-cond-200); }
+.pctask__text { max-width: 46em; color: var(--c-ink-700); font-size: var(--fs-14); }
+.pctask__list { list-style: none; padding: 0; margin-top: var(--sp-3); border-top: 1px solid var(--c-line-200); }
+.pctask__list li { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); padding: var(--sp-2) 0; border-bottom: 1px solid var(--c-line-200); }
+.pctask__name { font-weight: 600; color: var(--c-ink-900); }
+.pctask__certs { font-size: var(--fs-14); color: var(--c-ink-600); }
+.pctask__more { margin-top: var(--sp-2); font-size: var(--fs-14); color: var(--c-ink-600); }
+.pctask__act { margin-top: var(--sp-3); }
 
 .cat {
   display: inline-flex; align-items: center; gap: var(--sp-1); white-space: nowrap;

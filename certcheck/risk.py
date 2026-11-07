@@ -12,6 +12,7 @@ from functools import lru_cache
 
 from rapidfuzz import fuzz, process
 
+from .classify import parse_pcts
 from .data import DATA, RegIndex
 from .normalize import norm_inci, split_cas
 
@@ -82,12 +83,17 @@ def risk_features(p: dict, reg: RegIndex, juris: str) -> dict:
     n = max(len(ings), 1)
     max_b = max_r = 0.0
     near_b = near_r = 0
+    unk_limits: list[float] = []  # 함량 미상인 제한 성분의 한도(낮을수록 실제 함량이 한도를 넘을 여지가 큼)
     for ing in ings:
         k = norm_inci(ing["inci"])
         if not k:
             continue
         exact = reg.lookup(juris, ing["inci"], split_cas(ing.get("cas")))
         if exact:
+            if ing.get("pct") is None:
+                lims = [x for r, _ in exact if r.list_type == "restricted" for x in parse_pcts(r.max_conc)]
+                if lims:
+                    unk_limits.append(min(lims))
             continue
         if banned:
             _, s, _ = process.extractOne(k, banned, scorer=fuzz.ratio)
@@ -103,4 +109,6 @@ def risk_features(p: dict, reg: RegIndex, juris: str) -> dict:
         "max_sim_restricted": round(max_r, 3), "n_near_restricted": near_r,
         "frac_pct_missing": round(sum(1 for i in ings if i.get("pct") is None) / n, 3),
         "frac_cas_missing": round(sum(1 for i in ings if not split_cas(i.get("cas"))) / n, 3),
+        "n_pct_unknown_limited": len(unk_limits),
+        "min_limit_pct_unknown": round(min(unk_limits), 4) if unk_limits else 0.0,
     }

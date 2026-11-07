@@ -663,6 +663,186 @@
           "role": "functional_whitening_planned"
         }
       ]
+    },
+    {
+      "id": "D5",
+      "name_kr": "데모 클렌징 폼(전성분만·성분명 오기)",
+      "name_en": "Demo Cleansing Foam (INCI list only, one typo)",
+      "status": "on_market",
+      "net_content": "150 ml",
+      "product_type": "cleanser_foam",
+      "application": "rinse_off",
+      "body_area": [
+        "face"
+      ],
+      "functional_kr": [],
+      "claims": [
+        "cleansing"
+      ],
+      "manufacturer": {
+        "name": "위탁제조사(가상)",
+        "country": "KR",
+        "certs": [
+          "CGMP",
+          "ISO 22716",
+          "IFRA",
+          "ISO 9001",
+          "ISO 14001",
+          "ISO 45001"
+        ]
+      },
+      "documents": [
+        "finished_product_test_report",
+        "test_report_demo_02",
+        "packaging_spec_demo_02",
+        "label_kr"
+      ],
+      "formula_known": "ingredients_only_no_concentration",
+      "ingredients": [
+        {
+          "kr": "정제수",
+          "inci": "Water",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "소듐라우로일이세티오네이트",
+          "inci": "Sodium Lauroyl Isethionate",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "글리세린",
+          "inci": "Glycerin",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "소듐코코일글라이시네이트",
+          "inci": "Sodium Cocoyl Glycinate",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "하이드록시프로필스타치포스페이트",
+          "inci": "Hydroxypropyl Starch Phosphate",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "데실글루코사이드",
+          "inci": "Decyl Glucoside",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "마그네슘알루미늄실리케이트",
+          "inci": "Magnesium Aluminum Silicate",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "소듐클로라이드",
+          "inci": "Sodium Chloride",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "코카마이드미파",
+          "inci": "Cocamide MIPA",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "소듐라우로일락틸레이트",
+          "inci": "Sodium Lauroyl Lactylate",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "베타인",
+          "inci": "Betaine",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "소듐벤조에이트",
+          "inci": "Sodium Benzoate",
+          "cas": null,
+          "pct": null,
+          "role": "preservative"
+        },
+        {
+          "kr": "",
+          "inci": "Dibutyl Phthlate",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "시트릭애씨드",
+          "inci": "Citric Acid",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "향료",
+          "inci": "Fragrance",
+          "pct": null,
+          "role": "fragrance",
+          "_note": "향료 알러젠 구성 미보유(리모넨 0.000000 표기)",
+          "cas": null
+        },
+        {
+          "kr": "트레할로오스",
+          "inci": "Trehalose",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "소듐폴리아크릴로일다이메틸타우레이트",
+          "inci": "Sodium Polyacryloyldimethyl Taurate",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "카프릴릴글라이콜",
+          "inci": "Caprylyl Glycol",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "잔탄검",
+          "inci": "Xanthan Gum",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "포트마리골드추출물",
+          "inci": "Calendula Officinalis Extract",
+          "pct": null,
+          "cas": null
+        },
+        {
+          "kr": "다이소듐이디티에이",
+          "inci": "Disodium EDTA",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "1,2-헥산다이올",
+          "inci": "1,2-Hexanediol",
+          "cas": null,
+          "pct": null
+        },
+        {
+          "kr": "리모넨",
+          "inci": "Limonene",
+          "cas": null,
+          "pct": null,
+          "role": "allergen_from_fragrance"
+        }
+      ],
+      "demo_note": "D2와 같은 가상 제품. 포장의 전성분 목록만 붙여 넣어 함량·CAS가 없고, 금지 성분 Dibutyl Phthalate가 'Dibutyl Phthlate'로 잘못 적힌 입력(규칙 엔진은 이름이 정확히 같을 때만 금지 성분을 잡음 → AI 숨은 불가 경보 시연용)"
     }
   ]
 }

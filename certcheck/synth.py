@@ -17,7 +17,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from .classify import PROXY, evaluate
-from .names import convert_korean_names, inci_to_kr
+from .names import convert_korean_names, inci_to_kr, kr_dict
 from .normalize import norm_inci
 from .data import DATA, RegIndex
 from .risk import risk_features
@@ -59,12 +59,28 @@ def pool(reg: RegIndex, juris: str, list_type: str) -> list[tuple[str, list[str]
     return out
 
 
+def safe_pool(reg: RegIndex) -> list[tuple[str, list[str], str]]:
+    """일반 성분 후보: 식약처 원료성분사전(15111774)에서 어느 관할의 금지·제한 목록에도 없는 INCI.
+    (예전에는 중국 IECIC를 썼으나 운영진 데이터 검토에서 사용 불가 → 제외)"""
+    listed = {k for (_, k), rows in reg.by_key.items() if any(r.list_type in ("banned", "restricted") for r in rows)}
+    seen, out = set(), []
+    for hit in sorted(kr_dict().values(), key=lambda h: h["inci"] or ""):
+        name = (hit.get("inci") or "").strip()
+        k = norm_inci(name)
+        if not (4 < len(k) < 60) or k in listed or k in seen or _GROUPED.search(name):
+            continue
+        seen.add(k)
+        cas = [c for c in re.split(r"[;,/\s]+", hit.get("cas") or "") if c]
+        out.append((name, cas if len(cas) == 1 else [], ""))
+    return out
+
+
 def make_products(base: list[dict], reg: RegIndex, n: int, seed: int = 7) -> list[dict]:
     rng = random.Random(seed)
     jur = sorted(j for j in reg.jurisdictions if j != "GLOBAL")
     banned = {j: pool(reg, j, "banned") for j in jur}
     restricted = {j: pool(reg, j, "restricted") for j in jur}
-    safe = pool(reg, "CN", "inventory")
+    safe = safe_pool(reg)
     out = []
     for i in range(n):
         p = copy.deepcopy(rng.choice(base))

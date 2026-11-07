@@ -132,7 +132,7 @@
 
   // ------------------------------------------------------------------ 상태
   const S = {
-    health: null, certs: [], certIndex: {}, demo: null, company: {},
+    health: null, certs: [], certIndex: {}, demo: null, company: {}, explain: {}, explainGen: 0,
     docTypes: null, docMeta: {},
     product: null, result: null, source: null, demoId: null,
     filter: 'all', expanded: new Set(), fill: null, ctrl: null, trigger: null, retry: null, ids: new Map(),
@@ -595,6 +595,59 @@
     $('#table-body').innerHTML = '<p class="muted">판정하면 관할(국가)별 표가 여기에 나옵니다.</p>';
   }
 
+  // 함량이 없어 한도 대조를 못 한 제한 성분. 추측(ML) 대신 사용자에게 함량을 물어 판정을 확정한다
+  const PCT_ASK_RE = /제한 성분\s+(.+?):/;
+  function pctAskList(vs) {
+    const by = new Map();
+    for (const v of vs) {
+      for (const f of v.findings || []) {
+        if (f.code !== 'ING_RESTRICTED_PCT_UNKNOWN') continue;
+        const name = ((f.message || '').match(PCT_ASK_RE) || [])[1];
+        if (!name) continue;
+        if (!by.has(name)) by.set(name, new Set());
+        by.get(name).add(v.cert_name);
+      }
+    }
+    return Array.from(by, ([name, certs]) => ({ name, certs: Array.from(certs) })).sort((a, b) => b.certs.length - a.certs.length);
+  }
+  function pctAskHTML(vs) {
+    const list = pctAskList(vs);
+    if (!list.length) return '';
+    const shown = list.slice(0, 6);
+    return `<section class="pctask" aria-labelledby="pctask-title"><h3 class="sub-title" id="pctask-title">함량을 넣으면 판정이 확정되는 성분 ${list.length}종</h3>
+      <p class="pctask__text">한도가 있는 성분인데 함량이 없어 한도를 넘는지 알 수 없습니다. 함량을 넣고 다시 판정하면 이 성분 때문에 생긴 ‘조건부’가 통과 또는 불가로 바뀝니다.</p>
+      <ul class="pctask__list" role="list">${shown.map((x) => `<li><span class="pctask__name">${esc(x.name)}</span>
+        <span class="pctask__certs">인증 ${x.certs.length}개: ${esc(x.certs.slice(0, 3).join(', '))}${x.certs.length > 3 ? ' 외' : ''}</span></li>`).join('')}</ul>
+      ${list.length > shown.length ? `<p class="pctask__more">외 ${list.length - shown.length}종</p>` : ''}
+      <div class="pctask__act"><button type="button" class="btn btn--secondary btn--sm" data-pct-ask="${esc(shown[0].name)}">${icon('i-flask', 'ic--sm')}함량 입력하기</button></div>
+    </section>`;
+  }
+  // 입력 화면으로 옮겨 첫 성분 줄 끝에 커서를 둔다(데모면 데모 내용을 직접 입력 칸에 채운 뒤)
+  function goPctInput(name) {
+    if (S.source === 'demo' && S.demoId) {
+      const sel = $('#m-fill');
+      if (sel) sel.value = S.demoId;
+      fillFromDemo(S.demoId);
+    }
+    selectTab(document.getElementById('tab-manual'));
+    const ta = $('#m-ing');
+    const lines = ta.value.split('\n');
+    const key = name.toLowerCase();
+    let pos = ta.value.length;
+    let acc = 0;
+    for (const line of lines) {
+      if (line.toLowerCase().includes(key)) { pos = acc + line.length; break; }
+      acc += line.length + 1;
+    }
+    ta.focus();
+    ta.setSelectionRange(pos, pos);
+    ta.scrollIntoView({ block: 'center' });
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('[data-pct-ask]');
+    if (b) goPctInput(b.dataset.pctAsk);
+  });
+
   function renderSummary() {
     const p = S.product;
     const all = visibleVerdicts();
@@ -656,6 +709,7 @@
               ${t.link ? '<div class="todo__act"><a class="btn btn--quiet btn--sm" href="#docs">서류 초안 보기</a></div>' : ''}
             </div></li>`).join('')}</ol></section>`;
       }
+      html += pctAskHTML(vs);
       if (strategic.length) {
         html += `<section class="support" aria-labelledby="support-title">${icon('i-landmark', 'ic--lg support__icon')}<div>
           <h3 class="support__title" id="support-title">중기부 해외규격인증 지원 대상(비용 50~70%)</h3>
@@ -818,6 +872,71 @@
     return out.slice(0, 3);
   }
 
+  // AgentStream LLM+RAG 판정 설명(선택). 판정 표시와 따로 불러와 판정 속도를 늦추지 않는다. 등급은 규칙 엔진 결과 그대로
+  const llmOn = () => !!(S.health && S.health.llm_model);
+  function explainSlotHTML(v) {
+    if (!llmOn() || isCompany(v)) return '';
+    return `<section class="aiexp" data-explain="${esc(v.cert_id)}" aria-label="AI 판정 설명" aria-live="polite">${explainBodyHTML(S.explain[v.cert_id])}</section>`;
+  }
+  function explainTextHTML(text) {
+    const out = [];
+    let list = [];
+    const flush = () => { if (list.length) out.push(`<ul class="aiexp__list" role="list">${list.join('')}</ul>`); list = []; };
+    for (const raw of String(text || '').split(/\n+/)) {
+      const line = raw.trim().replace(/^\*\*(.+?)\*\*/, '$1');
+      if (!line) continue;
+      const m = line.match(/^[-*•]\s+(.*)$/);
+      if (m) list.push(`<li>${esc(m[1])}</li>`);
+      else { flush(); out.push(`<p>${esc(line)}</p>`); }
+    }
+    flush();
+    return out.join('');
+  }
+  function explainBodyHTML(st) {
+    const head = `<h4 class="aiexp__title">${icon('i-cpu', 'ic--sm')}AI 판정 설명 <span class="aiexp__by">AgentStream · qwen3.5-122b + 지식베이스</span></h4>`;
+    if (!st || st.loading) {
+      return `${head}<p class="aiexp__state">${icon('i-loader', 'ic--sm aiexp__spin')}근거 문서를 찾아 설명을 만드는 중입니다. 20~40초쯤 걸릴 수 있습니다.</p>`;
+    }
+    const d = st.data || {};
+    const src = (d.sources || []).map((s) => `<li><span class="aiexp__n">근거 ${esc(s.n)}</span> ${s.url
+      ? `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title || s.url)}</a>`
+      : esc(s.title)} <span class="muted">${esc(s.kind || '')}</span></li>`).join('');
+    const srcHTML = src ? `<details class="more aiexp__src"><summary>${icon('i-chevron', 'ic--sm')}근거 목록 ${(d.sources || []).length}건</summary>
+      <div class="more__body"><ol class="flist" role="list">${src}</ol></div></details>` : '';
+    if (st.error || !d.ok) {
+      return `${head}<p class="aiexp__state">${icon('i-info', 'ic--sm')}AI 설명을 지금 불러오지 못했습니다. 판정과 근거는 위 내용 그대로 유효합니다.</p>
+        <button type="button" class="btn btn--secondary btn--sm" data-explain-retry="${esc(d.cert_id || st.certId || '')}">${icon('i-refresh', 'ic--sm')}다시 불러오기</button>${srcHTML}`;
+    }
+    const rag = d.tool_failed ? '<p class="aiexp__rag muted">지식베이스 문서 조회가 실패해 판정 사유만으로 설명했습니다.</p>'
+      : (d.rag_sources || []).length ? `<p class="aiexp__rag muted">지식베이스에서 찾은 문서: ${esc(d.rag_sources.join(', '))}</p>` : '';
+    return `${head}<div class="aiexp__text">${explainTextHTML(d.text)}</div>${rag}${srcHTML}
+      <p class="aiexp__notice">${icon('i-info', 'ic--xs')}${esc(d.notice || '참고용 설명이며 공식 인증·심사가 아닙니다.')}</p>`;
+  }
+  function renderExplain(certId) {
+    const slot = document.querySelector(`.aiexp[data-explain="${CSS.escape(certId)}"]`);
+    if (slot) slot.innerHTML = explainBodyHTML(S.explain[certId]);
+  }
+  async function loadExplain(certId, force) {
+    if (!llmOn() || !S.product) return;
+    const cur = S.explain[certId];
+    if (cur && !force && (cur.loading || (cur.data && cur.data.ok))) return;
+    const gen = S.explainGen;
+    S.explain[certId] = { loading: true, certId };
+    renderExplain(certId);
+    let st;
+    try {
+      const res = await postJSON('api/explain', { product: S.product, company: S.company, cert_id: certId });
+      const data = await res.json();
+      st = data && data.enabled === false ? null : { data, certId };
+    } catch (err) {
+      st = { error: true, certId };
+    }
+    if (gen !== S.explainGen) return; // 그사이 다른 제품을 판정했으면 버린다
+    if (st) S.explain[certId] = st; else delete S.explain[certId];
+    const slot = document.querySelector(`.aiexp[data-explain="${CSS.escape(certId)}"]`);
+    if (!st && slot) slot.remove(); else renderExplain(certId);
+  }
+
   function detailHTML(v) {
     const c = certOf(v);
     const conf = confInfo(v.confidence);
@@ -844,7 +963,7 @@
     if (v.status === ST.NA) {
       const na = fs.filter((f) => f.level === 'na');
       html += `<ul class="flist" role="list">${na.map((f) => findingHTML({ type: 'one', f })).join('')}</ul>`;
-      return html;
+      return html + explainSlotHTML(v);
     }
     const gaps = fs.filter(isGap);
     if (!gaps.length) html += `<p class="pass-note">${icon('i-pass')}보완할 항목이 없습니다. 현재 처방·서류로 요건을 충족합니다.</p>`;
@@ -868,6 +987,7 @@
         <div class="more__body"><p class="hint">아래에 해당하면 재처방해야 합니다. 판정 엔진이 성분 규정 목록으로 함께 대조합니다.</p>
         <ul class="rules" role="list">${rules.map((f) => `<li>${icon('i-fail', 'ic--sm')}<span>${esc(clean(f.message))}</span></li>`).join('')}</ul></div></details>`;
     }
+    html += explainSlotHTML(v);
     const docs = relatedDocs(v).filter((d) => S.docTypes instanceof Set && S.docTypes.has(d));
     if (docs.length) {
       html += `<div class="ddocs"><span class="ddocs__label">관련 서류 초안</span>${docs.map((d) =>
@@ -1036,6 +1156,8 @@
       S.source = source;
       S.demoId = source === 'demo' ? product.id : null;
       S.expanded.clear();
+      S.explain = {};
+      S.explainGen += 1;
       if (data.disclaimer) $('#disclaimer').textContent = data.disclaimer;
       renderResult(true);
       renderDemoPressed();
@@ -1138,16 +1260,24 @@
   }
   // ------------------------------------------------------------------ 포장 사진 OCR
   const OCR_LONG_SIDE = 2400; // 서버 본문 상한(8 MiB) 아래로 줄이면서 작은 성분 글자는 남기는 크기
-  function shrinkPhoto(file) {
+  const OCR_ANGLES = [0, 90, 270]; // 성분이 거의 안 나오면 옆으로 누운 사진으로 보고 돌려서 다시 읽는다
+  const OCR_ENOUGH = 3; // 사전과 정확히 맞은 성분이 이 개수 이상이면 더 돌려 보지 않는다
+  function shrinkPhoto(file, deg = 0) {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => {
         const s = Math.min(1, OCR_LONG_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.round(img.naturalWidth * s);
+        const h = Math.round(img.naturalHeight * s);
         const c = document.createElement('canvas');
-        c.width = Math.round(img.naturalWidth * s);
-        c.height = Math.round(img.naturalHeight * s);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        const side = deg % 180 !== 0;
+        c.width = side ? h : w;
+        c.height = side ? w : h;
+        const g = c.getContext('2d');
+        g.translate(c.width / 2, c.height / 2);
+        g.rotate((deg * Math.PI) / 180);
+        g.drawImage(img, -w / 2, -h / 2, w, h);
         URL.revokeObjectURL(url);
         c.toBlob((b) => (b ? resolve(b) : reject(new Error('사진을 줄이지 못했습니다.'))), 'image/jpeg', 0.9);
       };
@@ -1167,7 +1297,9 @@
     const rows = check.map((i) => (i.match === 'fuzzy'
       ? `<li><span class="ocr-out__tag ocr-out__tag--fuzzy">이름 맞춤</span> 읽은 글자 <q>${esc(i.raw)}</q> → 표준명 <strong>${esc(i.kr)}</strong> (유사도 ${esc(i.score)})</li>`
       : `<li><span class="ocr-out__tag ocr-out__tag--unknown">확인 필요</span> <q>${esc(i.raw)}</q> — 사전에 없는 이름입니다. 사진과 대조해 고쳐 주세요.</li>`)).join('');
-    return `<p class="parse">${icon('i-check', 'ic--sm')}<span>전성분 ${items.length}종을 읽어 아래 칸에 채웠습니다. 식약처 사전과 그대로 일치 ${c.exact || 0}종, 비슷한 이름으로 맞춤 ${c.fuzzy || 0}종, 확인 필요 ${c.unknown || 0}종.</span></p>
+    const how = [r.method === 'lines' ? '"전성분" 표기 대신 표의 줄마다 성분명을 사전과 대조해 찾았습니다.' : '',
+      r.angle ? `사진이 옆으로 누워 있어 ${r.angle}° 돌려 읽었습니다.` : ''].filter(Boolean).join(' ');
+    return `<p class="parse">${icon('i-check', 'ic--sm')}<span>전성분 ${items.length}종을 읽어 아래 칸에 채웠습니다. 식약처 사전과 그대로 일치 ${c.exact || 0}종, 비슷한 이름으로 맞춤 ${c.fuzzy || 0}종, 확인 필요 ${c.unknown || 0}종.${how ? ` ${esc(how)}` : ''}</span></p>
       ${rows ? `<ul class="ocr-out__list">${rows}</ul>` : ''}`;
   }
   async function readPhoto(file) {
@@ -1178,10 +1310,16 @@
     out.hidden = false;
     out.innerHTML = `<p class="parse">${icon('i-clock', 'ic--sm')}<span>사진을 읽는 중입니다. 서빙이 쉬고 있었다면 첫 응답에 시간이 더 걸립니다.</span></p>`;
     try {
-      const blob = await shrinkPhoto(file);
-      const res = await fetch('api/ocr', { method: 'POST', headers: { 'Content-Type': 'image/jpeg', Accept: 'application/json' }, body: blob });
-      if (!res.ok) throw await readError(res);
-      const r = await res.json();
+      let r = null;
+      for (const deg of OCR_ANGLES) {
+        if (deg) out.innerHTML = `<p class="parse">${icon('i-clock', 'ic--sm')}<span>성분을 거의 찾지 못해 사진을 ${deg}° 돌려 다시 읽는 중입니다.</span></p>`;
+        const blob = await shrinkPhoto(file, deg);
+        const res = await fetch('api/ocr', { method: 'POST', headers: { 'Content-Type': 'image/jpeg', Accept: 'application/json' }, body: blob });
+        if (!res.ok) throw await readError(res);
+        const got = { ...(await res.json()), angle: deg };
+        if (!r || (got.counts?.exact || 0) > (r.counts?.exact || 0)) r = got;
+        if ((r.counts?.exact || 0) >= OCR_ENOUGH) break;
+      }
       out.innerHTML = ocrResultHTML(r);
       if ((r.ingredients || []).length) {
         $('#m-ing').value = r.ingredients.map((i) => i.kr || i.raw).join('\n');
@@ -1347,6 +1485,8 @@
       if (row) { toggleRow(row); return; }
       const doc = e.target.closest('[data-doc]');
       if (doc && !doc.disabled) { downloadDoc(doc); return; }
+      const again = e.target.closest('[data-explain-retry]');
+      if (again) { loadExplain(again.dataset.explainRetry, true); return; }
       if (e.target.closest('[data-retry]') && S.retry) S.retry();
     });
 
@@ -1363,6 +1503,7 @@
     if (open) {
       const v = (S.result.verdicts || []).find((x) => x.cert_id === certId);
       if (v && !panel.dataset.ready) { panel.innerHTML = detailHTML(v); panel.dataset.ready = '1'; }
+      if (v) loadExplain(certId);
       panel.hidden = false;
       S.expanded.add(certId);
     } else {
