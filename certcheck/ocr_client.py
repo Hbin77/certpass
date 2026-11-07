@@ -2,7 +2,7 @@
 
 환경변수 (서버 설정으로만 받음)
 - CERTCHECK_OCR_URL: OCR 서빙의 /predict 전체 주소. 없으면 사진 입력 기능을 끈다(503)
-- CERTCHECK_OCR_TIMEOUT: 초(기본 60). 서빙이 60분 쉬면 멈췄다가 첫 호출에 깨어나므로 넉넉히 둔다
+- CERTCHECK_OCR_TIMEOUT: 초(기본 40). 공개 주소 프록시가 60초에 끊으므로 그보다 짧게. 늦은 응답은 다시 보내지 않는다
 성분명 맞추기: OCR이 읽은 글자를 식약처 원료성분 사전(한글↔INCI)의 표준 한글명과 비교한다.
 정확히 같으면 exact, 글자 유사도 88 이상이면 fuzzy(사용자 확인 필요), 아니면 unknown.
 """
@@ -45,7 +45,7 @@ RETRY_WAIT = (3.0, 6.0)  # 서빙 replica가 다시 뜨는 동안(수 초) 기�
 def call_ocr(image: bytes, content_type: str) -> dict:
     """OCR 서빙 호출. 서빙이 잠깐 내려가 500·502·503·504를 주면 최대 2번 다시 보낸다(사진 문제 4xx는 바로 실패)."""
     body, ctype = _multipart("file", "package.jpg", content_type, image)
-    timeout = float(os.environ.get("CERTCHECK_OCR_TIMEOUT", "60"))
+    timeout = float(os.environ.get("CERTCHECK_OCR_TIMEOUT", "40"))
     for attempt in range(len(RETRY_WAIT) + 1):
         req = urllib.request.Request(os.environ["CERTCHECK_OCR_URL"], data=body, headers={"Content-Type": ctype}, method="POST")
         try:
@@ -54,8 +54,10 @@ def call_ocr(image: bytes, content_type: str) -> dict:
         except urllib.error.HTTPError as e:
             if e.code not in RETRY_STATUS or attempt == len(RETRY_WAIT):
                 raise
-        except (urllib.error.URLError, TimeoutError):
-            if attempt == len(RETRY_WAIT):
+        except TimeoutError:
+            raise  # 응답이 늦으면 다시 보내지 않는다(공개 주소 프록시가 60초에 끊으므로 화면이 먼저 끊기지 않게)
+        except urllib.error.URLError as e:
+            if isinstance(e.reason, TimeoutError) or attempt == len(RETRY_WAIT):
                 raise
         time.sleep(RETRY_WAIT[attempt])
     raise RuntimeError("unreachable")
