@@ -1171,8 +1171,14 @@ def _support_program(ctx: _Ctx) -> bytes:
         ["화장품 관련 전략인증 (Strategic certifications)", STRATEGIC_COSMETIC],
         ["목록 밖 인증 (Unlisted certifications)", "일반지원 583개 목록 밖 인증은 '비공고 규격인증'으로 신청 가능 — 사업 가이드 별첨 "
                                                "1-4호 작성, 운영위원회 심의(단순 마케팅·기업 홍보용 인증은 제외)"],
+        ["지급 방식 (Payment)", "성공조건부 사후 지급 — 인증 획득 후 실제 비용의 일부를 지급하므로 비용은 먼저 지출"],
+        ["지원 한도 (Limit)", "기업당 최대 4건, 1억 원(트랙 합산, 연간). 지원율: 전년도 매출 100억 원 미만 70%, 300억 원 미만 60%, 그 이상 50%"],
+        ["지원 항목 (Covered costs)", "인증비(발행·신청·연회·심사비, 현지 법정대리인 선임비), 시험비, 컨설팅비 등 — 인증별 개별 한도 있음"],
+        ["지원 제외 (Not covered)", "공고일 기준 이미 획득한 인증, 상대국이 강제하지 않는 인증(민간 인증은 수출에 매우 중요할 때만 예외), "
+                                    "동일 제품 인증비 중복 지원"],
         ["신청처 (Where to apply)", "smes.go.kr/globalcerti"],
     ], [48, 126])
+    d.p("출처: 중소벤처기업부 해외규격인증 획득지원사업 공고(관리기관 KTR). 세부 조건은 신청 연도 공고문으로 다시 확인하세요.", size=8)
 
     d.h("2. 판정 대상 중 지원 대상 인증 (Eligible certifications)")
     targets = []
@@ -1232,13 +1238,13 @@ def _support_program(ctx: _Ctx) -> bytes:
     fin_text = (f"자본잠식: {IMPAIRMENT.get(impairment, impairment)} ({fin.get('fiscal_year') or '-'} 회계연도)"
                 if impairment else TBC)
     if impairment == "complete":
-        d.p("주의: 회사 정보에 완전자본잠식으로 입력되어 있습니다. 준비물보다 먼저 공고문의 신청 제외 요건에 해당하는지 확인하세요.",
-            bold=True, size=9)
+        d.p("참고: 회사 정보에 완전자본잠식으로 입력되어 있습니다. 자본잠식은 이 공고의 신청 제외 대상이 아닙니다. 다만 성공조건부 사후 지급이라 "
+            "인증 비용을 먼저 지출해야 하므로, 먼저 낼 수 있는 금액이 실제 신청 범위입니다.", bold=True, size=9)
     d.table(["확인 (Done)", "준비물 (Item)", "자동 확인 (Auto check)", "비고 (Notes)"], [
         [BOX, "사업자등록증 (Business registration)", TBC, ""],
         [BOX, "중소기업 확인서 (SME confirmation)", TBC, "중소기업현황정보시스템(sminfo.mss.go.kr) 발급"],
         [BOX, "전년도 재무제표·매출액 증빙 (Prior-year financial statements)", TBC, "지원율(50~70%) 산정 기준"],
-        [BOX, "재무 상태 (Financial status)", fin_text, f"자본잠식 등 신청 제외 요건 해당 여부는 공고문에서 확인 {TBC}"],
+        [BOX, "재무 상태 (Financial status)", fin_text, "자본잠식은 신청 제외 대상 아님. 제외: 휴·폐업, 국세·지방세 체납, 채무불이행자 등록, 동일 제품 인증비 중복 지원"],
         [BOX, "수출 실적 증빙 (Export record)", f"수출 이력 {len(history)}건 입력됨" if history else f"{TBC} 수출 이력 없음",
          "수출실적증명서 등"],
         [BOX, "인증기관·시험기관 견적서 (Quotation)", TBC, "인증별 비용 견적 — 지원금 산정 근거"],

@@ -234,7 +234,7 @@ def run(req: EvalRequest):
     ml_info = {k: val for k, val in ml.items() if k != "results"}
     return {"product": p["name_kr"], "eval_date": (req.eval_date or date.today()).isoformat(), "summary": summary,
             "verdicts": out, "ml": ml_info, "unknown_cert_ids": unknown, "ingredient_names": names,
-            "disclaimer": "예비 판정입니다. 최종 판단은 각 기관과 자격 있는 안전성 평가자가 합니다."}
+            "disclaimer": "CertPass는 인증기관이 아니며, 이 결과는 공식 인증·심사가 아닌 예비 판정입니다. 최종 판단은 각 기관과 자격 있는 안전성 평가자가 합니다."}
 
 
 class ExplainRequest(EvalRequest):

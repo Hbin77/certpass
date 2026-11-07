@@ -648,6 +648,15 @@
     if (b) goPctInput(b.dataset.pctAsk);
   });
 
+  // 해외규격인증 획득지원사업 공고(KTR) 원문 확인 조건 — 신청 전 반드시 알아야 할 것만
+  const SUPPORT_RULES = [
+    '성공조건부 사후 지급: 인증을 받은 뒤 실제 비용의 일부를 돌려받으므로 비용은 먼저 지출해야 합니다.',
+    '기업당 최대 4건, 1억 원(트랙 합산, 연간). 지원율은 전년도 매출 100억 원 미만 70%·300억 원 미만 60%·그 이상 50%.',
+    '현지 법정대리인(책임자) 선임비도 지원 항목입니다(인증·등록에 필수일 때).',
+    '공고일 기준 이미 받은 인증은 지원하지 않습니다.',
+    '상대국이 강제하는 인증만 지원합니다. 민간 인증은 수출에 매우 중요할 때만 예외(단순 마케팅용 제외).',
+  ];
+
   function renderSummary() {
     const p = S.product;
     const all = visibleVerdicts();
@@ -714,6 +723,8 @@
         html += `<section class="support" aria-labelledby="support-title">${icon('i-landmark', 'ic--lg support__icon')}<div>
           <h3 class="support__title" id="support-title">중기부 해외규격인증 지원 대상(비용 50~70%)</h3>
           <p class="support__text">전략인증 ${strategic.length}개는 인증 비용의 50~70%(최대 1억 원)를 지원받을 수 있습니다.${general.length ? ` 일반 지원 목록(583종)에 있는 인증도 ${general.length}개 있습니다.` : ''}</p>
+          <ul class="support__rules" role="list">${SUPPORT_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
+          <p class="support__src muted">출처: 중소벤처기업부 해외규격인증 획득지원사업 공고(관리기관 KTR)</p>
           <ul class="support__list" role="list">${strategic.map((v) => `<li>${badge(v.status, true)}${esc(v.cert_name)}</li>`).join('')}</ul>
           ${S.docTypes instanceof Set && S.docTypes.has('support_program') ? `<div class="support__act">${docButton('support_program', '지원사업 신청 메모 내려받기', 'btn--secondary btn--sm')}</div>` : ''}
         </div></section>`;
@@ -944,6 +955,7 @@
     if (!st && slot) slot.remove(); else renderExplain(certId);
   }
 
+  const PRIVATE_KINDS = new Set(['voluntary_certification', 'marketing_label']);
   function detailHTML(v) {
     const c = certOf(v);
     const conf = confInfo(v.confidence);
@@ -957,6 +969,7 @@
       <dt>신뢰도</dt><dd>${esc(conf.label)} ${conf.pct}%${confWhy.length ? `. 낮춘 이유: ${esc(confWhy.join(' / '))}` : ''}</dd>
       ${ml ? ml.meta : ''}
       ${c.support_rate ? `<dt>중기부 지원</dt><dd>${esc(c.support_rate)}</dd>` : ''}
+      ${PRIVATE_KINDS.has(v.kind) ? `<dt>안내</dt><dd>공식 인증 아님 — 인증기관이 공개한 기준을 요약해 미리 점검한 결과입니다. 심사·인증은 해당 인증기관이 합니다.</dd>` : ''}
       ${typeof c.export_share_2025 === 'number' ? `<dt>수출 비중</dt><dd>한국 화장품 수출(2025)의 ${esc((c.export_share_2025 * 100).toFixed(1))}% <span class="muted">관세청 품목별 국가별 수출입실적</span></dd>` : ''}
     </dl>`;
     if (c.unofficial_notice) html += `<p class="note">${icon('i-info', 'ic--sm')}<span>${esc(c.unofficial_notice)}</span></p>`;

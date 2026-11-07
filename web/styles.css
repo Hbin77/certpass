@@ -498,6 +498,9 @@ code {
 .support__icon { color: var(--c-brand-700); margin-top: 2px; }
 .support__title { font-size: var(--fs-16); font-weight: 700; margin-bottom: 2px; }
 .support__text { color: var(--c-ink-700); font-size: var(--fs-14); }
+.support__rules { margin: var(--sp-2) 0 0; padding-left: var(--sp-4); font-size: var(--fs-14); color: var(--c-ink-700); }
+.support__rules li { margin-top: var(--sp-1); }
+.support__src { margin-top: var(--sp-2); font-size: var(--fs-14); }
 .support__list { list-style: none; padding: 0; margin-top: var(--sp-3); display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .support__list li {
   display: inline-flex; align-items: center; gap: var(--sp-2); padding: 4px var(--sp-2) 4px 4px;
