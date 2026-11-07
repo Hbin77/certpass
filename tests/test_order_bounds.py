@@ -49,3 +49,19 @@ def test_korean_variant_matching():
     assert kr_fuzzy(name) is None
     r = kr_fuzzy(name[:-2])
     assert r is None or r["kr_name"] == name
+
+
+def test_kr_shadow_adds_check_not_fail():
+    """한글 변형을 표준명으로 본 가상 판정의 불가 사유는 '확인 필요'(조건부)로만 붙고 등급을 불가로 만들지 않는다."""
+    from certcheck import classify as C
+    from certcheck.names import kr_dict
+    reg, attrs = load_reg_index(), load_attributes()
+    card = next(c for c in load_cards() if c["id"] == "EU_CPNP")
+    p = {"id": "T2", "name_kr": "시험", "product_type": "face_cream", "application": "leave_on", "claims": [], "documents": [],
+         "formula_known": "full_with_concentration", "ingredients": [{"inci": "Water", "pct": 80}]}
+    v = C.evaluate(card, p, {}, reg, attrs)
+    assert all(f.code != "ING_KR_VARIANT_RISK" for f in v.findings)  # 한글 표기가 없으면 추가 판정 없음
+    assert C._kr_shadow(p) is None
+    name = next(h["kr_name"] for h in kr_dict().values() if len(h["kr_name"]) > 6)
+    sh = C._kr_shadow({**p, "ingredients": [{"inci": name[:-2], "pct": None}]})
+    assert sh is None or sh[1][0][1]["kr_name"] == name

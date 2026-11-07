@@ -380,8 +380,8 @@ def check_ingredients(v: Verdict, card: dict, p: dict, reg: RegIndex, attrs: dic
             if "banned" in kt:
                 v.add("cond", "ING_BANNED_SUSPECT", f"{what} — 금지 성분, 오기·OCR 오류인지 확인", SOURCE_KR,
                       "포장·전성분표 원문으로 성분명 확인, 금지 성분이면 제거 재처방")
-            elif "restricted" in kt or any(t.startswith("allowed_") for t in kt):
-                v.add("cond", "ING_KR_VARIANT_LIMITED", f"{what} — 한도가 있는 성분, 표기와 함량 확인", SOURCE_KR,
+            elif "restricted" in kt and pct is None:  # 함량을 알면 아래 '가상 제품' 판정이 실제 한도 초과일 때만 표시
+                v.add("cond", "ING_KR_VARIANT_LIMITED", f"{what} — 한도가 있는 성분인데 함량도 없음, 표기와 함량 확인", SOURCE_KR,
                       "성분명·함량 확인 후 한도 대조")
         if has_inventory and "inventory" not in types and ingredient_key(ing) not in ("parfum",):
             a = (attrs or {}).get(ingredient_key(ing)) or {}
@@ -720,7 +720,46 @@ def check_special(v: Verdict, card: dict, p: dict, eval_date: date) -> None:
 
 
 # ---------------------------------------------------------------- 실행
-def evaluate(card: dict, p: dict, company: dict, reg: RegIndex, attrs: dict, eval_date: date | None = None) -> Verdict:
+KR_SHADOW = True  # 한글 변형 표기를 표준명으로 본 '가상 제품'으로 한 번 더 판정(측정 때 끄고 켜서 비교)
+
+
+def _kr_shadow(p: dict) -> tuple[dict, list[tuple[str, dict]]] | None:
+    """사전에 없는 한글 표기를 자모 유사도 후보(표준 INCI)로 바꾼 사본. 바꾼 게 없으면 None."""
+    swaps, ings = [], []
+    for ing in p.get("ingredients", []):
+        name = ing.get("inci") or ""
+        kv = kr_fuzzy(name) if _HANGUL.search(name) else None
+        if kv:
+            swaps.append((name, kv))
+            ings.append({**ing, "inci": kv["inci"], "kr": kv["kr_name"]})
+        else:
+            ings.append(ing)
+    return ({**p, "ingredients": ings}, swaps) if swaps else None
+
+
+def evaluate(card: dict, p: dict, company: dict, reg: RegIndex, attrs: dict, eval_date: date | None = None,
+             _shadow: bool = False) -> Verdict:
+    v = _evaluate(card, p, company, reg, attrs, eval_date)
+    if _shadow or not KR_SHADOW or v.status == STATUS_FAIL or card.get("kind") == "company_certification":
+        return v
+    sh = _kr_shadow(p)
+    if not sh:
+        return v
+    # 한글 변형을 표준명으로 보면 새로 생기는 불가 사유(금지·한도 초과·비건·할랄 속성 등)를 '확인 필요'로 붙인다(등급은 확정하지 않음)
+    have = {(f.code, f.message) for f in v.findings if f.level == "fail"}
+    alt = evaluate(card, sh[0], company, reg, attrs, eval_date, _shadow=True)
+    names = ", ".join(f"'{a}'→'{b['kr_name']}'" for a, b in sh[1][:3])
+    new = [f for f in alt.findings if f.level == "fail" and (f.code, f.message) not in have and f.code != "ING_BANNED"]
+    for f in new[:5]:
+        v.add("cond", "ING_KR_VARIANT_RISK", f"한글 표기를 표준명으로 보면({names}) 불가 사유: {f.message[:160]} — 표기 확인 필요",
+              SOURCE_KR, "포장·전성분표 원문으로 성분명 확인 후 다시 판정")
+    if new:
+        v.finalize()
+        v.features = features(v, p)
+    return v
+
+
+def _evaluate(card: dict, p: dict, company: dict, reg: RegIndex, attrs: dict, eval_date: date | None = None) -> Verdict:
     eval_date = eval_date or date.today()
     v = Verdict(p["id"], p.get("name_kr", ""), card["id"], card.get("name_ko", card["id"]), card.get("jurisdiction", ""),
                 card.get("kind", ""))
@@ -800,7 +839,7 @@ def features(v: Verdict, p: dict) -> dict:
         "formula_concept": int(p.get("formula_known") == "concept_only"),
         "n_banned": sum(1 for c in codes if c == "ING_BANNED"), "n_over_limit": cnt("ING_OVER_LIMIT"),
         "n_banned_suspect": cnt("ING_BANNED_SUSPECT"), "n_over_by_order": cnt("ING_OVER_LIMIT_BY_ORDER"),
-        "n_kr_variant_limited": cnt("ING_KR_VARIANT_LIMITED"),
+        "n_kr_variant_limited": cnt("ING_KR_VARIANT_LIMITED"), "n_kr_variant_risk": cnt("ING_KR_VARIANT_RISK"),
         "n_ok_by_order": cnt("ING_RESTRICTED_OK_BY_ORDER"),
         "n_restricted_unknown": cnt("ING_RESTRICTED_PCT_UNKNOWN"), "n_restricted_cond": cnt("ING_RESTRICTED_CONDITIONS"),
         "n_not_in_inventory": cnt("ING_NOT_IN_INVENTORY"), "ing_no_data": cnt("ING_NO_DATA"), "ing_proxy": cnt("ING_PROXY"),
