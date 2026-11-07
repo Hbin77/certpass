@@ -1,5 +1,5 @@
 #!/bin/bash
-# 팀 GPU 서버(axgpu) /data → jinusubuntu(100.106.185.56) /data2/hbin/axgpu_backup/<시각>/ 백업.
+# 팀 GPU 서버(axgpu) /data → jinusubuntu(팀 백업 서버, ssh 설정의 호스트 이름) /data2/hbin/axgpu_backup/<시각>/ 백업.
 # - 맥을 거쳐 tar를 흘려보낸다(axgpu에서 내려받는 방향은 중계가 끊지 않음, jinusubuntu는 tailscale)
 # - 가상환경(.venv*)은 용량만 크고 다시 설치할 수 있어 패키지 목록(pip freeze)만 남긴다
 # - ocr/crops·ocr/det는 jinusubuntu ai633/crops·det에서 만든 것이므로 체크섬만 대조한다
