@@ -67,7 +67,25 @@ def sources_for(v: dict, card: dict) -> list[dict]:
     return out
 
 
-def build_prompt(v: dict, card: dict, product: dict, sources: list[dict]) -> str:
+LIST_KO = {"banned": "금지", "restricted": "제한"}
+
+
+def ai_lines(ai: dict | None) -> tuple[str, str]:
+    """AIStream 숨은 불가 경보를 프롬프트에 넣을 (규칙 문장, 본문 구역). 경보가 없으면 둘 다 빈 문자열.
+    줄 머리에 대괄호를 쓰지 않는다(AgentStream이 표로 읽음). 확률은 소수 둘째 자리(캐시 키 안정)."""
+    if not ai:
+        return "", ""
+    near = "; ".join(f"입력 '{n['input'][:60]}' — {LIST_KO.get(n['list_type'], n['list_type'])} 성분 '{n['listed'][:60]}'와 "
+                     f"이름 유사도 {n['similarity']:.2f}" for n in ai.get("near") or []) or "없음(함량·CAS 누락 등 입력 불완전)"
+    rule = ("6. 'AI 모델 경보'가 있으면 '먼저 할 일' 앞에 'AI 경보:'로 시작하는 한 줄을 쓰세요. 규칙 판정 등급은 그대로이며, "
+            "AI 모델은 불가 가능성을 경보한 것뿐이라고 구분하고, 확인할 성분(오탈자 의심이면 올바른 이름과 금지 여부 확인)을 적으세요. "
+            "이 줄에는 근거 번호를 붙이지 않아도 됩니다.\n")
+    body = (f"\nAI 모델 경보(AIStream 랜덤포레스트, 등급 아님): 불가 가능성 {ai['fail_proba']:.2f} (경보 기준 {ai.get('threshold')})\n"
+            f"이름이 비슷한 규제 성분: {near}\n")
+    return rule, body
+
+
+def build_prompt(v: dict, card: dict, product: dict, sources: list[dict], ai: dict | None = None) -> str:
     fs = sorted([f for f in v.get("findings") or [] if f.get("level") in ("fail", "cond", "na")],
                 key=lambda f: {"fail": 0, "cond": 1, "na": 2}[f["level"]])[:MAX_FINDINGS]
     level = {"fail": "불가 사유", "cond": "보완 필요", "na": "해당 없음 사유"}
@@ -79,6 +97,7 @@ def build_prompt(v: dict, card: dict, product: dict, sources: list[dict]) -> str
     if not lines:
         lines = ["- 보완할 항목 없음: 현재 처방·서류로 요건 충족"]
     claims = ", ".join(map(str, product.get("claims") or [])) or "없음"
+    ai_rule, ai_body = ai_lines(ai)
     src = "\n".join(f"근거 {s['n']}: {s['title']}" + (f" — {s['url']}" if s.get("url") and s["url"] != s["title"] else "")
                     for s in sources) or "없음"
     return f"""당신은 화장품 수출 인증 사전 점검 도우미입니다. 아래 규칙 엔진 판정을 중소기업 실무자가 이해하도록 설명하세요.
@@ -91,13 +110,13 @@ def build_prompt(v: dict, card: dict, product: dict, sources: list[dict]) -> str
 5. 한국어, 존댓말, 6문장 이내. 형식:
 왜 이 등급인가: (2~3문장)
 먼저 할 일: (1~3개, 한 줄씩 "- "로 시작)
-
+{ai_rule}
 인증: {card.get('name_ko')} ({card.get('id')}, 관할 {card.get('jurisdiction')})
 제품: {str(product.get('name_kr') or '')[:60]} / 유형 {product.get('product_type') or '-'} / 표방 문구 {claims[:200]}
 판정 등급: {v.get('status')}
 판정 사유:
 {chr(10).join(lines)}
-
+{ai_body}
 근거 목록:
 {src}
 """
@@ -237,13 +256,13 @@ def health(timeout: float = 10) -> dict:
             "checked_at": d.get("checked_at"), "embedding_models": d.get("embedding_models")}
 
 
-def explain(v: dict, card: dict, product: dict) -> dict:
+def explain(v: dict, card: dict, product: dict, ai: dict | None = None) -> dict:
     """판정 하나(Verdict.to_dict 모양)의 설명. 같은 판정·같은 프롬프트는 캐시에서 돌려준다."""
     sources = sources_for(v, card)
-    base = {"cert_id": v.get("cert_id"), "status": v.get("status"), "sources": sources, "notice": NOTICE}
+    base = {"cert_id": v.get("cert_id"), "status": v.get("status"), "sources": sources, "notice": NOTICE, "ai_alert": ai}
     if not enabled():
         return {**base, "enabled": False, "reason": "AgentStream 설명 모델 미연결"}
-    prompt = build_prompt(v, card, product, sources)
+    prompt = build_prompt(v, card, product, sources, ai)
     key = hashlib.sha256(prompt.encode()).hexdigest()
     with _lock:
         if key in _cache:

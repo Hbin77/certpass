@@ -159,3 +159,24 @@ def test_health_reads_status(monkeypatch):
     h = llm_client.health()
     srv.shutdown()
     assert h["ok"] is True and h["status"] == "healthy"
+
+
+def test_ai_alert_section_in_prompt():
+    """AIStream 경보는 등급과 구분해 'AI 경보:' 규칙과 본문 구역으로 들어가고, 줄 머리에 대괄호가 없으며 확률은 둘째 자리."""
+    ai = {"fail_proba": 0.5234, "threshold": 0.25,
+          "near": [{"input": "Dibutyl Phthlate", "listed": "dibutyl phthalate", "list_type": "banned", "similarity": 0.97}]}
+    out = explain_demo("D3", "EU_ECOLABEL_RINSEOFF")
+    v = {"cert_id": "EU_ECOLABEL_RINSEOFF", "status": out["status"], "findings": []}
+    p = llm_client.build_prompt(v, {"id": "EU_ECOLABEL_RINSEOFF", "name_ko": "x", "jurisdiction": "EU"}, {"name_kr": "데모"}, out["sources"], ai)
+    assert "AI 경보:" in p and "불가 가능성 0.52" in p and "'dibutyl phthalate'" in p and "등급 아님" in p
+    assert not any(line.lstrip().startswith("[") for line in p.splitlines())
+    assert llm_client.ai_lines(None) == ("", "")
+
+
+def test_near_matches_skips_dictionary_names():
+    """정상 원료 이름(식약처 사전에 있음)은 오탈자 의심에서 빠지고, 사전에 없는 금지 성분 오기만 남는다."""
+    from certcheck.data import load_reg_index
+    from certcheck.risk import near_matches
+    p = {"ingredients": [{"inci": "Sodium Chloride"}, {"inci": "Dibutyl Phthlate"}]}
+    got = near_matches(p, load_reg_index(), "EU")
+    assert [g["input"] for g in got] == ["Dibutyl Phthlate"] and got[0]["list_type"] == "banned"

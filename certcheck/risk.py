@@ -75,6 +75,28 @@ def product_risk(p: dict) -> dict:
     }
 
 
+def near_matches(p: dict, reg: RegIndex, juris: str, threshold: int = 85, limit: int = 5) -> list[dict]:
+    """정확히 일치하지는 않지만 금지·제한 목록 이름과 매우 비슷한 성분(오탈자 의심). AI 경보 설명에 쓴다.
+    식약처 원료성분사전에 그대로 있는 이름(Sodium Chloride 등 정상 원료)은 오탈자가 아니므로 뺀다."""
+    from .names import inci_to_kr  # names → data만 import하므로 순환 없음. 사전은 처음 한 번만 읽힘
+    _REG[id(reg)] = reg
+    known = inci_to_kr()
+    out = []
+    for list_type in ("banned", "restricted"):
+        names = _names(id(reg), juris, list_type)
+        if not names:
+            continue
+        for ing in p.get("ingredients", []):
+            k = norm_inci(ing.get("inci"))
+            if not k or k in known or reg.lookup(juris, ing["inci"], split_cas(ing.get("cas"))):
+                continue
+            hit, s, _ = process.extractOne(k, names, scorer=fuzz.ratio)
+            if s >= threshold:
+                out.append({"input": ing["inci"], "listed": hit, "list_type": list_type, "similarity": round(s / 100, 2)})
+    out.sort(key=lambda x: (x["list_type"] != "banned", -x["similarity"]))
+    return out[:limit]
+
+
 def risk_features(p: dict, reg: RegIndex, juris: str) -> dict:
     _REG[id(reg)] = reg
     banned = _names(id(reg), juris, "banned")

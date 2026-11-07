@@ -29,6 +29,7 @@ from . import llm_client, ml_client, ocr_client
 from .names import convert_korean_names
 from .classify import evaluate, evaluate_company, gap_type
 from .data import DATA, load_attributes, load_cards, load_reg_index
+from .risk import near_matches
 from .schemas import CertIds, CompanyIn, Product, Short
 
 MAX_BODY_BYTES = 1024 * 1024  # 요청 본문 상한 1 MiB(성분 500개 제품도 수십 KB)
@@ -250,10 +251,24 @@ def explain(req: ExplainRequest):
         raise HTTPException(404, f"알 수 없는 인증 id입니다: {req.cert_id}")
     p = req.product.model_dump()
     company = req.company.model_dump(exclude_unset=True)
-    v = (evaluate_company(card, company) if card.get("kind") == "company_certification"
-         else evaluate(card, p, company, reg, attrs, req.eval_date)).to_dict()
+    verdict = (evaluate_company(card, company) if card.get("kind") == "company_certification"
+               else evaluate(card, p, company, reg, attrs, req.eval_date))
+    v = verdict.to_dict()
     v.pop("features", None)
-    return llm_client.explain(v, card, p)
+    return llm_client.explain(v, card, p, ai_alert(verdict, card, p, reg))
+
+
+def ai_alert(verdict, card: dict, p: dict, reg) -> dict | None:
+    """같은 판정의 AIStream 숨은 불가 경보와 오탈자 의심 성분. 경보가 없거나 ML이 꺼져·실패하면 None(설명은 그대로)."""
+    if card.get("kind") == "company_certification":
+        return None
+    ml = ml_client.predict([verdict], {card["id"]: card}, p, reg)
+    r = (ml.get("results") or {}).get(verdict.cert_id) if ml.get("ok") else None
+    if not r or not r.get("hidden_fail_alert"):
+        return None
+    rules = (card.get("ingredient_rules") or "none").upper()
+    return {"fail_proba": round(r["fail_proba"], 2), "threshold": ml.get("threshold"),
+            "near": near_matches(p, reg, ml_client.PROXY.get(rules, rules))}
 
 
 @app.post("/api/ocr")
