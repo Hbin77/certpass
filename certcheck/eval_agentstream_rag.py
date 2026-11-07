@@ -19,7 +19,7 @@ from pathlib import Path
 
 from . import llm_client as L
 
-TAG = re.compile(r"\[([A-Z0-9]{3,})[\s\]]")
+TAG = L.TAG_IN
 
 
 def tag_of(card_id: str) -> str:
@@ -30,7 +30,7 @@ def doc_tag(d: dict) -> str | None:
     for s in (d.get("document") or "", (d.get("evidence") or {}).get("section_title") or ""):
         m = TAG.search(s)
         if m:
-            return m.group(1)
+            return L.kb_tag(m.group(1))
     return None
 
 

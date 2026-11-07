@@ -28,8 +28,20 @@ def _t(s) -> str:
     return KW.sub("", str(s)).strip()
 
 
+def kb_tag(card_id: str) -> str:
+    """지식베이스 꼬리표. AgentStream은 제목의 밑줄을 지우므로(EU_CPNP → EUCPNP) 처음부터 밑줄 없이 쓴다(llm_client.kb_tag와 같음)."""
+    return re.sub(r"[^A-Z0-9]", "", str(card_id).upper())
+
+
+SENT = re.compile(r"(?<=[.。;])\s+")
+
+
 def card_doc(c: dict) -> str:
-    tag = f"[{c['id']} {c.get('name_ko', '')}]"
+    """AgentStream은 절 경계와 상관없이 일정 길이로 조각을 자른다(2026-11-07 실측: '# 기간·비용·유' 같은 조각).
+    어느 조각에도 어느 카드인지 남도록 모든 줄 머리에 [꼬리표]를 붙이고, 긴 메모는 문장마다 나눈다."""
+    k = kb_tag(c["id"])
+    tag = f"[{k} {c.get('name_ko', '')}]"
+    t = f"[{k}]"
     out = [f"# {c.get('name_ko', '')} ({c['id']})", "",
            f"{tag} 영문명: {c.get('name_en') or '-'} / 관할: {c.get('jurisdiction') or '-'} / "
            f"종류: {KIND.get(c.get('kind'), c.get('kind'))} / 성분 규제 목록: {c.get('ingredient_rules') or '없음'}"]
@@ -37,7 +49,7 @@ def card_doc(c: dict) -> str:
     def sec(title: str, lines: list[str]) -> None:
         lines = [x for x in lines if x]
         if lines:
-            out.extend(["", f"## {title} {tag}", *lines])
+            out.extend(["", f"## {title} {tag}", *[f"- {t} {x[2:] if x.startswith('- ') else x}" for x in lines]])
 
     ap = c.get("applies_to") or {}
     sec("적용 대상", [f"- 제품 유형: {', '.join(ap.get('product_types') or []) or '-'}",
@@ -58,7 +70,7 @@ def card_doc(c: dict) -> str:
     sec("동물실험", [f"- {c['animal_testing']}" if c.get("animal_testing") else ""])
     tl = c.get("timeline") or {}
     sec("기간·비용·유효기간", [f"- {k}: {_t(tl[k])}" for k in ("lead_time", "fee", "validity") if tl.get(k)])
-    sec("참고 메모", [_t(c["notes"])] if c.get("notes") else [])
+    sec("참고 메모", [x for x in SENT.split(_t(c["notes"])) if x.strip()] if c.get("notes") else [])
     seen, ev = set(), []
     for e in c.get("evidence") or []:
         url = str((e or {}).get("url", ""))
@@ -67,7 +79,7 @@ def card_doc(c: dict) -> str:
             title = e.get("title") if e.get("title") and e.get("title") != url else None
             ev.append(f"- {title + ' — ' if title else ''}{url} ({LEVEL.get(e.get('level'), e.get('level') or '-')})")
     sec("근거 문서(출처 링크)", ev)
-    out.extend(["", f"{tag} 표기 규칙: '(추정)'은 일반 지식으로 채운 부분, '(2차)'는 2차 자료로만 확인한 부분이다. "
+    out.extend(["", f"- {t} 표기 규칙: '(추정)'은 일반 지식으로 채운 부분, '(2차)'는 2차 자료로만 확인한 부분이다. "
                     "이 문서는 공개 기준을 정리한 참고 자료이며 인증기관의 공식 심사가 아니다.", ""])
     return "\n".join(out)
 
@@ -98,6 +110,7 @@ GUIDE = """# CertPass 판정 기준 안내(공통)
 """
 
 
+MAX_FILE = 38_000  # 바이트. 39KB 파일은 처리됐고 285KB는 실패(2026-11-07)
 GROUPS = [  # (파일 이름, 카드 id 앞부분·id). 어디에도 안 맞는 카드는 마지막 '기타'로 간다
     ("유럽_영국_유라시아", ("EU_", "UK_", "EAEU_")),
     ("동아시아_중국_일본_대만", ("CN_", "JP_", "TW_")),
@@ -127,10 +140,20 @@ def export(folder: Path) -> int:
     for n, (name, keys) in enumerate(GROUPS + [("기타", ("",))], 1):
         part = [c for c in left if c["id"].startswith(keys)]
         left = [c for c in left if c not in part]
-        if part:
-            head = (f"# CertPass 인증 요건 카드 — {name.replace('_', ' ')} ({len(part)}종)\n\n"
+        packs, cur = [], []
+        for c in part:  # 파일 하나가 MAX_FILE을 넘지 않게(285KB 한 파일은 AgentStream 문서 분석에서 실패)
+            if cur and len("\n\n".join(card_doc(x) for x in cur + [c]).encode()) > MAX_FILE:
+                packs.append(cur)
+                cur = []
+            cur.append(c)
+        if cur:
+            packs.append(cur)
+        for j, pack in enumerate(packs, 1):
+            suffix = f"_{j}" if len(packs) > 1 else ""
+            head = (f"# CertPass 인증 요건 카드 — {name.replace('_', ' ')}{suffix} ({len(pack)}종)\n\n"
                     "공개 사실을 자체 문장으로 정리한 참고 자료이며 인증기관의 공식 심사가 아니다.\n\n")
-            (bundle / f"CertPass_카드{n:02d}_{name}.md").write_text(head + "\n\n".join(card_doc(c) for c in part), encoding="utf-8")
+            (bundle / f"CertPass_카드{n:02d}{suffix}_{name}.md").write_text(
+                head + "\n\n".join(card_doc(c) for c in pack), encoding="utf-8")
     (bundle / "CertPass_판정기준_안내.md").write_text(GUIDE, encoding="utf-8")
     return len(cards) + 1
 

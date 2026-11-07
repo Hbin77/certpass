@@ -367,3 +367,23 @@ def test_cache_key_changes_with_ml_model(monkeypatch):
     assert explain_demo("D3", "EU_CPNP")["cached"] is True
     monkeypatch.setenv("AISTREAM_FAIL_THRESHOLD", "0.3")
     assert explain_demo("D3", "EU_CPNP")["cached"] is False
+    monkeypatch.setenv("AGENTSTREAM_KB_VERSION", "2")  # 지식베이스를 다시 올리면 새로 만든다
+    assert explain_demo("D3", "EU_CPNP")["cached"] is False
+
+
+def test_tag_from_body_with_underscores():
+    ev = _ndjson({"event": "tool.completed", "artifact": {"documents": [
+        {"reference": "f.md", "document": "# 기간·비용·유\n\n합업소 확인] ... [KR_CFS_EXPORT 대한화장품협회", "evidence": {"section_title": "기간·비용·유"}},
+        {"reference": "f.md", "document": "- [EUCPNP] 서명된 CPSR 없음", "evidence": {"section_title": "조건"}}]}},
+        {"event": "assistant.delta", "content": "답"}, {"event": "turn.completed"})
+    tags = [d["tag"] for d in llm_client.parse_stream(ev.splitlines())["docs"]]
+    assert tags == ["KRCFSEXPORT", "EUCPNP"]
+
+
+def test_kb_every_line_tagged():
+    from certcheck.data import DATA, load_cards
+    from certcheck.kb_export import card_doc
+    for c in load_cards(DATA / "certs"):
+        tag = "[" + llm_client.kb_tag(c["id"])
+        body = [x for x in card_doc(c).splitlines() if x.startswith("- ")]
+        assert body and all(x.startswith("- " + tag) for x in body), c["id"]

@@ -117,7 +117,7 @@ def sources_for(v: dict, card: dict) -> list[dict]:
 LIST_KO = {"banned": "금지", "restricted": "제한"}
 # 지식베이스(AgentStream)는 문서를 바꿀 때 밑줄을 지워 꼬리표가 [EUCPNP …]로 저장된다(2026-11-07 실측).
 # 서버가 EU_CPNP로 물으면 키워드 검색이 빗나가므로 같은 꼬리표 모양으로 찾게 한다.
-TAG_IN = re.compile(r"\[([A-Z0-9]{3,})[\s\]]")
+TAG_IN = re.compile(r"\[([A-Z0-9][A-Z0-9_]{2,})[\s\]]")  # 본문에는 밑줄이 남기도 한다([KR_CFS_EXPORT …) → kb_tag로 맞춘다
 DATE = re.compile(r"(?<!\d)(\d{4})\s*[-.년]\s*(\d{1,2})(?!\d)\s*(?:[-.월]\s*(\d{1,2})(?!\d)\s*일?)?")  # '/'는 규정 번호(2019/1021)라 뺌
 PCT = re.compile(r"(\d+(?:\.\d+)?)\s*(%|ppm)")
 
@@ -278,7 +278,7 @@ def parse_stream(lines) -> dict:
                 # 절 제목은 AgentStream이 잘라 꼬리표가 [EUEC처럼 끊기기도 한다 → 본문의 첫 꼬리표를 먼저 본다
                 m = TAG_IN.search(str(d.get("document") or "")) or TAG_IN.search(sec or "")
                 docs.append({"ref": str(d["reference"])[:120], "section": str(sec or "")[:160],
-                             "tag": m.group(1) if m else None, "text": str(d.get("document") or "")[:4000]})
+                             "tag": kb_tag(m.group(1)) if m else None, "text": str(d.get("document") or "")[:4000]})
         for r in e.get("references") or []:
             if isinstance(r, dict) and r.get("type") == "rag" and r.get("source"):
                 rag.append(str(r["source"])[:120])
@@ -443,7 +443,9 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
     if not enabled():
         return {**base, "enabled": False, "reason": "AgentStream 설명 모델 미연결", "ai_alert": None}
     # 경보 내용(확률)은 키에서 빼되, 경보를 정하는 AIStream 모델 주소·기준값은 넣는다 — 모델·기준을 바꾸면 설명도 새로 만든다
-    ml_ver = f"{os.environ.get('AISTREAM_URL', '')}|{os.environ.get('AISTREAM_FAIL_THRESHOLD', '')}"
+    # 지식베이스를 다시 올리면 AGENTSTREAM_KB_VERSION을 올려 예전 지식베이스로 만든 설명을 쓰지 않게 한다
+    ml_ver = (f"{os.environ.get('AISTREAM_URL', '')}|{os.environ.get('AISTREAM_FAIL_THRESHOLD', '')}"
+              f"|kb{os.environ.get('AGENTSTREAM_KB_VERSION', '1')}")
     key = hashlib.sha256(f"{build_prompt(v, card, product, sources, None)}\n{ml_ver}".encode()).hexdigest()
     with _lock:
         _load_cache()
