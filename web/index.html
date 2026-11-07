@@ -12,8 +12,8 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="styles.css?v=10">
-<script src="app.js?v=10" defer></script>
+<link rel="stylesheet" href="styles.css?v=11">
+<script src="app.js?v=11" defer></script>
 </head>
 <body>
 <a class="skip" href="#input">본문으로 건너뛰기</a>
@@ -147,6 +147,10 @@
     <form class="confirm__in" id="manual-form" novalidate>
       <h2 class="confirm__title" id="confirm-title">전성분 <b id="confirm-n">0</b>종</h2>
       <ul class="confirm__chips" id="confirm-chips" role="list"></ul>
+      <div class="confirm__add">
+        <label class="sr-only" for="ing-add">성분 추가</label>
+        <input class="input" id="ing-add" type="text" autocomplete="off" spellcheck="false" placeholder="+ 성분 추가">
+      </div>
       <p class="parse parse--warn" id="confirm-warn" hidden></p>
       <div class="field">
         <label class="field__label" for="m-name">상품명</label>

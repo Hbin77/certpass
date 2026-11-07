@@ -7,10 +7,10 @@
   // ------------------------------------------------------------------ 상수
   const ST = { FAIL: '불가', COND: '조건부', PASS: '통과 가능', NA: '해당 없음' };
   const STATUS_LIST = [
-    { s: ST.FAIL, key: 'fail', icon: 'i-fail', def: '재처방해야만 통과' },
-    { s: ST.COND, key: 'cond', icon: 'i-cond', def: '재처방 없이 서류·현지책임자·문구·시험 보완으로 통과' },
-    { s: ST.PASS, key: 'pass', icon: 'i-pass', def: '현재 상태로 통과' },
-    { s: ST.NA, key: 'na', icon: 'i-na', def: '적용 대상 아님' },
+    { s: ST.FAIL, key: 'fail', icon: 'i-fail', def: '재처방 필요' },
+    { s: ST.COND, key: 'cond', icon: 'i-cond', def: '보완하면 통과' },
+    { s: ST.PASS, key: 'pass', icon: 'i-pass', def: '지금 통과' },
+    { s: ST.NA, key: 'na', icon: 'i-na', def: '대상 아님' },
   ];
   const STATUS_BY = Object.fromEntries(STATUS_LIST.map((x) => [x.s, x]));
   const RANK = { [ST.FAIL]: 0, [ST.COND]: 1, [ST.PASS]: 2, [ST.NA]: 3 };
@@ -498,9 +498,24 @@
     const m = STATUS_BY[status] || STATUS_BY[ST.NA];
     return `<span class="badge badge--${m.key}${small ? ' badge--sm' : ''}">${icon(m.icon)}${esc(status)}</span>`;
   }
-  function catChip(col) {
-    const c = GAP_COLS.find((x) => x.id === col) || GAP_COLS[1];
-    return `<span class="cat${col === 'reform' ? ' cat--reform' : ''}">${icon(c.icon)}${esc(c.label)}</span>`;
+  // 인증 전체를 등급 비율 막대 하나로(숫자는 아래 네 칸)
+  function overviewHTML(c) {
+    const bar = STATUS_LIST.map((m) => (c[m.key] ? `<span class="ovbar__seg ovbar__seg--${m.key}" style="flex-grow:${c[m.key]}"></span>` : '')).join('');
+    return `<div class="ovbar" aria-hidden="true">${bar}</div>${legendHTML(c)}`;
+  }
+  // 지금 할 일: 인증을 가장 많이 묶는 일 3가지를 카드로(아이콘·제목·인증 수·초안 단추)
+  function actsHTML(todos) {
+    const top = todos.slice(0, 3);
+    if (!top.length) return '';
+    return `<section class="todo" aria-labelledby="todo-title"><h3 class="sub-title" id="todo-title">지금 할 일</h3>
+      <ol class="acts" role="list">${top.map((t, i) => {
+        const col = GAP_COLS.find((x) => x.id === t.col) || GAP_COLS[1];
+        const doc = t.doc && S.docTypes instanceof Set && S.docTypes.has(t.doc) ? docButton(t.doc, '초안 받기', 'btn--quiet btn--sm') : '';
+        return `<li class="act act--${esc(t.col)}">
+          <span class="act__icon" aria-hidden="true">${icon(col.icon)}</span>
+          <p class="act__title"><span class="act__n">${i + 1}</span>${esc(t.title)}</p>
+          <p class="act__count"><b>${esc(t.n)}</b>개 인증</p>${doc}</li>`;
+      }).join('')}</ol></section>`;
   }
   function legendHTML(c) {
     return `<ul class="legend" role="list" aria-label="판정 등급">${STATUS_LIST.map((m) => {
@@ -671,24 +686,13 @@
         <p class="state__text">‘판정 대상’을 전체로 바꾸면 모든 인증의 판정을 볼 수 있습니다. 이 범위의 인증 요건 카드는 아직 준비 중일 수 있습니다.</p></div></div>`;
       html += legendHTML(c);
     } else {
-      html += legendHTML(c);
-      html += '<div class="aisum" id="ai-sum" aria-live="polite" hidden></div>';
+      html += overviewHTML(c);
       html += mlAlertHTML(vs);
+      html += actsHTML(todos);
+      html += '<div class="aisum" id="ai-sum" aria-live="polite" hidden></div>';
       const concept = notes.length && /기획 단계/.test(notes[0]) ? notes.shift() : '';
       if (concept) html += `<p class="note note--cond">${icon('i-cond', 'ic--sm')}<span>${esc(concept)}</span></p>`;
       html += pctAskHTML(vs);
-      if (todos.length) {
-        extraHTML += `<section class="todo" aria-labelledby="todo-title"><h3 class="sub-title" id="todo-title">가장 먼저 할 일</h3>
-          <ol class="todo__list" role="list">${todos.map((t, i) => `<li class="todo__item">
-            <span class="todo__n" aria-hidden="true">${i + 1}</span>
-            <div>
-              <div class="todo__head"><p class="todo__title">${esc(t.title)}</p>${catChip(t.col)}</div>
-              ${t.sub ? `<p class="todo__sub">${esc(t.sub)}</p>` : ''}
-              <p class="todo__certs"><strong>인증 ${t.n}개${t.n > 1 ? ' 공통' : ''}</strong>: ${esc(t.where)}</p>
-              ${t.doc && S.docTypes instanceof Set && S.docTypes.has(t.doc) ? `<div class="todo__act">${docButton(t.doc, '초안 내려받기', 'btn--quiet btn--sm')}</div>` : ''}
-              ${t.link ? '<div class="todo__act"><a class="btn btn--quiet btn--sm" href="#docs">서류 초안 보기</a></div>' : ''}
-            </div></li>`).join('')}</ol></section>`;
-      }
       if (strategic.length) {
         extraHTML += `<section class="support" aria-labelledby="support-title">${icon('i-landmark', 'ic--lg support__icon')}<div>
           <h3 class="support__title" id="support-title">중기부 해외규격인증 지원 대상(비용 50~70%)</h3>
@@ -710,12 +714,25 @@
     renderAiSum();
   }
 
-  // 결과 맨 위 AI 설명: 가장 먼저 볼 판정(불가, 없으면 조건부) 하나의 LLM 설명에서 '왜 이 등급인가'만 보인다
-  function aiKeyVerdict() {
-    const vs = ((S.result && S.result.verdicts) || []).filter((v) => !isCompany(v));
-    const pick = (st) => vs.filter((v) => v.status === st).sort(byMarket)[0];
-    return pick(ST.FAIL) || pick(ST.COND) || null;
+  // LLM 설명이 판정과 다른 등급을 말하는지(예: 불가 판정인데 "'조건부' 판정"). 판정 등급은 규칙 엔진 결과를 따른다
+  const GRADE_SAID = /['‘"“]?(불가|조건부|통과 가능|해당 없음)['’"”]?\s*(?:판정|등급)/g;
+  function gradeMismatch(text, status) {
+    return Array.from(String(text || '').matchAll(GRADE_SAID)).some((m) => m[1] !== status);
   }
+  // 결과 맨 위 AI 설명: 가장 먼저 볼 판정(불가, 없으면 조건부) 하나의 LLM 설명에서 '왜 이 등급인가'만 보인다
+  function aiCandidates() {
+    const vs = ((S.result && S.result.verdicts) || []).filter((v) => !isCompany(v));
+    const by = (st) => vs.filter((v) => v.status === st).sort(byMarket);
+    return by(ST.FAIL).concat(by(ST.COND));
+  }
+  function aiKeyVerdict() {
+    const c = aiCandidates();
+    return c.find((v) => v.cert_id === S.aiPick) || c[0] || null;
+  }
+  const aiOk = (v) => {
+    const st = v && S.explain[v.cert_id];
+    return !!(st && st.data && st.data.ok && !gradeMismatch(st.data.text, v.status));
+  };
   function renderAiSum() {
     const el = $('#ai-sum');
     if (!el) return;
@@ -724,8 +741,9 @@
     const text = st && st.data && st.data.ok ? String(st.data.text || '') : '';
     const body = text.split(/\n\s*먼저 할 일\s*:/)[0].replace(/^\s*왜 이 등급인가\s*:\s*/, '')
       .replace(/\s*\((?:근거\s*\d+[,\s]*)+\)/g, '').trim();
-    el.hidden = !body;
-    if (body) {
+    const show = body && !gradeMismatch(body, v.status);
+    el.hidden = !show;
+    if (show) {
       el.innerHTML = `<p class="aisum__head">${icon('i-cpu', 'ic--sm')}<span>AI 설명</span><b>${esc(v.cert_name)}</b></p><p class="aisum__text">${esc(body)}</p>`;
     }
   }
@@ -930,7 +948,10 @@
     // 판정 사유·근거 목록·인증 카드에 같은 말이 없는 용어·숫자·인용(LLM이 바꿔 쓰거나 지어냈을 수 있는 부분)
     const uns = (d.unsupported || []).length
       ? `<p class="aiexp__check">${icon('i-alert', 'ic--sm')}<span>근거 자료에서 같은 표현을 찾지 못한 말: ${esc(d.unsupported.slice(0, 6).join(', '))}${d.unsupported.length > 6 ? ` 외 ${d.unsupported.length - 6}개` : ''}. AI가 바꿔 쓴 표현일 수 있어 원문 확인이 필요합니다.</span></p>` : '';
-    return `${head}<div class="aiexp__text">${explainTextHTML(d.text)}</div>${unv}${uns}${bad}${rag}${srcHTML}
+    const v = (S.result && S.result.verdicts || []).find((x) => x.cert_id === d.cert_id);
+    const grade = v && gradeMismatch(d.text, v.status)
+      ? `<p class="aiexp__check">${icon('i-alert', 'ic--sm')}<span>설명 속 등급 표현이 판정(${esc(v.status)})과 다릅니다. 판정 등급은 규칙 판정을 따릅니다.</span></p>` : '';
+    return `${head}<div class="aiexp__text">${explainTextHTML(d.text)}</div>${grade}${unv}${uns}${bad}${rag}${srcHTML}
       <p class="aiexp__notice">${icon('i-info', 'ic--xs')}${esc(d.notice || '참고용 설명이며 공식 인증·심사가 아닙니다.')}</p>`;
   }
   function renderExplain(certId) {
@@ -1189,14 +1210,20 @@
       const ml = mlState();
       const alerts = ml.kind === 'on' ? (data.verdicts || []).filter((v) => mlOf(v) && mlOf(v).hidden_fail_alert).length : 0;
       step(1, ml.kind === 'on' ? 'done' : 'fail', ml.kind === 'on' ? (alerts ? `경보 ${alerts}건` : '이상 없음') : '연결 안 됨');
-      const key = aiKeyVerdict();
-      if (key && llmOn()) {
+      // AI 설명: 가장 먼저 볼 판정부터, 설명이 판정과 다른 등급을 말하면 다음 판정으로(최대 2건)
+      S.aiPick = null;
+      const cands = aiCandidates().slice(0, 2);
+      if (cands.length && llmOn()) {
         step(2, 'run');
-        await Promise.race([loadExplain(key.cert_id), new Promise((ok) => setTimeout(ok, AI_SUM_WAIT_MS))]);
-        if (ctrl !== S.ctrl) return;
-        const okExp = S.explain[key.cert_id] && S.explain[key.cert_id].data && S.explain[key.cert_id].data.ok;
-        step(2, okExp ? 'done' : 'fail', okExp ? '완료' : '나중에');
-        if (!okExp) loadExplain(key.cert_id).then(renderAiSum);
+        const t0 = Date.now();
+        for (const c of cands) {
+          const left = AI_SUM_WAIT_MS - (Date.now() - t0);
+          if (left <= 0) break;
+          await Promise.race([loadExplain(c.cert_id), new Promise((ok) => setTimeout(ok, left))]);
+          if (ctrl !== S.ctrl) return;
+          if (aiOk(c)) { S.aiPick = c.cert_id; break; }
+        }
+        step(2, S.aiPick ? 'done' : 'fail', S.aiPick ? '완료' : '건너뜀');
       } else {
         step(2, 'fail', '꺼짐');
       }
@@ -1457,13 +1484,40 @@
       $('#m-photo').value = '';
     }
   }
+  // 확인 화면에서 성분 빼기·넣기: '고치기'의 원문 칸(#m-ing)을 기준으로 다시 쓴다(함량·CAS 열 유지)
+  const fmtIng = (i) => [i.inci, i.pct != null ? String(i.pct) : '', i.cas || ''].join(' | ').replace(/(\s*\|\s*)+$/, '');
+  function setIngredients(items) {
+    $('#m-ing').value = items.map(fmtIng).join('\n');
+    updateParse();
+    fieldError('m-ing-err', 'm-ing', '');
+  }
+  function addIngredients(text) {
+    const cur = parseIngredients($('#m-ing').value).items;
+    const byKey = new Map(cur.map((i) => [normKey(i.kr || i.inci), i]));
+    let pctSet = 0;
+    const add = parseIngredients(text).items.filter((i) => {
+      const k = normKey(i.kr || i.inci);
+      if (!k) return false;
+      const old = byKey.get(k);
+      if (old) { // 이미 있는 성분에 함량만 적었으면 함량을 채운다
+        if (i.pct != null && old.pct !== i.pct) { old.pct = i.pct; pctSet += 1; }
+        return false;
+      }
+      byKey.set(k, i);
+      return true;
+    });
+    if (add.length || pctSet) setIngredients(cur.concat(add));
+    announce(add.length ? `성분 ${add.length}종을 더했습니다. 전성분 ${cur.length + add.length}종.` : pctSet ? '함량을 넣었습니다.' : '이미 있는 성분입니다.');
+    return add.length;
+  }
   // 확인 화면: 읽은 성분(사전에 없거나 이름을 맞춘 것은 표시)과 개수
   function renderConfirm(items) {
     const check = S.ocrCheck || new Set();
     $('#confirm-n').textContent = String(items.length);
-    $('#confirm-chips').innerHTML = items.map((i) => {
+    $('#confirm-chips').innerHTML = items.map((i, k) => {
       const n = i.kr || i.inci;
-      return `<li class="chip-ing${check.has(n) ? ' is-check' : ''}">${esc(n)}${i.pct != null ? ` <span class="chip-ing__pct">${esc(i.pct)}%</span>` : ''}</li>`;
+      return `<li class="chip-ing${check.has(n) ? ' is-check' : ''}"><span>${esc(n)}${i.pct != null ? ` <span class="chip-ing__pct">${esc(i.pct)}%</span>` : ''}</span>
+        <button type="button" class="chip-ing__x" data-rm-ing="${k}" aria-label="${esc(n)} 빼기">${icon('i-x', 'ic--sm')}</button></li>`;
     }).join('');
     const nCheck = items.filter((i) => check.has(i.kr || i.inci)).length;
     const warn = [nCheck ? `표시한 ${nCheck}종은 확인이 필요합니다.` : '', S.ocrBlurry ? '흐린 사진이 있어 잘못 읽었을 수 있습니다.' : ''].filter(Boolean).join(' ');
@@ -1635,6 +1689,33 @@
       renderPicked();
     });
     $('#start-btn').addEventListener('click', () => readFiles(S.files.slice()));
+    $('#confirm-chips').addEventListener('click', (e) => {
+      const x = e.target.closest('[data-rm-ing]');
+      if (!x) return;
+      const items = parseIngredients($('#m-ing').value).items;
+      const k = Number(x.dataset.rmIng);
+      const [gone] = items.splice(k, 1);
+      setIngredients(items);
+      announce(`${gone ? gone.kr || gone.inci : '성분'}을 뺐습니다. 전성분 ${items.length}종.`);
+      const next = document.querySelector(`#confirm-chips [data-rm-ing="${Math.min(k, items.length - 1)}"]`);
+      (next || $('#ing-add')).focus();
+    });
+    const addBox = $('#ing-add');
+    const flushAdd = () => { if (addBox.value.trim()) addIngredients(addBox.value); addBox.value = ''; };
+    addBox.addEventListener('keydown', (e) => {
+      // Enter, 또는 숫자 뒤가 아닌 쉼표('1,2-헥산다이올'의 쉼표는 이름의 일부)
+      if (e.key === 'Enter' || (e.key === ',' && !/\d$/.test(addBox.value))) {
+        e.preventDefault();
+        flushAdd();
+      }
+    });
+    addBox.addEventListener('paste', (e) => {
+      const t = e.clipboardData && e.clipboardData.getData('text');
+      if (!t) return;
+      e.preventDefault();
+      addBox.value = '';
+      addIngredients(t);
+    });
     $('#m-type-btn').addEventListener('click', () => { S.ocrCheck = new Set(); S.ocrBlurry = false; S.fromFile = false; updateParse(); revealDetail($('#m-ing')); });
     $('.brand').addEventListener('click', (e) => { e.preventDefault(); show('start'); });
     window.addEventListener('popstate', (e) => {
@@ -1648,6 +1729,7 @@
     });
     $('#manual-form').addEventListener('submit', (e) => {
       e.preventDefault();
+      flushAdd();
       fieldError('m-submit-err', null, '');
       const r = buildManualProduct();
       if (r.error) {
@@ -1761,7 +1843,7 @@
       Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
       return e;
     };
-    const pad = 6;
+    const pad = 2;
     const mask = el('mask', { id: 'scene-mask' });
     mask.appendChild(el('rect', { x: 0, y: 0, width: data.w, height: data.h, fill: 'white' }));
     const dim = el('rect', { class: 'scene__dim', x: 0, y: 0, width: data.w, height: data.h, mask: 'url(#scene-mask)' });
@@ -1803,7 +1885,7 @@
       const v = (res.verdicts || []).find((x) => x.status === st);
       row.hidden = !v;
       if (!v) return;
-      row.querySelector('.scene__name').textContent = String(v.cert_name).replace(/\s*\([^)]*\)/g, '');
+      row.querySelector('.scene__name').textContent = String(v.cert_name).replace(/\s*\([^)]*\)/g, '').replace(/\s*—.*$/, '').trim();
       row.querySelector('.scene__st').textContent = st;
     });
   }
@@ -1811,7 +1893,7 @@
     const scene = $('#scene');
     const data = scene && buildScene();
     if (!data || !scene.offsetParent || reduceMotion() || typeof scene.animate !== 'function') return;
-    const CYCLE = 11500, START = 700, FOCUS = 500, S0 = 500, SWEEP = 1900, DIM = 2600, FLY0 = 3200, FLY_GAP = 120, FLY = 760, OUT = 10600;
+    const CYCLE = 12500, START = 700, FOCUS = 500, S0 = 500, SWEEP = 1900, DIM = 2600, FLY0 = 3100, FLY_GAP = 250, FLY = 460, OUT = 11600;
     const T = (ms) => ms / CYCLE;
     const tok = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
     const loop = { duration: CYCLE, iterations: Infinity, delay: START, fill: 'both' };
@@ -1872,6 +1954,7 @@
       srcOf[r.dataset.item] = { cx: photo.offsetLeft + (x + w / 2) * k, cy: photo.offsetTop + (y + h / 2) * k, w: w * k };
     });
     const chips = Array.from(scene.querySelectorAll('.scene__chips li'));
+    const shadow = tok('--sh-drop');
     const lands = chips.map((c, i) => {
       const t = FLY0 + i * FLY_GAP;
       const src = srcOf[c.dataset.item];
@@ -1880,18 +1963,19 @@
       const from = src
         ? `translate(${src.cx - cx}px, ${src.cy - cy}px) scale(${Math.max(0.5, src.w / c.offsetWidth).toFixed(2)})`
         : 'translateY(6px) scale(.9)';
-      const lift = src ? `translate(${(src.cx - cx) * 0.55}px, ${(src.cy - cy) * 0.55 - 46}px) scale(1.18) rotate(-3deg)` : 'none';
+      const lift = src ? `translate(${(src.cx - cx) * 0.5}px, ${(src.cy - cy) * 0.5 - 40}px) scale(1.15) rotate(-3deg)` : 'none';
+      const fly = { boxShadow: shadow, zIndex: 2 }, rest = { boxShadow: 'none', zIndex: 1 };
       c.animate([
-        { offset: 0, opacity: 0, transform: from },
-        { offset: T(t), opacity: 0, transform: from },
-        { offset: T(t + 80), opacity: 1, transform: from, easing: 'cubic-bezier(.3, 0, .2, 1)' },
-        { offset: T(t + FLY * 0.5), opacity: 1, transform: lift, easing: 'cubic-bezier(.4, 0, .2, 1)' },
-        { offset: T(t + FLY), opacity: 1, transform: 'none', easing: 'cubic-bezier(.3, 1.5, .6, 1)' },
-        { offset: T(t + FLY + 160), opacity: 1, transform: 'scale(1.08)' },
-        { offset: T(t + FLY + 300), opacity: 1, transform: 'none' },
-        { offset: T(OUT), opacity: 1, transform: 'none' },
-        { offset: T(OUT + 300), opacity: 0, transform: 'none' },
-        { offset: 1, opacity: 0, transform: from },
+        { offset: 0, opacity: 0, transform: from, ...rest },
+        { offset: T(t), opacity: 0, transform: from, ...fly },
+        { offset: T(t + 60), opacity: 1, transform: from, ...fly, easing: 'cubic-bezier(.3, 0, .2, 1)' },
+        { offset: T(t + FLY * 0.5), opacity: 1, transform: lift, ...fly, easing: 'cubic-bezier(.4, 0, .2, 1)' },
+        { offset: T(t + FLY), opacity: 1, transform: 'none', ...rest, easing: 'cubic-bezier(.3, 1.5, .6, 1)' },
+        { offset: T(t + FLY + 140), opacity: 1, transform: 'scale(1.08)', ...rest },
+        { offset: T(t + FLY + 260), opacity: 1, transform: 'none', ...rest },
+        { offset: T(OUT), opacity: 1, transform: 'none', ...rest },
+        { offset: T(OUT + 300), opacity: 0, transform: 'none', ...rest },
+        { offset: 1, opacity: 0, transform: from, ...rest },
       ], loop);
       return t + FLY;
     });
