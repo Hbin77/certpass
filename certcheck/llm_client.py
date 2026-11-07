@@ -469,7 +469,8 @@ def group_sources(docs: list[dict], card_id: str) -> dict:
 
 
 _calls: dict[str, list[float]] = {}  # 방문자(IP)별 새 설명 호출 시각. "*"는 전체 합
-# 7팀 AgentStream LLM 일간 토큰 한도 12M(KST 자정 초기화), 설명 1건이 약 30K 토큰(2026-11-07 실측: 약 390건에 11.6M)
+# 7팀 AgentStream LLM 일간 토큰 한도 12M(KST 자정 초기화), 설명 1건이 약 30~37K 토큰
+# (2026-11-07: 약 390건에 11.6M / 2026-11-08 00:25: 약 21건에 0.79M)
 # → 공개 URL에서 하루 새 설명 수를 묶어 발표 전에 할당량이 바닥나지 않게 한다
 _day = {"date": None, "n": 0}
 
@@ -492,7 +493,8 @@ def _day_take() -> bool:
 
 def _rate_take(client: str | None) -> bool:
     """공개 URL이라 누구나 부를 수 있다 → 새로 만드는 설명(캐시 밖)만 전체 분당·시간당, 방문자별 분당 상한."""
-    lim = {"*": (int(os.environ.get("AGENTSTREAM_RATE_PER_MIN", "20")), int(os.environ.get("AGENTSTREAM_RATE_PER_HOUR", "300"))),
+    # 7팀 LLM 분당 토큰 한도 240K ÷ 질문 1건 약 37K(2026-11-08 실측) ≈ 분당 6건 → 전체 분당 5건, 시간당 150건
+    lim = {"*": (int(os.environ.get("AGENTSTREAM_RATE_PER_MIN", "5")), int(os.environ.get("AGENTSTREAM_RATE_PER_HOUR", "150"))),
            "ip": (int(os.environ.get("AGENTSTREAM_RATE_PER_CLIENT_MIN", "6")), 10 ** 9)}
     now = time.monotonic()
     keys = ["*", f"ip:{client or '-'}"]
