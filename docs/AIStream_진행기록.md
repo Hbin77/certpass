@@ -59,3 +59,20 @@
 | 2026-11-07 17:47 | 실측(calibrate_aistream) | 평가셋 13,303행(합성 제품 단위 분할, 학습 50,297행과 겹침 없음)을 서빙 `/predict`로 직접 호출(500행씩, 요청 지연 중앙 0.80초·최대 1.75초, 전체 21초). 4종 정확도 **모델 0.9854 / 규칙만 0.9831**. 오분류는 대부분 불가→조건부(모델 179건, 규칙 208건). 결과 `out/aistream_calib/calib_SV-(RF 서빙)_v3.json`, 확률 `proba_SV-(RF 서빙)_v3.json` | 완료 |
 | 2026-11-07 17:50 | 경보 기준 확정 | 규칙이 불가가 아니라고 한 11,353건 중 실제 불가 210건 대상. 기준별(재현율/정밀도/경고 수/오경보율): 0.1 0.724/0.226/672/4.67%, 0.15 0.600/0.329/383/2.31%, **0.175 0.571/0.396/303/1.64%**, 0.2 0.476/0.422/237/1.23%, 0.3 0.300/0.624/101/0.34%, 0.5 0.133/1.000/28/0%. **0.175 채택**(F1 0.468·F2 0.525 모두 최대). 참고: 로컬 이진 분류기(기준 0.85)는 0.343/0.434 | 확정 |
 | 2026-11-07 17:56 | 대회 서버 연결 | axgpu 기존 코드 백업(`/data/certcheck_backup/certcheck_code_before_aistream_0848.tgz`, UTC 08:48) → 맥 최신 코드(커밋 435b9b9 + `deploy/run_server.sh` 변경, 시험 54 통과) push → 재시작. run_server.sh 기본값: `AISTREAM_URL=…/SV-(RF 서빙)/predict`, `AISTREAM_FORMAT=mlflow`, `AISTREAM_FAIL_THRESHOLD=0.175`(빈 값 넘기면 끔). 공개 URL `/api/health` `ml_model:true`. 데모 D3: 판정 56건 중 53건에 AI 판정(회사 인증 3건 제외), 숨은 불가 경보 1건(KR_FUNCTIONAL_REPORT, 규칙 통과 가능, 불가 확률 0.182) | 완료 |
+
+## RF 재학습 (운영진 데이터 검토 반영, ax-45)
+| 시각(KST) | 단계 | 내용 | 상태 |
+|---|---|---|---|
+| 2026-11-07 19:20 | 판단 | 운영진 검토로 중국 IECIC·2015 규범, 대만 TFDA 목록이 '사용 불가'(ax-fd가 표에서 삭제, 식약처 API 15111772로 대체). 기존 합성 데이터는 일반 성분 후보를 **IECIC 목록에서 뽑았고** `f_n_not_in_inventory` 특징도 IECIC 기반 → 지금 AIStream 데이터셋·모델이 사용 불가 자료로 만들어진 상태. **재학습 필요** | 결정 |
+| 2026-11-07 19:24 | 생성기 수정 | `certcheck/synth.py`: 일반 성분 후보를 식약처 원료성분사전(15111774, DATA_SOURCES '가능')에서 어느 관할 금지·제한 목록에도 없는 INCI 18,475개로 교체(`safe_pool`). 시험 61 통과 | 완료 |
+| 2026-11-07 19:25 | 데이터 v6 | `out/private/ml/certcheck_train_v5.csv`(제품 1,200, seed 7, 기준일 2026-11-07) → `out/public/aistream_v5/`(학습 50,297·평가 13,303행, 열 96개 = 서빙 중 모델과 같음). 평가 정답 분포 COND 9,932·FAIL 2,310·NA 801·PASS 260, 숨은 불가 312건, IECIC 특징 0. 업로드용 사본 `~/Downloads/7팀_certpass_train_v6.csv`·`7팀_certpass_test_v6.csv` | 완료 |
+| 2026-11-07 19:26 | 영향 확인 | 지금 서빙 모델(옛 데이터 학습)을 새 평가셋에: 정확도 모델 0.9787 / 규칙 0.9754, 기준 0.2에서 재현율 0.609·정밀도 0.662. 성능은 유지되지만 학습 자료 문제로 교체. 맥 가능성 확인(발표 수치 아님): 새 데이터 학습 시 정확도 0.9833 / 규칙 0.9754 | 참고 |
+| 다음 | AIStream | 데이터셋 7팀_certpass_train·test에 v6 새 버전 업로드 → 기존 워크플로 재실행(새 데이터셋 버전 선택) → 서빙 새 버전 → calibrate_aistream(`out/public/aistream_v5`) → 기준값을 deploy/server.env(맥·axgpu)에 반영 | 대기 |
+
+## 포장 OCR 서빙 (워크스페이스 'AX 해커톤 7팀')
+| 시각(KST) | 단계 | 내용 | 상태 |
+|---|---|---|---|
+| 18:05 | 개발 세션 | serving/7팀_package_ocr(TP-7d2f1b98) 세션 ocr-serve-dev(4C8GB)에 서빙 코드 반영. Python 3.11 uv sync(torch 2.15 CPU·Ray 2.55.1·mlflow 3.13.0·protobuf 6.33.6), 시험 모델로 /health 200·/predict JSON·사진 아닌 파일 415 확인 | 통과 |
+| 19:05 | 변경사항 저장 | Commit 9fecda4a5cec '포장 OCR 서빙 작성' | 완료 |
+| 19:27 | 빌드·게시 | 빌드 성공(의존성 설치 1,066초), PUBLISHED | 완료 |
+| — | 모델 등록 | 7팀_package_ocr 새 버전(MLflow pyfunc zip 80.7MB: det.pt·rec.pt·추론 코드) | 대기 |
