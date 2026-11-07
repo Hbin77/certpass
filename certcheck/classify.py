@@ -279,6 +279,28 @@ def kr_fuzzy(name: str) -> dict | None:
     return _kf(name)
 
 
+@lru_cache(maxsize=4)
+def _cas_index(reg_id: int) -> dict[str, tuple[str, ...]]:
+    """INCI 키 → CAS: 식약처 원료성분사전 + 모든 관할 목록에서 이름(INCI)과 CAS가 함께 적힌 행."""
+    from .names import kr_dict
+    reg = _REG_BY_ID[reg_id]
+    out: dict[str, set[str]] = {}
+    for h in kr_dict().values():
+        for c in split_cas(h.get("cas")):
+            out.setdefault(norm_inci(h.get("inci")), set()).add(c)
+    for (_, k), rows in reg.by_key.items():  # 목록의 이름 키(INCI 또는 영문 물질명)와 그 행의 CAS
+        for r in rows:
+            if len(r.cas) == 1:
+                out.setdefault(k, set()).update(r.cas)
+    return {k: tuple(sorted(v)) for k, v in out.items() if k and len(v) <= 3}
+
+
+def cas_by_name(reg: RegIndex, inci: str) -> list[str]:
+    """CAS가 없는 입력 성분의 CAS 후보(정확히 같은 INCI명 기준, 후보가 4개 이상이면 모호해 쓰지 않음)."""
+    _REG_BY_ID[id(reg)] = reg
+    return list(_cas_index(id(reg)).get(norm_inci(inci), ()))
+
+
 def banned_suspect(reg: RegIndex, juris: str, inci: str) -> tuple[str, float] | None:
     """정확히 일치하지 않지만 금지 성분 이름과 90% 이상 같은 표기(오탈자 의심). 식약처 원료성분사전에 있는 정상 원료명은 제외."""
     from .names import inci_to_kr  # names는 data·normalize만 import → 순환 없음
@@ -334,6 +356,10 @@ def check_ingredients(v: Verdict, card: dict, p: dict, reg: RegIndex, attrs: dic
             v.add("cond", "ING_UNDEFINED", f"처방 미확정 성분: {ing.get('kr')} — 처방 확정 후 재판정", action="처방서(INCI·함량) 확보")
             continue
         hits = reg.lookup(juris, inci, cas)
+        if not hits and not cas and (cas2 := cas_by_name(reg, inci)):
+            # CAS가 비어 있으면 성분명(정확히 같은 INCI)으로 식약처 원료사전·다른 관할 목록의 CAS를 찾아 다시 대조한다
+            # (일본·일부 목록은 현지어 이름이라 CAS로만 맞출 수 있음)
+            hits = reg.lookup(juris, inci, cas2)
         types = {r.list_type for r, _ in hits}
         pct = ing.get("pct")
         key = ingredient_key(ing)
@@ -734,15 +760,71 @@ def check_special(v: Verdict, card: dict, p: dict, eval_date: date) -> None:
 KR_SHADOW = True  # 한글 변형 표기를 표준명으로 본 '가상 제품'으로 한 번 더 판정(측정 때 끄고 켜서 비교)
 
 
-def _kr_shadow(p: dict) -> tuple[dict, list[tuple[str, dict]]] | None:
-    """사전에 없는 한글 표기를 자모 유사도 후보(표준 INCI)로 바꾼 사본. 바꾼 게 없으면 None."""
+@lru_cache(maxsize=4)
+def _known_names(reg_id: int) -> tuple[frozenset, tuple[str, ...]]:
+    """공식 이름 키: 식약처 원료사전 INCI + 모든 관할 규제 목록 이름(정확히 있는 이름은 오타가 아님)."""
+    from .names import kr_dict
+    reg = _REG_BY_ID[reg_id]
+    names = {norm_inci(h.get("inci")) for h in kr_dict().values()} | {k for (_, k) in reg.by_key}
+    names = {n for n in names if n and not _HANGUL.search(n)}
+    return frozenset(names), tuple(sorted(n for n in names if len(n) >= 6))
+
+
+@lru_cache(maxsize=20000)
+def _en_fuzzy(reg_id: int, key: str) -> str | None:
+    known, pool = _known_names(reg_id)
+    if len(key) < 6 or key in known:
+        return None
+    hit, score, _ = process.extractOne(key, pool, scorer=fuzz.ratio)
+    need = 88 if len(key) >= 8 else 92  # 긴 이름은 한 글자 오타가 10% 남짓이라 기준을 낮춘다
+    return hit if need <= score < 100 else None
+
+
+@lru_cache(maxsize=4)
+def _kr_reg_index(reg_id: int) -> tuple[list[str], list[str], list[tuple[str, str]]]:
+    """규제 목록(식약처 API 등)의 한글 물질명: 원료사전에 없는 금지·제한 물질의 한글 표기 대조용. (키, 자모, (한글명, 조회 이름))"""
+    from .data import kr_key
+    from .names import jamo
+    reg = _REG_BY_ID[reg_id]
+    seen: dict[str, tuple[str, str]] = {}
+    for (_, k), rows in reg.by_key.items():
+        for r in rows:
+            if _HANGUL.search(r.name or "") and len(kr_key(r.name)) >= 3:
+                seen.setdefault(kr_key(r.name), (r.name, r.inci or k))
+    keys = list(seen)
+    return keys, [jamo(x) for x in keys], [seen[x] for x in keys]
+
+
+@lru_cache(maxsize=20000)
+def _kr_reg_fuzzy(reg_id: int, name: str) -> dict | None:
+    from .data import kr_key
+    from .names import jamo
+    k = kr_key(name)
+    keys, jk, vals = _kr_reg_index(reg_id)
+    if len(k) < 3 or k in set(keys):
+        return None
+    hit, score, idx = process.extractOne(jamo(k), jk, scorer=fuzz.ratio)
+    if score >= 88:
+        return {"kr_name": vals[idx][0], "inci": vals[idx][1], "how": "규제 목록 한글명 유사", "similarity": round(score / 100, 2)}
+    return None
+
+
+def _kr_shadow(p: dict, reg: RegIndex | None = None) -> tuple[dict, list[tuple[str, dict]]] | None:
+    """사전에 없는 표기를 가장 가까운 공식 이름으로 바꾼 사본: 한글은 자모 유사도(식약처 표준명), 영문은 이름 유사도 92% 이상
+    (식약처 원료사전 INCI·규제 목록 이름). 바꾼 게 없으면 None."""
     swaps, ings = [], []
+    if reg is not None:
+        _REG_BY_ID[id(reg)] = reg
     for ing in p.get("ingredients", []):
         name = ing.get("inci") or ""
         kv = kr_fuzzy(name) if _HANGUL.search(name) else None
+        if not kv and reg is not None and _HANGUL.search(name):
+            kv = _kr_reg_fuzzy(id(reg), name)
+        if not kv and reg is not None and not _HANGUL.search(name) and (en := _en_fuzzy(id(reg), norm_inci(name))):
+            kv = {"inci": en, "kr_name": en, "how": "영문 이름 유사", "similarity": None}
         if kv:
             swaps.append((name, kv))
-            ings.append({**ing, "inci": kv["inci"], "kr": kv["kr_name"]})
+            ings.append({**ing, "inci": kv["inci"], "kr": ing.get("kr") if kv.get("how") == "영문 이름 유사" else kv["kr_name"]})
         else:
             ings.append(ing)
     return ({**p, "ingredients": ings}, swaps) if swaps else None
@@ -753,16 +835,17 @@ def evaluate(card: dict, p: dict, company: dict, reg: RegIndex, attrs: dict, eva
     v = _evaluate(card, p, company, reg, attrs, eval_date)
     if _shadow or not KR_SHADOW or v.status == STATUS_FAIL or card.get("kind") == "company_certification":
         return v
-    sh = _kr_shadow(p)
+    sh = _kr_shadow(p, reg)
     if not sh:
         return v
-    # 한글 변형을 표준명으로 보면 새로 생기는 불가 사유(금지·한도 초과·비건·할랄 속성 등)를 '확인 필요'로 붙인다(등급은 확정하지 않음)
+    # 오기·OCR 변형을 공식 이름으로 보면 새로 생기는 불가 사유(금지·배제·한도 초과·비건·할랄 속성 등)를 '확인 필요'로 붙인다(등급은 확정하지 않음)
     have = {(f.code, f.message) for f in v.findings if f.level == "fail"}
     alt = evaluate(card, sh[0], company, reg, attrs, eval_date, _shadow=True)
     names = ", ".join(f"'{a}'→'{b['kr_name']}'" for a, b in sh[1][:3])
-    new = [f for f in alt.findings if f.level == "fail" and (f.code, f.message) not in have and f.code != "ING_BANNED"]
+    flagged = any(f.code == "ING_BANNED_SUSPECT" for f in v.findings)  # 금지 성분 오기는 이미 '의심'으로 표시됨
+    new = [f for f in alt.findings if f.level == "fail" and (f.code, f.message) not in have and not (flagged and f.code == "ING_BANNED")]
     for f in new[:5]:
-        v.add("cond", "ING_KR_VARIANT_RISK", f"한글 표기를 표준명으로 보면({names}) 불가 사유: {f.message[:160]} — 표기 확인 필요",
+        v.add("cond", "ING_KR_VARIANT_RISK", f"성분 표기를 공식 이름으로 보면({names}) 불가 사유: {f.message[:160]} — 표기 확인 필요",
               SOURCE_KR, "포장·전성분표 원문으로 성분명 확인 후 다시 판정")
     if new:
         v.finalize()

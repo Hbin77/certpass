@@ -65,3 +65,13 @@ def test_kr_shadow_adds_check_not_fail():
     name = next(h["kr_name"] for h in kr_dict().values() if len(h["kr_name"]) > 6)
     sh = C._kr_shadow({**p, "ingredients": [{"inci": name[:-2], "pct": None}]})
     assert sh is None or sh[1][0][1]["kr_name"] == name
+
+
+def test_cas_recovery_and_english_shadow():
+    """CAS가 없으면 같은 INCI명으로 CAS를 찾아 대조하고, 공식 이름과 한 글자 다른 영문 오기는 가상 판정으로 '확인 필요'."""
+    from certcheck import classify as C
+    reg = load_reg_index()
+    assert C.cas_by_name(reg, "Glycerin") == ["56-81-5"] and C.cas_by_name(reg, "Water") == []
+    assert C._en_fuzzy(id(reg), "glycerin") is None          # 공식 이름은 오타가 아님
+    C._REG_BY_ID[id(reg)] = reg
+    assert C._en_fuzzy(id(reg), "homosalatc") == "homosalate"  # 10글자 중 1글자 오기
