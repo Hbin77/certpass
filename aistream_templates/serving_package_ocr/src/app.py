@@ -7,9 +7,12 @@
 """
 
 import asyncio
+import json
 import logging
 import os
+import resource
 import time
+import traceback
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from ray import serve
@@ -43,12 +46,19 @@ class ServingModel:
         async with self._slots:
             try:
                 res = await asyncio.to_thread(self.reader.read, data)
+                body = {**res, "model": self.meta, "elapsed_sec": round(time.time() - t0, 2)}
+                # 응답 직렬화 오류도 여기서 잡히도록 미리 JSON으로 바꿔 본다(NaN 등)
+                json.dumps(body, allow_nan=False)
             except Exception as exc:
-                logger.exception("[predict] 실패 (%.2fs) bytes=%d", time.time() - t0, len(data))
-                raise HTTPException(status_code=500, detail="사진을 읽는 중 오류가 났습니다. 서버 로그를 확인해 주세요.") from exc
-        logger.info("[predict] 완료 (%.2fs) 단어 %d 줄 %d 성분 %d", time.time() - t0, len(res["words"]), len(res["lines"]),
-                    len(res["ingredients"]))
-        return {**res, "model": self.meta, "elapsed_sec": round(time.time() - t0, 2)}
+                # 원인을 로그와 응답에 남긴다(사진 내용·글자는 남기지 않음)
+                logger.error("[predict] 실패 (%.2fs) bytes=%d %s\n%s", time.time() - t0, len(data), repr(exc),
+                             traceback.format_exc())
+                raise HTTPException(status_code=500,
+                                    detail=f"사진을 읽는 중 오류가 났습니다: {type(exc).__name__}: {str(exc)[:300]}") from exc
+        rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1024
+        logger.info("[predict] 완료 (%.2fs) 단어 %d 줄 %d 성분 %d 최대메모리 %dMB", time.time() - t0, len(res["words"]),
+                    len(res["lines"]), len(res["ingredients"]), rss)
+        return body
 
     @app.get("/health")
     async def health_check(self):

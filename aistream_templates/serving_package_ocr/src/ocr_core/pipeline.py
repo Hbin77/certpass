@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import io
+import math
 import re
 
 import numpy as np
@@ -26,6 +27,8 @@ STOP = re.compile(r"(사용\s*(방법|법|시의|상의)|주의\s*사항|용\s*�
 class PackageOCR:
     def __init__(self, det_ckpt: str, rec_ckpt: str, device: str | None = None):
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        if hasattr(torch.backends, "mha") and hasattr(torch.backends.mha, "set_fastpath_enabled"):
+            torch.backends.mha.set_fastpath_enabled(False)  # 주의 연산 빠른 경로 끔(서빙 CPU에서 입력에 따라 실패 방지)
         d = torch.load(det_ckpt, map_location="cpu", weights_only=False)
         self.det = DetNet(pretrained=False)
         self.det.load_state_dict(d["model"])
@@ -58,7 +61,7 @@ class PackageOCR:
         return out
 
     @torch.no_grad()
-    def recognize(self, img: Image.Image, boxes, batch: int = 256):
+    def recognize(self, img: Image.Image, boxes, batch: int = 64):
         crops = []
         for x0, y0, x1, y1 in boxes:
             x0, y0 = max(0, int(x0) - 2), max(0, int(y0) - 2)
@@ -82,13 +85,13 @@ class PackageOCR:
                 mx = probs[k, :T].max(-1)
                 keep = mx.indices != 0
                 conf = float(mx.values[keep].mean()) if keep.any() else 0.0
-                out.append((t, round(conf, 3)))
+                out.append((t, round(conf, 3) if math.isfinite(conf) else 0.0))
         return out
 
     def read(self, data: bytes) -> dict:
         img = ImageOps.exif_transpose(Image.open(io.BytesIO(data))).convert("L")
         boxes = self.detect(img)
-        words = [{"box": [round(v) for v in b], "text": t, "conf": c}
+        words = [{"box": [int(round(float(v))) for v in b], "text": str(t), "conf": float(c)}
                  for b, (t, c) in zip(boxes, self.recognize(img, boxes)) if t]
         lines = group_lines(words)
         text = "\n".join(l["text"] for l in lines)

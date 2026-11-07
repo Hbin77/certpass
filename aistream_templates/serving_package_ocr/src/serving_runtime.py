@@ -5,6 +5,7 @@
 """
 
 import logging
+import os
 import time
 
 import ray
@@ -17,6 +18,21 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def container_cpus() -> int:
+    """컨테이너에 실제로 할당된 CPU 수(cgroup 한도). 컨테이너 안 nproc는 서버 전체(96 등)로 보여
+    Ray가 그만큼 작업자를 띄우면 메모리가 부족해진다(RF 서빙에서 확인)."""
+    try:
+        quota, period = open("/sys/fs/cgroup/cpu.max").read().split()[:2]
+        if quota != "max":
+            return max(1, int(int(quota) / int(period)))
+    except (OSError, ValueError):
+        pass
+    try:
+        return max(1, len(os.sched_getaffinity(0)))
+    except AttributeError:
+        return os.cpu_count() or 1
+
+
 def run_serving(max_mb: int, threads: int, max_concurrency: int) -> None:
     t0 = time.time()
     logger.info("[model_input] 시작")
@@ -26,7 +42,10 @@ def run_serving(max_mb: int, threads: int, max_concurrency: int) -> None:
     try:
         t0 = time.time()
         logger.info("[serve] 시작")
-        ray.init()
+        cpus = container_cpus()
+        threads = min(threads, cpus)  # 할당 CPU보다 많은 스레드는 느려지기만 한다
+        logger.info("[serve] 할당 CPU %d, 추론 스레드 %d", cpus, threads)
+        ray.init(num_cpus=cpus, include_dashboard=False)
         serve.start(http_options={"host": "0.0.0.0", "port": 8000})
         app = ServingModel.bind(spec["mountPath"], model_meta, max_mb, threads, max_concurrency)
         logger.info("[serve] 준비 완료 (%.1fs), 요청 대기", time.time() - t0)

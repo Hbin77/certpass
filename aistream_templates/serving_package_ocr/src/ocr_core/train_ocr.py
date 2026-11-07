@@ -98,7 +98,8 @@ class OCRNet(nn.Module):
         )
         self.pool = nn.AdaptiveAvgPool2d((1, None))
         enc = nn.TransformerEncoderLayer(d, heads, d * 4, dropout=0.1, batch_first=True, norm_first=True)
-        self.tr = nn.TransformerEncoder(enc, layers)
+        # 중첩 텐서 빠른 경로는 CPU 추론에서 입력에 따라 불안정할 수 있어 끈다(가중치 구조는 같음)
+        self.tr = nn.TransformerEncoder(enc, layers, enable_nested_tensor=False)
         self.pos = nn.Parameter(torch.zeros(1, 200, d))
         self.head = nn.Linear(d, n_class)
 
