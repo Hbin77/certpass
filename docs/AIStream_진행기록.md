@@ -76,3 +76,7 @@
 | 19:05 | 변경사항 저장 | Commit 9fecda4a5cec '포장 OCR 서빙 작성' | 완료 |
 | 19:27 | 빌드·게시 | 빌드 성공(의존성 설치 1,066초), PUBLISHED | 완료 |
 | — | 모델 등록 | 7팀_package_ocr 새 버전(MLflow pyfunc zip 80.7MB: det.pt·rec.pt·추론 코드) | 대기 |
+
+## 팀 서버 경로 정리 (운영진 안내 2026-11-07 19:18)
+- `cp -a /home/ubuntu/. /data/` 실행(캐시 8,755,523,427바이트 원본·사본 일치). 이 명령이 /data 권한을 홈 권한(drwxr-x---)으로 덮어써 2775로 되돌림
+- 캐시 경로: `/data/env_cache.sh`(사본 `deploy/env_cache.sh`)로 uv·pip·torch·huggingface·CUDA 캐시를 /data/.cache 아래로. ~/.bashrc·~/.profile·/data/.bashrc에서 읽음(서버 재시작 시 /home이 지워지므로 /data/.bashrc 포함)
