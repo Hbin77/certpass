@@ -286,6 +286,24 @@ def _key_prompt(v: dict, card: dict, product: dict, sources: list[dict], ai: dic
 SEND_FINDINGS = 8  # 보내는 프롬프트의 사유 수(불가 → 조건부 순). 화면의 근거 목록·점검은 전체 사유로 한다
 
 
+AMINE_SPEC = re.compile(r"secondary amine|2차 (?:알킬)?아민|2급 아민|nitros|니트로", re.I)
+RESTRICTED = re.compile(r"제한 성분 (.+?) (\d+(?:\.\d+)?%)")
+
+
+def spec_notes(findings: list[dict]) -> list[str]:
+    """제한 성분 조건에 2차 아민·니트로소아민 규격이 있으면, 그 %가 원료 불순물 규격임을 덧붙인다.
+    원문(식약처 API)이 이 규격을 '완제품 최대 농도' 칸에 적기도 해서 AI가 '제품 함량 0.5% 이하'로 읽었다(2026-11-08 뜻 점검 8건)."""
+    out = []
+    for f in findings:
+        m = f.get("message", "")
+        if f.get("code") == "ING_RESTRICTED_CONDITIONS" and AMINE_SPEC.search(m):
+            r = RESTRICTED.search(m)
+            ing, conc = (r.group(1), r.group(2)) if r else ("이 성분", "")
+            out.append(f"- 참고: {ing} 조건의 2차 아민·니트로소아민·순도 수치(예: 0.5%)는 원료 불순물 규격(원료 규격서·성적서로 확인)이며 "
+                       f"제품 속 성분 함량 한도가 아닙니다." + (f" 제품 함량은 {conc}입니다." if conc else ""))
+    return out
+
+
 def build_prompt(v: dict, card: dict, product: dict, sources: list[dict], ai: dict | None = None, kb_hint: bool = True) -> str:
     """AgentStream에 보내는 프롬프트(짧은 판). 챗봇 시스템 프롬프트에 이미 있는 원칙(등급 고정·없는 내용 금지·'(추정)'·존댓말)은
     되풀이하지 않고, 이 판정에만 필요한 것(형식, 근거 번호 범위, 지식베이스 꼬리표, 사유)만 싣는다 — 토큰 절약.
@@ -295,6 +313,7 @@ def build_prompt(v: dict, card: dict, product: dict, sources: list[dict], ai: di
     level = {"fail": "불가", "cond": "보완", "na": "해당 없음"}
     lines = [f"- {level[f['level']]}: {KW.sub('', f.get('message', ''))[:200]}"
              + (f" / 근거: {f['evidence'][:120]}" if f.get("evidence") else "") for f in fs] or ["- 보완할 항목 없음"]
+    lines += spec_notes(fs)
     ai_rule, ai_body = ai_lines(ai)
     tag = kb_tag(card.get("id"))
     n = len(sources)

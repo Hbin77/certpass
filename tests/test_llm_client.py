@@ -404,6 +404,17 @@ def test_unsupported_terms_and_strip_refs():
     assert llm_client.strip_bad_refs("A (근거 1). B (근거 2)", 0) == "A. B"
 
 
+def test_amine_spec_note_in_prompt():
+    f = {"level": "cond", "code": "ING_RESTRICTED_CONDITIONS", "action": "원료 규격서 확인",
+         "message": "제한 성분 Tromethamine 0.0005% (한도 조건) — 【Maximum authorised concentration in the finished cosmetic product】 : "
+                    "Maximum secondary amine content: 0.5%"}
+    other = {"level": "cond", "code": "ING_RESTRICTED_CONDITIONS", "message": "제한 성분 Glycerin 5% (한도 10%)"}
+    v = {"status": "조건부", "findings": [f, other]}
+    p = llm_client.build_prompt(v, {"id": "TH_FDA", "name_ko": "태국"}, {"product_type": "cream"}, [])
+    assert "Tromethamine 조건의 2차 아민" in p and "제품 함량은 0.0005%입니다" in p
+    assert llm_client.spec_notes([other]) == []
+
+
 def test_quoted_paraphrase_vs_new_wording():
     corpus = "표방 anti_wrinkle 주름 외관 개선. '노화로 인한 생리적 변화를 예방·감소·역전' 표현 불가"
     ans = "'주름 개선'·'생리적 변화 역전'은 바꾸고 '톤 업'이나 '피부 톤을 균일하게 보이게 함'으로 쓰세요."
