@@ -99,5 +99,7 @@
 "rule_PASS",
 "rule_COND",
 "rule_FAIL",
-"rule_NOT_APPLICABLE"
+"rule_NOT_APPLICABLE",
+"f_n_kr_variant_limited",
+"f_n_kr_variant_risk"
 ]
