@@ -1,6 +1,6 @@
 """PDF 전성분표 읽기: 글자 정보가 있는 쪽은 그대로 꺼내고, 이미지뿐인 쪽(스캔·가림 처리본)은 그림으로 바꿔 OCR 서빙에 보낸다.
 
-- 앞에서부터 최대 PDF_MAX_PAGES쪽. 공개 주소 프록시가 60초에 끊으므로 전체 시간 예산(PDF_BUDGET초)을 넘기면 거기까지만 읽는다
+- 앞에서부터 최대 PDF_MAX_PAGES쪽. 전체 시간 예산(PDF_BUDGET초)을 넘기면 거기까지만 읽는다(화면은 접수 → 결과 조회라 60초 프록시와 무관)
 - 이미지 쪽은 화면(web/app.js)과 같은 규칙으로 다시 읽는다: 사전과 정확히 맞은 성분이 3종 미만이면 90°·270°,
   글자 줄 기울기가 1° 이상이면 바로 세워 한 번 더(남으면 0.5° 이상에서 한 번 더). 결과가 나빠지면 앞 결과를 쓴다
 - PDF는 PDFium(pypdfium2)으로 연다. 쪽 수·그림 크기에 상한을 두고, 글자 정보는 읽기만 한다(스크립트·첨부는 쓰지 않음)
@@ -34,7 +34,8 @@ def max_pages() -> int:
 
 
 def budget() -> float:
-    return float(os.environ.get("CERTCHECK_PDF_BUDGET", "35"))
+    """화면은 접수 → 결과 조회(ocr_jobs)라 공개 프록시 60초에 묶이지 않는다. 서빙이 붐빌 때도 4쪽을 읽게 90초."""
+    return float(os.environ.get("CERTCHECK_PDF_BUDGET", "90"))
 
 
 def extract_section(lines: list[str]) -> list[str]:
