@@ -333,8 +333,9 @@ def _lines(resp, deadline: float, timeout: float):
         yield buf
 
 
-def call(prompt: str, timeout: float, title: str = "CertPass 판정 설명") -> dict:
-    """세션 → 메시지 스트림. 슬롯(동시 1)을 짧게만 기다리고, 제한 시간은 슬롯을 얻은 뒤부터 잰다."""
+def call(prompt: str, timeout: float, title: str = "CertPass 판정 설명", bot: str | None = None) -> dict:
+    """세션 → 메시지 스트림. 슬롯(동시 1)을 짧게만 기다리고, 제한 시간은 슬롯을 얻은 뒤부터 잰다.
+    bot: 다른 챗봇(예: AI 검토 챗봇) UUID. 없으면 AGENTSTREAM_CHATBOT_ID(판정 설명 챗봇)."""
     global _waiting
     with _lock:
         if _waiting >= int(os.environ.get("AGENTSTREAM_MAX_WAITING", "3")):
@@ -349,7 +350,7 @@ def call(prompt: str, timeout: float, title: str = "CertPass 판정 설명") -> 
         raise Busy("설명 요청이 밀려 있음")
     try:
         deadline = time.monotonic() + timeout
-        bot = os.environ["AGENTSTREAM_CHATBOT_ID"].strip()
+        bot = (bot or os.environ["AGENTSTREAM_CHATBOT_ID"]).strip()
         with _step("sessions", f"{_base()}/chatbots/{bot}/sessions", {"query": title[:100]}, min(15.0, timeout)) as r:
             sid = json.loads(r.read()).get("session_id")
         if not sid or not re.fullmatch(r"[A-Za-z0-9_-]{1,100}", str(sid)):
