@@ -402,6 +402,25 @@ def group_sources(docs: list[dict], card_id: str) -> dict:
 
 
 _calls: dict[str, list[float]] = {}  # 방문자(IP)별 새 설명 호출 시각. "*"는 전체 합
+# 7팀 AgentStream LLM 일간 토큰 한도 12M(KST 자정 초기화), 설명 1건이 약 30K 토큰(2026-11-07 실측: 약 390건에 11.6M)
+# → 공개 URL에서 하루 새 설명 수를 묶어 발표 전에 할당량이 바닥나지 않게 한다
+_day = {"date": None, "n": 0}
+
+
+def _kst_date() -> str:
+    return time.strftime("%Y-%m-%d", time.gmtime(time.time() + 9 * 3600))
+
+
+def _day_take() -> bool:
+    cap = int(os.environ.get("AGENTSTREAM_RATE_PER_DAY", "200"))
+    with _lock:
+        today = _kst_date()
+        if _day["date"] != today:
+            _day.update(date=today, n=0)
+        if _day["n"] >= cap:
+            return False
+        _day["n"] += 1
+        return True
 
 
 def _rate_take(client: str | None) -> bool:
@@ -443,6 +462,8 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
     base = {"cert_id": v.get("cert_id"), "status": v.get("status"), "sources": sources, "notice": NOTICE}
     if not enabled():
         return {**base, "enabled": False, "reason": "AgentStream 설명 모델 미연결", "ai_alert": None}
+    if v.get("status") == "해당 없음":  # 적용 대상이 아니라는 사유뿐이라 AI 설명을 붙이지 않는다(토큰 절약)
+        return {**base, "enabled": False, "reason": "해당 없음 판정은 AI 설명을 생략합니다", "ai_alert": None}
     # 경보 내용(확률)은 키에서 빼되, 경보를 정하는 AIStream 모델 주소·기준값은 넣는다 — 모델·기준을 바꾸면 설명도 새로 만든다
     # 지식베이스를 다시 올리면 AGENTSTREAM_KB_VERSION을 올려 예전 지식베이스로 만든 설명을 쓰지 않게 한다
     # 같은 서빙 주소에 새 모델 버전만 붙는 경우(AIStream 워크플로 재실행)를 위해 AISTREAM_MODEL_VERSION도 넣는다
@@ -459,6 +480,10 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
     if not _rate_take(client):
         return {**base, "enabled": True, "ok": False, "ai_alert": None,
                 "error": "RateLimit: 설명 요청이 많아 잠시 뒤 다시 시도해 주세요"}
+    if not _day_take():
+        _rate_refund(client)
+        return {**base, "enabled": True, "ok": False, "ai_alert": None,
+                "error": "RateLimit: 오늘 새로 만들 수 있는 AI 설명 수를 다 썼습니다(미리 만든 설명은 그대로 나옵니다)"}
     ai = ai() if callable(ai) else ai
     prompt = build_prompt(v, card, product, sources, ai)
     title = f"{card.get('id')} {v.get('status')} 설명"

@@ -886,7 +886,7 @@
   // AgentStream LLM+RAG 판정 설명(선택). 판정 표시와 따로 불러와 판정 속도를 늦추지 않는다. 등급은 규칙 엔진 결과 그대로
   const llmOn = () => !!(S.health && S.health.llm_model);
   function explainSlotHTML(v) {
-    if (!llmOn() || isCompany(v)) return '';
+    if (!llmOn() || isCompany(v) || v.status === ST.NA) return ''; // 해당 없음은 AI 설명 생략(서버와 같음)
     return `<section class="aiexp" data-explain="${esc(v.cert_id)}" aria-label="AI 판정 설명" aria-live="polite">${explainBodyHTML(S.explain[v.cert_id])}</section>`;
   }
   function explainTextHTML(text) {

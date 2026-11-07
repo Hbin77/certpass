@@ -17,6 +17,7 @@ def _clean(monkeypatch):
     monkeypatch.setattr(llm_client, "CACHE_FILE", "")  # 시험은 파일 캐시를 쓰지 않는다
     monkeypatch.setattr(llm_client, "_cache_loaded", True)
     llm_client._calls.clear()
+    llm_client._day.update(date=None, n=0)
 
 
 def _ndjson(*events) -> bytes:
@@ -389,3 +390,21 @@ def test_kb_every_line_tagged():
         tag = "[" + llm_client.kb_tag(c["id"])
         body = [x for x in card_doc(c).splitlines() if x.startswith("- ")]
         assert body and all(x.startswith("- " + tag) for x in body), c["id"]
+
+
+def test_na_verdict_skips_ai(monkeypatch):
+    _on(monkeypatch, lambda *a, **k: (_ for _ in ()).throw(AssertionError("해당 없음인데 AI 호출")))
+    from certcheck.app import resources, run_demo
+    v = next(x for x in run_demo("D3")["verdicts"] if x["status"] == "해당 없음")
+    card = next(c for c in resources()[0] if c["id"] == v["cert_id"])
+    out = llm_client.explain(v, card, {})
+    assert out["enabled"] is False and out["sources"] is not None
+
+
+def test_daily_cap(monkeypatch):
+    _on(monkeypatch, lambda *a, **k: dict(GOOD_RAW))
+    monkeypatch.setenv("AGENTSTREAM_RATE_PER_DAY", "1")
+    assert explain_demo("D3", "EU_CPNP")["ok"]
+    out = explain_demo("D3", "EU_PPWR")
+    assert out["ok"] is False and "오늘" in out["error"]
+    assert explain_demo("D3", "EU_CPNP")["cached"] is True  # 미리 만든 설명은 상한과 상관없이
