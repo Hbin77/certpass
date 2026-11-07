@@ -6,6 +6,7 @@
 """
 
 import logging
+import os
 import sys
 import time
 from pathlib import Path
@@ -38,11 +39,15 @@ def load_reader(model_dir: str, model_meta: dict, threads: int):
         from pipeline import PackageOCR
 
         root = Path(model_dir)
-        reader = PackageOCR(_one(root, "det.pt"), _one(root, "rec.pt"), device="cpu")
+        # 사전 제한 해독: 식약처 성분명 사전 단어(공공데이터, 템플릿에 함께 넣음). 모델 업로드는 .csv를 받지 않아 템플릿 쪽에 둔다
+        lex = CORE / "lexicon_words.txt.gz"
+        use_lex = lex.exists() and os.environ.get("OCR_LEXICON", "1") != "0"
+        reader = PackageOCR(_one(root, "det.pt"), _one(root, "rec.pt"), device="cpu", lexicon=str(lex) if use_lex else None)
     except Exception:
         logger.exception("[load_model] 실패 (%.1fs)", time.time() - t0)
         raise
-    meta = {**model_meta, "charset": len(reader.charset), "device": "cpu", "threads": threads}
+    meta = {**model_meta, "charset": len(reader.charset), "device": "cpu", "threads": threads,
+            "lexicon_words": len(reader.lex.words) if reader.lex else 0}
     logger.info("[load_model] 완료 (%.1fs) 글자표 %d종", time.time() - t0, len(reader.charset))
     return reader, meta
 

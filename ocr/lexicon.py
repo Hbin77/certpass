@@ -12,8 +12,6 @@ import csv
 import re
 from pathlib import Path
 
-import torch
-import torch.nn.functional as F
 from rapidfuzz import fuzz, process
 
 EDGE = re.compile(r"^([(\[\"'“‘]*)(.*?)([,.;:)\]\"'”’·]*)$")
@@ -54,6 +52,11 @@ class Lexicon:
 
     @classmethod
     def from_csv(cls, dict_csv: str | Path, charset: list[str], **kw) -> "Lexicon":
+        """사전 CSV, 또는 build_words 결과를 한 줄에 하나씩 담은 .txt.gz(서빙 템플릿에 넣는 형태)."""
+        if str(dict_csv).endswith(".txt.gz"):
+            import gzip
+            words = [w for w in gzip.open(dict_csv, "rt", encoding="utf-8").read().splitlines() if w]
+            return cls(words, charset, **kw)
         return cls(build_words(dict_csv), charset, **kw)
 
     def _pool(self, core: str) -> list[str]:
@@ -64,8 +67,11 @@ class Lexicon:
             self._pools[n] = [w for L in range(lo, hi + 1) for w in self.by_len.get(L, [])]
         return self._pools[n]
 
-    def _ll(self, logp: torch.Tensor, texts: list[str]) -> list[float]:
-        """logp: T×C 로그 확률. 각 글자열의 CTC 로그 우도."""
+    def _ll(self, logp, texts: list[str]) -> list[float]:
+        """logp: T×C 로그 확률(torch). 각 글자열의 CTC 로그 우도."""
+        import torch  # 사전 만들기(build_words)는 torch 없이 쓸 수 있게
+        import torch.nn.functional as F
+
         T = logp.shape[0]
         tg = [torch.tensor([self.idx[c] for c in t], dtype=torch.long) for t in texts]
         ok = [i for i, t in enumerate(tg) if 0 < len(t) <= T]
@@ -80,7 +86,7 @@ class Lexicon:
             out[i] = -float(loss[j])
         return out
 
-    def correct(self, text: str, conf: float, logp: torch.Tensor) -> tuple[str, bool]:
+    def correct(self, text: str, conf: float, logp) -> tuple[str, bool]:
         """탐욕 결과 text(확신도 conf)와 그 단어의 T×C 로그 확률 → (고친 글자, 고쳤는가)."""
         if conf >= self.conf_below or not text:
             return text, False

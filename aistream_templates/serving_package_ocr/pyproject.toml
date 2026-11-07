@@ -1,6 +1,6 @@
 [project]
 name = "serving-template"
-version = "0.4.0"
+version = "0.5.0"
 description = "AISTREAM 서빙 Deployment입니다. 7팀 화장품 포장 사진 OCR(검출 ResNet18-FPN + 인식 CNN-Transformer-CTC) 추론 API."
 authors = []
 requires-python = ">=3.11,<3.12"
@@ -12,6 +12,8 @@ dependencies = [
     "numpy>=2.0.0,<3.0.0",
     "pillow>=10.0.0",
     "scipy>=1.13.0",
+    # 사전 제한 해독(src/ocr_core/lexicon.py)의 후보 찾기
+    "rapidfuzz>=3.9.0",
     # CPU 서빙: CUDA 판(수 GB) 대신 CPU 판 휠을 받는다(아래 tool.uv.sources)
     "torch>=2.7.0",
     "torchvision>=0.22.0",
