@@ -241,10 +241,24 @@ class ExplainRequest(EvalRequest):
     cert_id: Short
 
 
+@lru_cache(maxsize=1)
+def _demo_keys() -> frozenset:
+    """데모 제품(화면의 데모 버튼이 보내는 것)의 정규화된 모양. 이 제품의 설명만 캐시에 고정·파일 저장한다."""
+    out = set()
+    for x in demo_products()["products"]:
+        prod = Product(**{k: v for k, v in x.items() if k in Product.model_fields}).model_dump()
+        out.add(json.dumps(prod, sort_keys=True, ensure_ascii=False, default=str))
+    return frozenset(out)
+
+
 @app.post("/api/explain")
-def explain(req: ExplainRequest):
+def explain(req: ExplainRequest, request: Request):
     """판정 하나의 AI 설명(AgentStream LLM+RAG)과 근거 목록. 판정은 서버가 다시 계산한다(화면이 보낸 판정 문구를 믿지 않음).
     /api/evaluate와 따로 불러 LLM이 판정 표시를 늦추지 않게 한다."""
+    return _explain(req, request.client.host if request.client else None)
+
+
+def _explain(req: ExplainRequest, client: str | None):
     cards, reg, attrs = resources()
     card = next((c for c in cards if c["id"] == req.cert_id), None)
     if not card:
@@ -255,7 +269,8 @@ def explain(req: ExplainRequest):
                else evaluate(card, p, company, reg, attrs, req.eval_date))
     v = verdict.to_dict()
     v.pop("features", None)
-    return llm_client.explain(v, card, p, ai_alert(verdict, card, p, reg))
+    pin = json.dumps(p, sort_keys=True, ensure_ascii=False, default=str) in _demo_keys()
+    return llm_client.explain(v, card, p, lambda: ai_alert(verdict, card, p, reg), client=client, pin=pin)
 
 
 def ai_alert(verdict, card: dict, p: dict, reg) -> dict | None:
@@ -298,13 +313,16 @@ def run_demo(pid: str):
 
 
 @app.get("/api/explain-demo/{pid}/{cert_id}")
-def explain_demo(pid: str, cert_id: str):
+def explain_demo(pid: str, cert_id: str, request: Request = None):
     data = demo_products()
     p = next((x for x in data["products"] if x["id"] == pid), None)
     if not p:
         raise HTTPException(404, "데모 제품 없음")
+    if cert_id not in {c["id"] for c in resources()[0]}:  # 긴 값이 ExplainRequest 검증에서 500이 되지 않게 먼저 거른다
+        raise HTTPException(404, "알 수 없는 인증 id입니다")
     product = Product(**{k: v for k, v in p.items() if k in Product.model_fields})
-    return explain(ExplainRequest(product=product, company=data["company"], cert_id=cert_id))
+    client = request.client.host if request is not None and request.client else None
+    return _explain(ExplainRequest(product=product, company=data["company"], cert_id=cert_id), client)
 
 
 # 서류 초안 생성 라우터(별도 모듈). 모듈 파일이 없을 때만 건너뛰고, 모듈 안의 오류는 그대로 드러낸다.

@@ -407,6 +407,8 @@ code {
 .aiexp__list { padding-left: var(--sp-5); list-style: disc; }
 .aiexp__list li + li { margin-top: var(--sp-1); }
 .aiexp__rag { margin-top: var(--sp-2); font-size: var(--fs-12); }
+.aiexp__check { display: flex; gap: var(--sp-2); align-items: flex-start; margin-top: var(--sp-2); font-size: var(--fs-14); color: var(--c-ink-900); }
+.aiexp__check .ic { margin-top: 2px; flex: none; color: var(--c-cond-700); }
 .aiexp__src { margin-top: var(--sp-2); }
 .aiexp__n { font-variant-numeric: tabular-nums; color: var(--c-ink-600); }
 .aiexp__notice { display: flex; gap: var(--sp-1); align-items: flex-start; margin-top: var(--sp-3); font-size: var(--fs-12); color: var(--c-ink-600); }

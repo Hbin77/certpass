@@ -895,7 +895,7 @@
   function explainBodyHTML(st) {
     const head = `<h4 class="aiexp__title">${icon('i-cpu', 'ic--sm')}AI 판정 설명 <span class="aiexp__by">AgentStream · qwen3.5-122b + 지식베이스</span></h4>`;
     if (!st || st.loading) {
-      return `${head}<p class="aiexp__state">${icon('i-loader', 'ic--sm aiexp__spin')}근거 문서를 찾아 설명을 만드는 중입니다. 20~40초쯤 걸릴 수 있습니다.</p>`;
+      return `${head}<p class="aiexp__state">${icon('i-loader', 'ic--sm aiexp__spin')}근거 문서를 찾아 설명을 만드는 중입니다. 보통 10초 안팎 걸립니다.</p>`;
     }
     const d = st.data || {};
     const src = (d.sources || []).map((s) => `<li><span class="aiexp__n">근거 ${esc(s.n)}</span> ${s.url
@@ -904,12 +904,18 @@
     const srcHTML = src ? `<details class="more aiexp__src"><summary>${icon('i-chevron', 'ic--sm')}근거 목록 ${(d.sources || []).length}건</summary>
       <div class="more__body"><ol class="flist" role="list">${src}</ol></div></details>` : '';
     if (st.error || !d.ok) {
-      return `${head}<p class="aiexp__state">${icon('i-info', 'ic--sm')}AI 설명을 지금 불러오지 못했습니다. 판정과 근거는 위 내용 그대로 유효합니다.</p>
+      const busy = /RateLimit|LLM_RATE_LIMITED|HTTP 429|HTTP 503/.test(d.error || '');
+      return `${head}<p class="aiexp__state">${icon('i-info', 'ic--sm')}${busy ? 'AI 모델에 요청이 몰려 지금은 설명을 만들지 못했습니다. 잠시 뒤 다시 불러오세요.' : 'AI 설명을 지금 불러오지 못했습니다.'} 판정과 근거는 위 내용 그대로 유효합니다.</p>
         <button type="button" class="btn btn--secondary btn--sm" data-explain-retry="${esc(d.cert_id || st.certId || '')}">${icon('i-refresh', 'ic--sm')}다시 불러오기</button>${srcHTML}`;
     }
+    // 지식베이스 조회 결과: 이 인증 카드 조각만 '파일: 절' 묶음으로, 다른 카드 조각은 개수만(rag_target·rag_other가 없으면 옛 응답 모양)
+    const other = d.rag_other ? ` · 다른 인증 카드 조각 ${d.rag_other}건은 제외` : '';
     const rag = d.tool_failed ? '<p class="aiexp__rag muted">지식베이스 문서 조회가 실패해 판정 사유만으로 설명했습니다.</p>'
-      : (d.rag_sources || []).length ? `<p class="aiexp__rag muted">지식베이스에서 찾은 문서: ${esc(d.rag_sources.join(', '))}</p>` : '';
-    return `${head}<div class="aiexp__text">${explainTextHTML(d.text)}</div>${rag}${srcHTML}
+      : d.rag_target === 0 ? `<p class="aiexp__rag muted">지식베이스에서 이 인증 카드를 찾지 못해 판정 사유만으로 설명했습니다${esc(other)}.</p>`
+      : (d.rag_sources || []).length ? `<p class="aiexp__rag muted">지식베이스에서 찾은 이 인증 카드: ${esc(d.rag_sources.join(' / '))}${esc(other)}</p>` : '';
+    const unv = (d.unverified || []).length
+      ? `<p class="aiexp__check">${icon('i-alert', 'ic--sm')}<span>설명 속 날짜·비율 중 판정 사유와 지식베이스에서 확인되지 않은 값: ${esc(d.unverified.join(', '))}. 원문 확인이 필요합니다.</span></p>` : '';
+    return `${head}<div class="aiexp__text">${explainTextHTML(d.text)}</div>${unv}${rag}${srcHTML}
       <p class="aiexp__notice">${icon('i-info', 'ic--xs')}${esc(d.notice || '참고용 설명이며 공식 인증·심사가 아닙니다.')}</p>`;
   }
   function renderExplain(certId) {
@@ -925,7 +931,8 @@
     renderExplain(certId);
     let st;
     try {
-      const res = await postJSON('api/explain', { product: S.product, company: S.company, cert_id: certId });
+      const res = await postJSON('api/explain', { product: S.product, company: S.company, cert_id: certId },
+        { signal: AbortSignal.timeout(90000) }); // 연결이 조용히 끊겨도 '만드는 중'에 멈추지 않고 재시도 버튼으로
       const data = await res.json();
       st = data && data.enabled === false ? null : { data, certId };
     } catch (err) {
