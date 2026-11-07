@@ -31,7 +31,7 @@ def test_over_limit_by_order_and_ok_by_order():
 
 def test_banned_suspect_typo_only():
     reg = load_reg_index()
-    assert banned_suspect(reg, "EU", "Dibutyl Phthlate")[0] == "dibutyl phthalate"
+    assert banned_suspect(reg, "EU", "Diethyamine Laureth Sulfate")[0] == "diethylamine laureth sulfate"
     assert banned_suspect(reg, "EU", "Sodium Chloride") is None      # 식약처 사전에 있는 정상 원료
     assert banned_suspect(reg, "EU", "Dibutyl Phthalate") is None    # 정확히 같은 이름은 의심이 아니라 금지 판정 쪽
     demo = json.loads((DATA / "public/products/demo_products.json").read_text(encoding="utf-8"))

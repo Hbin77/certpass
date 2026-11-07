@@ -774,7 +774,7 @@
         },
         {
           "kr": "",
-          "inci": "Dibutyl Phthlate",
+          "inci": "Diethyamine Laureth Sulfate",
           "cas": null,
           "pct": null
         },
@@ -842,7 +842,7 @@
           "role": "allergen_from_fragrance"
         }
       ],
-      "demo_note": "D2와 같은 가상 제품. 포장의 전성분 목록만 붙여 넣어 함량·CAS가 없고, 금지 성분 Dibutyl Phthalate가 'Dibutyl Phthlate'로 잘못 적힌 입력(규칙 엔진은 이름이 정확히 같을 때만 금지 성분을 잡음 → AI 숨은 불가 경보 시연용)"
+      "demo_note": "D2와 같은 가상 제품. 포장의 전성분 목록만 붙여 넣어 함량·CAS가 없고, 금지 성분 Diethylamine Laureth Sulfate가 'Diethyamine Laureth Sulfate'로 잘못 적힌 입력(규칙 엔진은 이름이 정확히 같을 때만 금지로 판정하고 비슷하면 '오기 확인'으로 표시, AI는 불가 가능성 경보 — 시연용)"
     }
   ]
 }
