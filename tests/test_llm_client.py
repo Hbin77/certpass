@@ -510,3 +510,15 @@ def test_prompt_guards_against_common_distortions():
     if ok:
         assert "새 보완 과제" in llm_client.build_prompt(ok, cards[ok["cert_id"]], {}, [])
     assert not any(line.lstrip("- ").startswith("[") for line in p.splitlines())
+
+
+def test_cache_tool_strip_bad_refs(tmp_path, monkeypatch):
+    import json
+    from certcheck import cache_tool
+    f = tmp_path / "c.json"
+    monkeypatch.setattr(llm_client, "CACHE_FILE", f)
+    (keys, n_src), = cache_tool._entries(["D5/NATRUE"])
+    f.write_text(json.dumps({keys[0]: {"text": f"왜 이 등급인가: A (근거 1, 근거 {n_src + 1}).", "pin": True}}), encoding="utf-8")
+    assert cache_tool.run("strip", ["D5/NATRUE"]) == 1
+    assert json.loads(f.read_text(encoding="utf-8"))[keys[0]]["text"] == "왜 이 등급인가: A (근거 1)."
+    assert cache_tool.run("drop", ["D5/NATRUE"]) == 1 and json.loads(f.read_text(encoding="utf-8")) == {}
