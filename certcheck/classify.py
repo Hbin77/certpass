@@ -436,7 +436,7 @@ def _check_limits(v: Verdict, inci: str, pct: float | None, limited: list, p: di
             if hi <= limits[0]:
                 if r.conditions:
                     v.add("cond", "ING_RESTRICTED_CONDITIONS", f"{kind} {inci} 전성분 순서상 최대 {_pct_txt(hi)}% (한도 {r.max_conc}{scope_note}) — 조건/경고문: {r.conditions[:160]}",
-                          ref, "라벨 경고문·사용 조건 반영")
+                          ref, _cond_action(f"{r.conditions} {r.name}"))
                 else:
                     v.add("info", "ING_RESTRICTED_OK_BY_ORDER", f"{kind} {inci}: 함량 미상이지만 전성분 순서상 최대 {_pct_txt(hi)}% ≤ 한도 {r.max_conc}{scope_note}", ref)
                 continue
@@ -454,10 +454,21 @@ def _check_limits(v: Verdict, inci: str, pct: float | None, limited: list, p: di
                   "제품 용도에 맞는 한도 확인(초과면 함량 낮춰 재처방)")
         elif r.conditions:
             v.add("cond", "ING_RESTRICTED_CONDITIONS", f"{kind} {inci} {pct}% (한도 {r.max_conc or '조건'}{scope_note}) — 조건/경고문: {r.conditions[:160]}",
-                  ref, "라벨 경고문·사용 조건 반영")
+                  ref, _cond_action(f"{r.conditions} {r.name}"))
         else:
             v.add("info", "ING_POSITIVE_LIST" if r.list_type.startswith("allowed_") else "ING_RESTRICTED_OK",
                   f"{kind} {inci} {pct}% (한도 {r.max_conc or '없음'}{scope_note})", ref)
+
+
+_SPEC_WORDS = ("nitros", "니트로", "purity", "순도", "impurit", "불순물", "secondary amine", "2차 아민", "2차 알킬아민", "2급 아민", "이차아민")
+
+
+def _cond_action(conditions: str) -> str:
+    """제한 성분 조건의 종류에 맞는 할 일. 원료 규격(순도·니트로소아민·불순물)이면 성적서 확인, 그 밖에는 라벨 경고문·사용 조건."""
+    low = (conditions or "").lower()
+    if any(w in low for w in _SPEC_WORDS):
+        return "원료 규격서·성적서로 순도·니트로소아민 등 조건 확인(니트로소화 계와 함께 쓰지 않기)"
+    return "라벨 경고문·사용 조건 반영"
 
 
 def _scope_excludes(scope: str, p: dict) -> bool:
@@ -529,7 +540,7 @@ def check_documents(v: Verdict, card: dict, p: dict, company: dict) -> None:
         st, src = doc_status(d.get("satisfied_by_hint") or [], have, p, company)
         desc = d.get("desc", d.get("id"))
         who = {"external_expert": "외부 전문가", "company": "자사", "manufacturer": "제조사", "lab": "시험기관",
-               "authority": "관공서", "local_entity": "현지 책임자"}.get(d.get("producer"), d.get("producer") or "")
+               "authority": "관공서", "certifier": "인증기관", "local_entity": "현지 책임자"}.get(d.get("producer"), d.get("producer") or "")
         if st == "have":
             v.add("info", "DOC_OK", f"보유: {desc}", src)
         elif st == "draftable":

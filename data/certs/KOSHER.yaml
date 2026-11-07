@@ -30,7 +30,7 @@ documents_required:
   - id: plant_inspection
     desc: "제조소 점검 (추정)"
     satisfied_by_hint: []
-    producer: authority
+    producer: certifier
 tests_required: []
 labeling:
   language: null

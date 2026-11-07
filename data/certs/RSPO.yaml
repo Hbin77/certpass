@@ -26,7 +26,7 @@ documents_required:
   - id: SCC_audit
     desc: "공급망 인증 심사(IP·SG·MB 모델) — 제조소 포함 (추정)"
     satisfied_by_hint: []
-    producer: authority
+    producer: certifier
   - id: palm_derivative_inventory
     desc: "팜 유래 원료 목록과 공급사 RSPO 인증서 (추정)"
     satisfied_by_hint: ["draft_from:formula_*", "draft_from:ingredient_list_*"]
