@@ -609,8 +609,9 @@
   }
   function renderEmpty() {
     resetSummaryTitle();
-    $('#summary-body').innerHTML = `<p class="empty-lede">데모 제품을 고르거나 직접 입력하면, 인증·등록마다 아래 네 가지 중 하나로 예비 판정합니다.</p>${legendHTML(null)}`;
-    $('#table-body').innerHTML = '<p class="muted">판정하면 관할(국가)별 표가 여기에 나옵니다.</p>';
+    document.body.classList.remove('has-result');
+    $('#summary-body').innerHTML = '';
+    $('#table-body').innerHTML = '';
   }
 
   // 함량이 없어 한도 대조를 못 한 제한 성분. 추측(ML) 대신 사용자에게 함량을 물어 판정을 확정한다
@@ -647,7 +648,6 @@
       if (sel) sel.value = S.demoId;
       fillFromDemo(S.demoId);
     }
-    selectTab(document.getElementById('tab-manual'));
     const ta = $('#m-ing');
     const lines = ta.value.split('\n');
     const key = name.toLowerCase();
@@ -720,9 +720,8 @@
       if (sen.sub.length) html += `<p class="verdict-sub">${esc(sen.sub.join(' '))}</p>`;
       if (sen.fail) html += `<p class="note note--fail">${icon('i-fail', 'ic--sm')}<span>${esc(sen.fail)}</span></p>`;
       html += mlAlertHTML(vs);
-      for (const n of notes) html += `<p class="note">${icon('i-info', 'ic--sm')}<span>${esc(n)}</span></p>`;
-      html += mlStatusHTML(vs);
-      html += nameConvHTML();
+      const concept = notes.length && /기획 단계/.test(notes[0]) ? notes.shift() : '';
+      if (concept) html += `<p class="note note--cond">${icon('i-cond', 'ic--sm')}<span>${esc(concept)}</span></p>`;
       html += legendHTML(c);
       if (todos.length) {
         html += `<section class="todo" aria-labelledby="todo-title"><h3 class="sub-title" id="todo-title">가장 먼저 할 일</h3>
@@ -747,6 +746,8 @@
           ${S.docTypes instanceof Set && S.docTypes.has('support_program') ? `<div class="support__act">${docButton('support_program', '지원사업 신청 메모 내려받기', 'btn--secondary btn--sm')}</div>` : ''}
         </div></section>`;
       }
+      const extra = notes.map((n) => `<p class="note">${icon('i-info', 'ic--sm')}<span>${esc(n)}</span></p>`).join('') + mlStatusHTML(vs) + nameConvHTML();
+      if (extra) html += `<details class="more more--info"><summary>${icon('i-chevron', 'ic--sm')}판정 정보: 신뢰도·AI 모델·성분명 변환</summary><div class="more__body">${extra}</div></details>`;
       if (cvs.length) html += companyHTML(cvs);
     }
     html += '</div>';
@@ -791,11 +792,11 @@
   // 행의 작은 AI 판정 표시: 규칙과 같으면 흐리게, 다르면 등급 색·확률과 함께
   function mlGradeHTML(v) {
     const m = mlOf(v);
-    if (!m) return '';
+    if (!m || m.agree) return ''; // 규칙과 같으면 표시하지 않는다(펼친 상세의 'AI 모델 판정' 줄에는 남음)
     const meta = STATUS_BY[m.status];
-    const p = !m.agree && m.proba && typeof m.proba[m.label] === 'number' ? pctOf(m.proba[m.label]) : '';
-    const mod = m.agree ? 'agree' : (meta ? meta.key : 'na');
-    return `<span class="mlgrade mlgrade--${mod}"><span class="mlgrade__k" aria-hidden="true">AI</span><span class="sr-only">AI 모델 판정 </span>${meta ? icon(meta.icon, 'ic--xs') : ''}${esc(m.status || m.label || '')}${p ? ` ${p}` : ''}${m.agree ? '<span class="sr-only">, 규칙 판정과 같음</span>' : ''}</span>`;
+    const p = m.proba && typeof m.proba[m.label] === 'number' ? pctOf(m.proba[m.label]) : '';
+    const mod = meta ? meta.key : 'na';
+    return `<span class="mlgrade mlgrade--${mod}"><span class="mlgrade__k" aria-hidden="true">AI</span><span class="sr-only">AI 모델 판정 </span>${meta ? icon(meta.icon, 'ic--xs') : ''}${esc(m.status || m.label || '')}${p ? ` ${p}` : ''}</span>`;
   }
   // 상세의 AI 판정 줄(meta)과, 숨은 불가 경보가 있으면 맨 위 경보 블록(alert)
   function mlDetailHTML(v) {
@@ -824,9 +825,8 @@
       return `<li class="corp__item">${badge(v.status, true)}<div><p class="corp__name">${esc(v.cert_name)}</p>
         <p class="corp__why">${esc(why)}${act ? `<span class="muted"> 해야 할 일: ${esc(act)}</span>` : ''}</p></div></li>`;
     }).join('');
-    return `<section class="corp" aria-labelledby="company-title"><h3 class="sub-title" id="company-title">회사 단위 인증</h3>
-      <p class="hint">제품과 관계없이 회사 요건(재무·업력·인력 등)으로 판정합니다. 여기서 불가는 회사 요건을 먼저 갖춰야 신청할 수 있다는 뜻입니다.</p>
-      <ul class="corp__list" role="list">${items}</ul></section>`;
+    return `<details class="more more--info corp"><summary>${icon('i-chevron', 'ic--sm')}회사 단위 인증 ${cvs.length}개 <span class="muted">제품과 관계없이 회사 요건으로 판정</span></summary>
+      <ul class="corp__list" role="list">${items}</ul></details>`;
   }
 
   function gapCells(v) {
@@ -1069,7 +1069,7 @@
       ${GAP_COLS.map((c) => `<span class="vhead__gap">${c.lines.map((l) => `<span>${esc(l)}</span>`).join('')}</span>`).join('')}
       <span class="vhead__conf">신뢰도</span><span></span></div></div>`;
 
-    let html = `<p class="vtable__intro">행을 누르면 근거와 해야 할 일이 펼쳐집니다. 가운데 다섯 칸은 보완이 필요한 항목 수입니다.</p>${applicable.length ? head : ''}`;
+    let html = `<p class="vtable__intro">행을 누르면 근거와 해야 할 일이 펼쳐집니다. 가운데 다섯 칸은 보완할 항목 수입니다.</p>${applicable.length ? head : ''}`;
     for (const k of keys) {
       const list = groups.get(k).slice().sort((a, b) => (RANK[a.status] - RANK[b.status]) || a.cert_name.localeCompare(b.cert_name, 'ko'));
       const gid = `jg-${safeId(k)}`;
@@ -1108,7 +1108,7 @@
       const names = uniq(drafts.map((x) => docParts(x.f.message).short));
       const certsN = uniq(drafts.map((x) => x.v.cert_id)).length;
       const lead = names.length ? `보유 자료로 초안을 만들 수 있는 서류가 인증 ${certsN}개에 걸쳐 ${names.length}종 있습니다. ` : '';
-      note.innerHTML = `${icon('i-info', 'ic--sm')}<span>${esc(lead)}${esc(S.product.name_kr)}의 판정 결과를 반영한 초안입니다. 제출 전에 담당자가 확인하고 서명합니다.</span>`;
+      note.innerHTML = `<span>${esc(lead)}판정 결과를 반영한 초안입니다. 제출 전에 담당자가 확인하고 서명합니다.</span>`;
     }
     const ids = uniq(DOCS.map((d) => d.id).concat(ready ? Array.from(S.docTypes) : []));
     $('#doclist').innerHTML = ids.map((id) => {
@@ -1239,11 +1239,12 @@
     const top = sec.getBoundingClientRect().top;
     const headerH = $('.top').offsetHeight;
     const visible = top >= headerH - 4 && top < window.innerHeight * 0.6;
-    if (!wide() || !visible) sec.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
-    if (moveFocus || !wide()) sec.focus({ preventScroll: true });
+    if (!visible) sec.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
+    sec.focus({ preventScroll: true });
   }
 
   function renderResult(fresh) {
+    document.body.classList.add('has-result');
     const sheet = $('#sheet');
     sheet.classList.toggle('is-fresh', !!fresh && !reduceMotion());
     renderSummary();
@@ -1505,6 +1506,8 @@
     if (S.fill.extraClaims.length) ex.push(`표방 ${S.fill.extraClaims.length}개(${claimText(S.fill.extraClaims).slice(0, 3).join(', ')}${S.fill.extraClaims.length > 3 ? ' 등' : ''})`);
     if (S.fill.extraDocs.length) ex.push(`서류 ${S.fill.extraDocs.length}개`);
     extrasEl.textContent = ex.length ? `목록에 없는 ${ex.join(', ')}는 불러온 그대로 판정에 넣습니다.` : '';
+    // 채운 표방·서류가 접힌 칸 안에 숨지 않게 연다
+    if (ex.length || document.querySelector('#m-more input:checked')) $('#m-more').open = true;
     extrasEl.hidden = !ex.length;
     updateParse();
     fieldError('m-ing-err', 'm-ing', '');
@@ -1512,6 +1515,7 @@
 
   // ------------------------------------------------------------------ 이벤트
   function selectTab(tab, focus) {
+    if (!tab) return;
     const tabs = Array.from(document.querySelectorAll('.tabs__tab'));
     for (const t of tabs) {
       const on = t === tab;
@@ -1562,6 +1566,25 @@
     });
     $('#m-fill').addEventListener('change', (e) => fillFromDemo(e.target.value));
     $('#m-photo-btn').addEventListener('click', () => $('#m-photo').click());
+    const drop = $('#m-photo-btn');
+    ['dragover', 'drop'].forEach((ev) => document.addEventListener(ev, (e) => {
+      if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) {
+        e.preventDefault();
+        if (!drop.contains(e.target)) e.dataTransfer.dropEffect = 'none';
+      }
+    }));
+    ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = drop.disabled ? 'none' : 'copy';
+      if (!drop.disabled) drop.classList.add('is-over');
+    }));
+    drop.addEventListener('dragleave', (e) => { if (!drop.contains(e.relatedTarget)) drop.classList.remove('is-over'); });
+    ['dragend', 'drop'].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove('is-over')));
+    drop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f && !drop.disabled) readPhoto(f);
+    });
     $('#m-photo').addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) readPhoto(e.target.files[0]); });
     $('#manual-form').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -1614,10 +1637,10 @@
     spyFrame = window.requestAnimationFrame(() => {
       spyFrame = 0;
       const line = $('.top').offsetHeight + 16;
-      let current = wide() ? 'summary' : 'input'; // 넓은 화면은 입력 영역이 늘 보이므로 판정서 기준으로 표시
+      let current = 'input';
       for (const id of ['summary', 'table', 'docs']) {
         const el = document.getElementById(id);
-        if (el && el.getBoundingClientRect().top <= line) current = id;
+        if (el && el.offsetParent !== null && el.getBoundingClientRect().top <= line) current = id;
       }
       if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4 && S.result) current = 'docs';
       document.querySelectorAll('[data-nav]').forEach((a) => {
@@ -1670,6 +1693,7 @@
     if (health.status === 'fulfilled') S.health = health.value;
     // OCR 서빙이 연결되지 않은 서버에서는 사진 입력 칸을 숨긴다
     $('#m-photo-field').hidden = !(S.health && S.health.ocr_model);
+    $('#m-photo-src').hidden = $('#m-photo-field').hidden;
     if (certs.status === 'fulfilled' && Array.isArray(certs.value)) {
       S.certs = certs.value;
       S.certIndex = Object.fromEntries(S.certs.map((c) => [c.id, c]));
@@ -1695,7 +1719,7 @@
       renderManualOptions();
     }
     if (certs.status !== 'fulfilled') {
-      $('#filter-chips').insertAdjacentHTML('afterend', `<p class="field__err" role="alert">${icon('i-alert', 'ic--sm')}<span>인증 목록을 불러오지 못했습니다. ${esc(explain(certs.reason))}</span></p>`);
+      $('#demo-list').insertAdjacentHTML('afterend', `<p class="field__err" role="alert">${icon('i-alert', 'ic--sm')}<span>인증 목록을 불러오지 못했습니다. ${esc(explain(certs.reason))}</span></p>`);
     }
     onScroll();
 
