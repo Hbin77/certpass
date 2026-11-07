@@ -648,6 +648,7 @@
       if (sel) sel.value = S.demoId;
       fillFromDemo(S.demoId);
     }
+    revealDetail();
     const ta = $('#m-ing');
     const lines = ta.value.split('\n');
     const key = name.toLowerCase();
@@ -1375,9 +1376,31 @@
     return `<p class="parse">${icon('i-check', 'ic--sm')}<span>${few ? '성분 이름' : '전성분'} ${items.length}종을 읽어 아래 칸에 채웠습니다. 식약처 사전과 그대로 일치 ${c.exact || 0}종, 비슷한 이름으로 맞춤 ${c.fuzzy || 0}종, 확인 필요 ${c.unknown || 0}종.${how ? ` ${esc(how)}` : ''}</span></p>
       ${blurryHTML(r)}${few}${rows ? `<ul class="ocr-out__list">${rows}</ul>` : ''}`;
   }
-  async function readPhoto(file) {
+  function revealDetail(focusEl) {
+    const d = $('#m-detail');
+    d.hidden = false;
+    $('#m-type-btn').setAttribute('aria-expanded', 'true');
+    if (focusEl) {
+      focusEl.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'center' });
+      focusEl.focus({ preventScroll: true });
+    }
+  }
+  // 여러 파일을 놓으면 차례로 읽고, 찾은 성분을 이름이 겹치지 않게 합친다
+  async function readFiles(list) {
+    const files = Array.from(list || []).filter(Boolean);
+    if (!files.length) return;
+    S.ocrSeen = new Set();
+    let total = 0;
+    for (let i = 0; i < files.length; i++) {
+      const n = await readPhoto(files[i], { append: i > 0, nth: i + 1, of: files.length });
+      total += n;
+    }
+    if (total) revealDetail($('#m-submit'));
+  }
+  async function readPhoto(file, opt = {}) {
     const btn = $('#m-photo-btn');
     const out = $('#m-photo-out');
+    const tag = opt.of > 1 ? `(${opt.nth}/${opt.of}) ` : '';
     btn.setAttribute('aria-busy', 'true');
     btn.disabled = true;
     out.hidden = false;
@@ -1389,9 +1412,7 @@
         ? ` 다른 요청 ${ahead}건이 먼저 처리되고 있어 차례를 기다리는 중입니다.` : ''}</span></p>`;
     };
     const wait = (ahead) => say(base, ahead);
-    say(isPdf
-      ? 'PDF를 읽는 중입니다. 글자 정보가 없는 쪽은 그림으로 바꿔 읽어서 쪽마다 몇 초씩 걸립니다.'
-      : '사진을 읽는 중입니다. 서빙이 쉬고 있었다면 첫 응답에 시간이 더 걸립니다.');
+    say(`${tag}${isPdf ? 'PDF를 읽는 중입니다.' : '사진을 읽는 중입니다.'}`);
     try {
       let r = null;
       if (isPdf) { // 쪽 그림 만들기·돌려 읽기·바로 세우기는 서버(ocr_pdf)가 쪽마다 한다
@@ -1417,15 +1438,25 @@
         if ((got.counts?.exact || 0) < (r.counts?.exact || 0)) break;
         r = got;
       }
-      out.innerHTML = ocrResultHTML(r);
-      if ((r.ingredients || []).length) {
-        $('#m-ing').value = r.ingredients.map((i) => i.kr || i.raw).join('\n');
+      out.innerHTML = (opt.of > 1 ? `<p class="parse parse--file">${esc(file.name || `파일 ${opt.nth}`)}</p>` : '') + ocrResultHTML(r);
+      const names = (r.ingredients || []).map((i) => i.kr || i.raw).filter(Boolean);
+      const seen = S.ocrSeen || new Set();
+      const ta = $('#m-ing');
+      const prev = opt.append ? ta.value.split('\n').filter(Boolean) : [];
+      prev.forEach((x) => seen.add(x));
+      const add = names.filter((x) => !seen.has(x));
+      add.forEach((x) => seen.add(x));
+      S.ocrSeen = seen;
+      if (names.length) {
+        ta.value = prev.concat(add).join('\n');
         updateParse();
         fieldError('m-ing-err', 'm-ing', '');
       }
-      announce(r.ingredients && r.ingredients.length ? `전성분 ${r.ingredients.length}종을 채웠습니다.` : '전성분 표기를 찾지 못했습니다.');
+      announce(names.length ? `전성분 ${names.length}종을 읽었습니다.` : '전성분 표기를 찾지 못했습니다.');
+      return add.length;
     } catch (err) {
-      out.innerHTML = `<p class="field__err">${icon('i-alert', 'ic--sm')}<span>${esc(err instanceof ApiError ? explain(err) : err.message)}</span></p>`;
+      out.innerHTML = `<p class="field__err">${icon('i-alert', 'ic--sm')}<span>${esc(tag)}${esc(err instanceof ApiError ? explain(err) : err.message)}</span></p>`;
+      return 0;
     } finally {
       btn.removeAttribute('aria-busy');
       btn.disabled = false;
@@ -1474,6 +1505,7 @@
     return { product };
   }
   function fillFromDemo(id) {
+    if (id) revealDetail();
     const p = ((S.demo && S.demo.products) || []).find((x) => x.id === id);
     const extrasEl = $('#m-extras');
     if (!p) { S.fill = null; extrasEl.hidden = true; return; }
@@ -1583,9 +1615,10 @@
     drop.addEventListener('drop', (e) => {
       e.preventDefault();
       const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-      if (f && !drop.disabled) readPhoto(f);
+      if (f && !drop.disabled) readFiles(e.dataTransfer.files);
     });
-    $('#m-photo').addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) readPhoto(e.target.files[0]); });
+    $('#m-photo').addEventListener('change', (e) => { if (e.target.files && e.target.files.length) readFiles(e.target.files); });
+    $('#m-type-btn').addEventListener('click', () => revealDetail($('#m-ing')));
     $('#manual-form').addEventListener('submit', (e) => {
       e.preventDefault();
       fieldError('m-submit-err', null, '');
@@ -1694,6 +1727,7 @@
     // OCR 서빙이 연결되지 않은 서버에서는 사진 입력 칸을 숨긴다
     $('#m-photo-field').hidden = !(S.health && S.health.ocr_model);
     $('#m-photo-src').hidden = $('#m-photo-field').hidden;
+    if ($('#m-photo-field').hidden) revealDetail(); // 사진 인식이 없으면 바로 직접 입력 칸을 연다
     if (certs.status === 'fulfilled' && Array.isArray(certs.value)) {
       S.certs = certs.value;
       S.certIndex = Object.fromEntries(S.certs.map((c) => [c.id, c]));
@@ -1707,6 +1741,7 @@
 
     renderCompany();
     renderFilter();
+    if (S.certs.length) $('#cert-count').textContent = String(S.certs.length);
     renderBasis();
     renderDocs();
     if (demo.status === 'fulfilled') {
