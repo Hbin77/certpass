@@ -451,8 +451,13 @@ def _check_limits(v: Verdict, inci: str, pct: float | None, limited: list, p: di
         return
     for r, ref in fits:
         kind = "제한 성분" if r.list_type == "restricted" else f"허용 목록({r.list_type})"
-        limits = sorted(set(parse_pcts(r.max_conc)))
         scope_note = f" / 적용범위: {r.product_scope}" if r.product_scope else ""
+        if _is_spec(r.max_conc):
+            # 원문이 '최대 농도' 칸에 원료 규격(2차 아민 함량·순도 등)을 적은 행: 제품 함량과 비교하지 않는다(EU 113·대만 88행)
+            v.add("cond", "ING_RESTRICTED_CONDITIONS", f"{kind} {inci}: 원료 규격 {r.max_conc[:120]}(제품 함량 한도 아님){scope_note}"
+                  + (f" — 조건/경고문: {r.conditions[:120]}" if r.conditions else ""), ref, _cond_action(f"{r.conditions} {r.max_conc} {r.name}"))
+            continue
+        limits = sorted(set(parse_pcts(r.max_conc)))
         if pct is None and bound and limits:
             lo, hi = bound
             if lo > limits[-1]:
@@ -487,6 +492,15 @@ def _check_limits(v: Verdict, inci: str, pct: float | None, limited: list, p: di
 
 
 _SPEC_WORDS = ("nitros", "니트로", "purity", "순도", "impurit", "불순물", "secondary amine", "2차 아민", "2차 알킬아민", "2급 아민", "이차아민")
+
+
+_SPEC_LIMIT = ("secondary amine", "2급 아민", "2차 아민", "purity", "순도", "nitrosamine", "니트로사민", "니트로소아민")
+
+
+def _is_spec(max_conc: str) -> bool:
+    """'최대 농도' 칸의 값이 제품 함량 한도가 아니라 원료 규격(2차 아민 함량·순도·니트로사민)인지."""
+    low = (max_conc or "").lower()
+    return any(w in low for w in _SPEC_LIMIT)
 
 
 def _cond_action(conditions: str) -> str:

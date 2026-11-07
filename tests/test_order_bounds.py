@@ -75,3 +75,14 @@ def test_cas_recovery_and_english_shadow():
     assert C._en_fuzzy(id(reg), "glycerin") is None          # 공식 이름은 오타가 아님
     C._REG_BY_ID[id(reg)] = reg
     assert C._en_fuzzy(id(reg), "homosalatc") == "homosalate"  # 10글자 중 1글자 오기
+
+
+def test_spec_limit_is_not_product_limit():
+    """트로메타민 '2차 아민 0.5%'는 원료 규격이라 제품 함량이 0.5%를 넘어도 불가가 아니라 원료 규격 확인(조건부)."""
+    reg, attrs = load_reg_index(), load_attributes()
+    card = next(c for c in load_cards() if c["id"] == "EU_CPNP")
+    p = {"id": "T3", "name_kr": "시험", "product_type": "face_cream", "application": "leave_on", "claims": [], "documents": [],
+         "formula_known": "full_with_concentration", "ingredients": [{"inci": "Water", "pct": 90}, {"inci": "Tromethamine", "cas": "77-86-1", "pct": 1.2}]}
+    v = evaluate(card, p, {}, reg, attrs)
+    assert not any(f.code == "ING_OVER_LIMIT" and "Tromethamine" in f.message for f in v.findings)
+    assert any("원료 규격" in f.message and "Tromethamine" in f.message for f in v.findings)
