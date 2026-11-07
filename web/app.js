@@ -192,7 +192,7 @@
   }
   // OCR은 접수 → 결과 조회로 부른다. 공개 주소 프록시가 60초에 연결을 끊어서, 서빙 대기·PDF 여러 쪽처럼 오래 걸려도
   // 요청 하나로 기다리지 않게 한다. onWait(앞 대기 수)로 화면 문구를 바꾼다
-  const OCR_POLL_MS = 1500;
+  const OCR_POLL_MS = 700; // 결과 묻기 간격(조회는 가벼워 짧게: 혼자 쓸 때 늘어나는 지연이 0.7초 이내)
   const OCR_WAIT_MAX_MS = 240000;
   async function ocrRequest(body, ctype, onWait) {
     const res = await fetch('api/ocr?mode=job', { method: 'POST', headers: { 'Content-Type': ctype, Accept: 'application/json' }, body });
