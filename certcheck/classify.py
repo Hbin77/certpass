@@ -223,6 +223,11 @@ def check_applicability(v: Verdict, card: dict, p: dict) -> bool:
     return True
 
 
+def _pct_txt(x: float) -> str:
+    """화면용 % 숫자: 소수 첫째 자리까지, 끝 0은 뺀다(8.3333 → 8.3, 5.0 → 5)."""
+    return f"{x:.1f}".rstrip("0").rstrip(".")
+
+
 def pct_bounds(ings: list[dict]) -> list[tuple[float, float] | None]:
     """전성분 표시 순서로 함량을 모르는 성분의 (최소, 최대) %를 구한다.
     표시 규칙(국내·EU): 1%를 넘는 성분은 함량 많은 순으로 먼저 적고, 1% 이하는 그 뒤에 순서 없이 적는다.
@@ -406,19 +411,19 @@ def _check_limits(v: Verdict, inci: str, pct: float | None, limited: list, p: di
         if pct is None and bound and limits:
             lo, hi = bound
             if lo > limits[-1]:
-                v.add("fail", "ING_OVER_LIMIT_BY_ORDER", f"{kind} {inci}: 함량 미상이지만 전성분 순서상 최소 {lo:g}% > 한도 {r.max_conc}{scope_note}",
+                v.add("fail", "ING_OVER_LIMIT_BY_ORDER", f"{kind} {inci}: 함량 미상이지만 전성분 순서상 최소 {_pct_txt(lo)}% > 한도 {r.max_conc}{scope_note}",
                       ref, "함량 확인 후 한도 이하로 재처방")
                 continue
             if hi <= limits[0]:
                 if r.conditions:
-                    v.add("cond", "ING_RESTRICTED_CONDITIONS", f"{kind} {inci} 전성분 순서상 최대 {hi:g}% (한도 {r.max_conc}{scope_note}) — 조건/경고문: {r.conditions[:160]}",
+                    v.add("cond", "ING_RESTRICTED_CONDITIONS", f"{kind} {inci} 전성분 순서상 최대 {_pct_txt(hi)}% (한도 {r.max_conc}{scope_note}) — 조건/경고문: {r.conditions[:160]}",
                           ref, "라벨 경고문·사용 조건 반영")
                 else:
-                    v.add("info", "ING_RESTRICTED_OK_BY_ORDER", f"{kind} {inci}: 함량 미상이지만 전성분 순서상 최대 {hi:g}% ≤ 한도 {r.max_conc}{scope_note}", ref)
+                    v.add("info", "ING_RESTRICTED_OK_BY_ORDER", f"{kind} {inci}: 함량 미상이지만 전성분 순서상 최대 {_pct_txt(hi)}% ≤ 한도 {r.max_conc}{scope_note}", ref)
                 continue
         if pct is None:
             if limits or r.list_type == "restricted":
-                rng = f" (전성분 순서상 {bound[0]:g}~{bound[1]:g}%)" if bound else ""
+                rng = f" (전성분 순서상 {_pct_txt(bound[0])}~{_pct_txt(bound[1])}%)" if bound else ""
                 v.add("cond", "ING_RESTRICTED_PCT_UNKNOWN", f"{kind} {inci}: 한도 {r.max_conc or '조건부'}{scope_note} — 함량 미상{rng}", ref,
                       "처방 함량 확인 후 한도·조건 대조")
             else:
