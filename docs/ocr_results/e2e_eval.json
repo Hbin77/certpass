@@ -1,0 +1,20 @@
+{
+ "images": 150,
+ "ours": {
+  "precision": 0.9815,
+  "recall": 0.9028,
+  "f1": 0.9405,
+  "gt_ingredients": 4515,
+  "pred_ingredients": 4153,
+  "section_found": 0.9933,
+  "sec_per_image_gpu": 0.43
+ },
+ "easyocr": {
+  "precision": 0.9733,
+  "recall": 0.2097,
+  "f1": 0.3451,
+  "gt_ingredients": 4515,
+  "pred_ingredients": 973,
+  "section_found": 0.9133
+ }
+}

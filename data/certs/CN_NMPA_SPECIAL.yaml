@@ -1,0 +1,112 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: CN_NMPA_SPECIAL
+name_ko: 중국 특수화장품 注册(NMPA, 미백 포함)
+name_en: China NMPA Special Cosmetics Registration (特殊化妆品注册)
+jurisdiction: CN
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 349
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 349번 NMPA)"
+applies_to:
+  product_types: [whitening, sunscreen, hair_dye, perm, hair_loss, new_efficacy]
+  condition: "중국 수출 제품 중 祛斑美白·자외선차단·염모·펌·탈모방지·신규효능을 표방하는 제품 [kw:target_market(CN)] [kw:claim(whitening|sunscreen|hair_dye|perm|hair_loss|new_efficacy)]"
+ingredient_rules: CN
+claim_rules:
+  - claim: whitening
+    effect: ok
+    note: "이 카드가 해당 경로. 배합표 사용목적란에 미백 유효성분 명시(29조 1항 3호), 인체 효능시험 필수(33조 3항)"
+  - claim: sunscreen
+    effect: ok
+    note: "SPF·PA 등 인체 효능시험 필수(33조 3항)"
+  - claim: anti_wrinkle
+    effect: ok
+    note: "함께 표방하면 일반 효능 근거도 필요 (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "의료 작용 표현 금지 (추정)"
+local_entity:
+  required: true
+  role: "境内责任人(중국 내 책임자). 授权书 원본과 공증서 원본(32호 10조·16조)"
+documents_required:
+  - id: user_info
+    desc: "注册人 정보표·质量安全负责人 이력, 품질관리·이상반응 체계 개요(10조)"
+    satisfied_by_hint: []
+    producer: company
+  - id: DRP_authorization
+    desc: "境内责任人 授权书 원본과 공증서 원본"
+    satisfied_by_hint: ["company.local_entities:CN"]
+    producer: company
+  - id: overseas_GMP_proof
+    desc: "해외 생산기업 생산규범 증명 원본(10조 6호)"
+    satisfied_by_hint: ["manufacturer.certs:CGMP"]
+    producer: authority
+  - id: marketing_proof
+    desc: "已上市销售证明 또는 '중국 최초 출시' 성명(27조 4호, 2026 제70호) — 국내 발급: 대한화장품협회 제조판매증명서(KR_CFS_EXPORT)"
+    satisfied_by_hint: ["cfs_kcia*"]
+    producer: authority
+  - id: formula_pct
+    desc: "配方表(백분율·사용목적), 미백 등 유효성분을 사용목적란에 명시(29조 1항 3호)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: executive_standard
+    desc: "产品执行的标准(30조)"
+    satisfied_by_hint: ["draft_from:bulk_test_report", "draft_from:finished_product_test_report"]
+    producer: manufacturer
+  - id: label_draft
+    desc: "라벨 시안, 원산국 판매 포장과 중문 번역본, 출시 전 판매 포장 이미지(31·32조)"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:brochure_*"]
+    producer: company
+  - id: toxicology_tests
+    desc: "독성시험 보고서 — 독성시험 면제(33조 2항)는 일반화장품만 해당"
+    satisfied_by_hint: []
+    producer: lab
+  - id: efficacy_human_test
+    desc: "注册备案检验机构 발행 인체 효능시험 보고서(33조 3항)"
+    satisfied_by_hint: []
+    producer: lab
+  - id: test_reports_cn
+    desc: "미생물·이화학·인체 안전성 검사보고서(33조)"
+    satisfied_by_hint: []
+    producer: lab
+  - id: safety_assessment
+    desc: "产品安全评估报告(34조)"
+    satisfied_by_hint: ["draft_from:formula_*", "draft_from:msds_*"]
+    producer: external_expert
+  - id: sealed_samples
+    desc: "첫 검사기관 봉인 견본 1건, 수입 특수화장품은 봉인 시제품·미개봉 시판품 각 1건 보관(36조)"
+    satisfied_by_hint: []
+    producer: company
+tests_required: [microbiology, physicochemical, toxicology, efficacy_human, local_lab_test, stability]
+labeling:
+  language: "중국어(규범 한자) (추정)"
+  allergens: null
+  other: ["알레르겐 — 향료 알레르겐 표시 의무 없음 — '香精' 기재 가능(29조 4항)", "特殊化妆品 注册证 번호", "전성분(표준 중문명)", "注册人·境内责任人 이름·주소", "원산국", "순함량", "사용기한", "사용법·안전 경고 (추정)"]
+animal_testing: required_for_some
+timeline:
+  lead_time: "注册 기술심사 포함 12~18개월 이상 (추정)"
+  fee: "注册 심사 수수료 있음 — 금액 확인 필요 (추정)"
+  validity: "注册证 5년, 만료 전 연장 신청 (추정)"
+evidence:
+  - url: "local:조사자료_20261107/규제원문_dl_cn/reg32.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-3"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.nmpa.gov.cn"
+    title: "기관 누리집"
+    level: unverified
+    checked: 2026-11-07
+blocking_rules:
+  - "중국 금지성분 포함 [kw:ingredient_banned(CN)]"
+  - "중국 제한성분(미백·UV 유효성분 포함) 한도 초과 [kw:ingredient_restricted_over(CN)]"
+conditional_rules:
+  - "IECIC 미등재 확인 원료 — 신원료 注册·备案 또는 대체 원료 필요 [kw:ingredient_not_in_inventory(CN)]"
+  - "통합표 CN 금지표는 2015 규범 기준 — 2021 제74호·2026 제99호 개정분 미반영 [kw:ingredient_list_unavailable(CN_BANNED_2021_74)]"
+  - "제한성분 함량 미상 [kw:ingredient_restricted_conc_unknown(CN)]"
+  - "배합 백분율 미보유 또는 개념 단계 — 注册 신청 불가 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "境内责任人 미지정 [kw:local_entity_missing(CN)]"
+  - "인체 효능시험 보고서 없음 [kw:doc_missing(efficacy_human_test)]"
+  - "독성시험 보고서 없음 [kw:doc_missing(toxicology_tests)]"
+  - "IECIC 매칭 실패 성분 존재 [kw:ingredient_match_unresolved]"
+notes: "원문 확인(32호 ◎): 특수화장품 표방은 특수로 신청(27조 2호), 유효성분 명시(29조), 인체 효능시험(33조 3항), 독성시험 면제는 일반화장품만(33조 2항), 봉인 견본(36조). 미백 → 특수 注册은 문서 §4-3 ◎. 한국 기능성(미백) 보고 자료는 중국 인체 효능시험을 대신하지 못함(중국 지정 검사기관 시험 필요, 추정). 독성시험 필수라 LEAPING_BUNNY·VEGAN_SOCIETY 등 동물실험 금지 인증과 충돌. 심사 기간·수수료·注册证 유효기간은 (추정)."

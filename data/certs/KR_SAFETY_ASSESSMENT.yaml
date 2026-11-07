@@ -1,0 +1,43 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: KR_SAFETY_ASSESSMENT
+name_ko: 화장품 안전성 평가 의무화(시행 예정)
+name_en: Korea mandatory cosmetic product safety assessment (Cosmetics Act Art. 4-2 as amended by Act No. 21302)
+jurisdiction: KR
+kind: mandatory_compliance
+strategic_kr: false
+general_kr_no: null
+support_rate: null
+applies_to:
+  product_types: [cosmetic]
+  effective_from: 2031-01-01   # 연 생산액 10억 원 미만 업소 기준(10억 이상은 2028·2030·2031 단계 — timeline.validity)
+  condition: "국내 유통 화장품의 책임판매업자. 2026-11-07 현재 시행 전 — 시행일만 기록하고 현재 서류 요구 없음. 시행 후에는 유통 전 제품별 안전성 평가 자료 작성 → 평가자 검토 → 보관"
+ingredient_rules: none
+claim_rules: []
+local_entity:
+  required: false
+  role: null
+documents_required: []
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: []
+animal_testing: not_required
+timeline:
+  lead_time: "시행 전. 제품별 평가 자료 작성·평가자 검토 소요기간은 미확인"
+  fee: null
+  validity: "시행일 — 연 생산액·수입액 10억 원 이상 업소(또는 법 공포 후 책임판매업 등록 업소): 공포 후 기능성 심사·보고 제품 2028-01-01, 공포 후 최초 출시 제품 2030-01-01, 그 밖의 제품 2031-01-01 / 10억 원 미만 업소: 2031-01-01"
+evidence:
+  - url: "local:조사자료_20261107/국내제도_원문/agentE/law_21302.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-8"
+    level: direct
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "(시행 후) 10억 원 이상 업소의 공포 후 기능성 심사·보고 제품 — 2028-01-01부터 평가 자료 필요 [kw:date_on_or_after(2028-01-01)] [kw:company_fact(annual_production_ge_1bn_krw)] [kw:claim(whitening|anti_wrinkle)]"
+  - "(시행 후) 10억 원 이상 업소의 공포 후 최초 출시 제품 — 2030-01-01부터 [kw:date_on_or_after(2030-01-01)] [kw:company_fact(annual_production_ge_1bn_krw)]"
+  - "(시행 후) 모든 업소·제품 — 2031-01-01부터 제품별 평가 자료 필요 [kw:date_on_or_after(2031-01-01)]"
+  - "연 생산액·수입액 데이터 없음 — 2028·2030 적용 여부 판단 불가 [kw:date_on_or_after(2028-01-01)] [kw:data_unknown(company.annual_production)]"
+notes: "원문 확인(법률 제21302호 부칙 ◎, 식약처 안내서-1506-01(2026-06-10)은 문서 §4-8 ◎): 유통 전 제품별 안전성 평가 자료 작성 → 평가자 검토 → 보관. 보고서 항목: 조성·안정성·미생물·불순물·노출·MOS·독성·유해사례·결론·서명. 시행일 구분은 timeline.validity 참고. 지금은 의무 전이라 documents_required를 비워 두었고 엔진 판정은 '통과 가능(현행 의무 없음)'으로 나옴 — 화면에서는 시행일 안내로 표시 권장. 회사 연 생산액이 데이터에 없어(문서 §4-8 미확인) 2028·2030 적용 여부 미정 — 10억 원 미만이면 2031-01-01. 개정 후 영유아·어린이 화장품 관리 조항은 §4의2 → §4의3으로 이동. 준비는 SCCS 노출·MoS 수치(문서 §4-7)로 미리 가능. 평가자 자격 요건은 미확인."

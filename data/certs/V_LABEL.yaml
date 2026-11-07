@@ -1,0 +1,78 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: V_LABEL
+name_ko: V-Label 비건 인증
+name_en: V-Label (European Vegetarian Union) — Vegan
+jurisdiction: GLOBAL
+kind: marketing_label
+strategic_kr: false
+general_kr_no: 573
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 573번 V-Label)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "비건 표방 제품(유럽 유통 인지도) (추정). 기준은 V-Label Criteria V02.03(2026-09-04)"
+ingredient_rules: none
+claim_rules:
+  - claim: vegan
+    effect: ok
+    note: "라이선스 후 V-Label 'vegan' 로고 사용, 포장 레이아웃은 승인 필요"
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: application
+    desc: "라이선스 신청(V-Label·국가별 파트너) — 연매출 구간 입력, 공장 주소"
+    satisfied_by_hint: []
+    producer: company
+  - id: ingredient_origin
+    desc: "전 성분·첨가물·가공보조제·배양배지 구성 선언과 사양서 — 생산·가공 전 단계 동물 유래 물질 전무"
+    satisfied_by_hint: ["draft_from:formula_*", "draft_from:ingredient_list_*"]
+    producer: manufacturer
+  - id: packaging_layout
+    desc: "로고를 넣은 포장 레이아웃 승인"
+    satisfied_by_hint: ["draft_from:label_kr"]
+    producer: company
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: ["V-Label 로고·라이선스 번호 (추정)"]
+animal_testing: banned
+timeline:
+  lead_time: "2~8주"
+  fee: "연 라이선스비(매출 구간 기준 — 매출이 10% 넘게 변하면 조정) + 1회 검사비, 금액 비공개"
+  validity: "계약 1년, 만료 3개월 전 서면 해지가 없으면 자동 연장"
+evidence:
+  - url: "https://www.v-label.com/our-criteria/"
+    title: "V-Label 비건 인증 기준"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.v-label.com/our-criteria/"
+    title: "V-Label 비건 인증 기준"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.v-label.com/our-criteria/"
+    title: "V-Label 비건 인증 기준"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.v-label.com/faqs/"
+    title: "FAQ - V-Label"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.v-label.com/faqs/"
+    title: "FAQ - V-Label"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.v-label.com/faqs/"
+    title: "FAQ - V-Label"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules:
+  - "동물성 원료 포함(꿀·밀랍·라놀린·쉘락·실크·로열젤리·동물성 색소·진주 등, 가공보조제·배양배지 포함) [kw:ingredient_animal_derived]"
+conditional_rules:
+  - "기원 확인이 필요한 원료 [kw:ingredient_origin_unknown(animal)]"
+  - "비의도적 혼입 0.1%(1g/kg) 초과 — 공정 개선 의무(자동 탈락은 아님) [kw:manual_check(V_LABEL_traces)]"
+  - "화장품 동물실험 기준의 현행 위치 확인 — V02.02의 동물실험 금지·GMO 표시 제품 불가 조항이 V02.03에서 삭제됨 [kw:manual_check(V_LABEL_animal_testing)]"
+notes: "원문 확인(2026-11-07, V-Label Criteria V02.03(2026-09-04)·V02.02(2025-01-20) 비교, FAQ): 동물은 모든 척추·무척추동물(해조류는 제외), 생산·가공 전 단계 동물 유래 원료·가공보조제·배양배지 금지, 비의도적 혼입 0.1% 기준, 라이선서 위탁 정기 감사, 연 라이선스비+1회 검사비(비공개), 2~8주, 계약 1년 자동 연장. V02.02에 있던 동물실험 금지·GMO 표시 제품 불가 조항이 V02.03에서 빠져, 앞선 카드의 동물실험 서류·규칙을 '현행 위치 확인'으로 바꿨다(animal_testing은 보수적으로 banned 유지). 엔진은 id(V_LABEL)로 성분 vegan 속성 검사. 미확인: 화장품 동물실험 기준의 현행 위치, SGS 화장품 브로슈어(403), 요율."

@@ -1,0 +1,90 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: MA_DMP
+name_ko: 모로코 화장품 사전등록(DMP)
+name_en: Morocco DMP/AMMPS Cosmetic Product Pre-registration
+jurisdiction: MA
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 435
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 435번 DMP)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "모로코 수입·판매 화장품 — 제품 사전 등록(Circulaire n°48 DMP/20, 2012, 화장품위원회 분기 심사, 2차). 2026-08 AMMPS 새 지침으로 제조·수입·수출 업소 사전 신고 의무(circulaire 771 인용, 2차) [kw:target_market(MA)]"
+ingredient_rules: EU
+claim_rules:
+  - claim: whitening
+    effect: ok
+    note: "화장품 범위 표방 가능 (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "치료 표현 불가 (추정)"
+local_entity:
+  required: true
+  role: "업소 신고(상업등기·patente·CNSS·인력)를 하고 자격자(personne qualifiée)를 둔 모로코 수입업소 — 외국 기업 직접 신청 불가(2차)"
+documents_required:
+  - id: application
+    desc: "사전 등록 신청서·수수료 영수증·샘플(2차)"
+    satisfied_by_hint: []
+    producer: company
+  - id: CFS_legalized
+    desc: "원산국 감독기관 비자(visa)를 받은 자유판매증명서(CFS)(2차) — 영사확인 여부 미확인. 국내 발급: 대한화장품협회 제조판매증명서(KR_CFS_EXPORT)"
+    satisfied_by_hint: ["cfs_kcia*"]
+    producer: authority
+  - id: GMP_proof
+    desc: "품질보증 시스템 인증서(GMP·ISO 22716)(2차)"
+    satisfied_by_hint: ["manufacturer.certs:ISO 22716", "manufacturer.certs:CGMP"]
+    producer: manufacturer
+  - id: CAPM_receipt
+    desc: "독극물센터(CAPM) 포뮬러 접수증(2차)"
+    satisfied_by_hint: []
+    producer: authority
+  - id: formula_pct
+    desc: "정량·정성 포뮬러(2차)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: technical_dossier
+    desc: "규격·미생물 기준·제조 방법·포장 설명(2차)"
+    satisfied_by_hint: ["draft_from:finished_product_test_report", "draft_from:packaging_spec_*"]
+    producer: manufacturer
+  - id: stability_test
+    desc: "안정성 시험 자료(2차) — 현재 미보유"
+    satisfied_by_hint: []
+    producer: lab
+  - id: label_ma
+    desc: "라벨 — 제조사·원산지·내용량·유효기한·로트·용도·성분(2차), 언어 미확인"
+    satisfied_by_hint: ["draft_from:label_kr"]
+    producer: company
+tests_required: [microbiology, stability]
+labeling:
+  language: "언어 미확인 — 아랍어 또는 프랑스어 (추정)"
+  allergens: null
+  other: ["라벨 항목: 제조사·원산지·내용량·유효기한·로트·용도·성분(2차)", "알레르겐 — EU 기준 준용 가능 (추정)"]
+animal_testing: not_required
+timeline:
+  lead_time: "화장품위원회 분기 회의 심사 — 지연 다수 보고(2차)"
+  fee: "미확인"
+  validity: "5년, 만료 3개월 전 갱신(2차). 임시수입허가(ATI) 6개월(2019, 2차)"
+evidence:
+  - url: "https://aujourdhui.ma/societe/importation-et-fabrication-des-produits-cosmetiques-le-ministere-de-la-sante-instaure-de-nouvelles-mesures-97434"
+    title: "Importation et fabrication des produits cosmétiques : Le ministère de la santé instaure de"
+    level: secondary
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-4"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+  - url: "https://ammps.ma"
+    title: "기관 누리집"
+    level: unverified
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "모로코 성분 규정은 통합표에 없음 — EU 부속서 참조·CMR 금지·EU 금지 추종(2025-09 TPO 금지, 2차)으로 EU 기준 1차 선별 [kw:ingredient_list_unavailable(MA_DMP)]"
+  - "EU 금지성분 포함 — 모로코 규정 대조 필요 [kw:ingredient_banned(EU)]"
+  - "EU 제한성분 한도 초과 [kw:ingredient_restricted_over(EU)]"
+  - "신고된 모로코 수입업소·자격자 미지정 [kw:local_entity_missing(MA)]"
+  - "CFS 미준비 [kw:doc_missing(CFS_legalized)]"
+  - "CAPM 접수증·안정성 자료 없음 [kw:doc_missing(CAPM_receipt)] [kw:doc_missing(stability_test)]"
+notes: "국가 절차는 2차 자료(aujourdhui.ma 2012-08-23, lematin.ma 2026-08-05(차단), bladi.net 2019)로만 확인 — ammps.ma 접속 불가로 원문 미입수. 원문은 중기부 일반목록 435번(문서 §4-4 ◎)뿐. 앞선 카드의 '안전성 평가 자료'는 2차 서류 목록에 없어 빼고, 독극물센터 접수증·안정성 시험을 넣었다. 미확인: AMMPS 2026 가이드·circulaire 771 원문, 수수료, 라벨 언어, CFS 영사확인 여부."

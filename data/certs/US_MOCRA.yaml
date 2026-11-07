@@ -1,0 +1,118 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: US_MOCRA
+name_ko: 미국 FDA 화장품 시설등록·제품리스팅(MoCRA)
+name_en: FDA Cosmetic Product Facility Registration and Product Listing (MoCRA, FD&C Act sec. 607)
+jurisdiction: US
+kind: mandatory_registration
+strategic_kr: true
+general_kr_no: 43
+support_rate: "50~70%, 최대 1억(중기부 전략인증 — 미국 FDA는 화장품 등록 분야 한정. 일반목록 43번 FDA와 같은 제도)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "미국 유통 화장품. 화장품이면서 의약품(OTC 선스크린 등)인 제품은 리스팅 대상 아님(의약품 등록 경로). 소기업(최근 3년 미국 내 화장품 연평균 매출 100만 달러 미만, 물가 보정)은 면제 — 단 눈 점막 접촉·주사·내용·24시간 초과 외관 변화 제품은 면제 불가 [kw:target_market(US)]"
+ingredient_rules: US   # 식약처 화장품 사용제한 원료정보 API(국가별 금지·한도)
+claim_rules:
+  - claim: sunscreen
+    effect: needs_special_registration
+    note: "미국 선스크린은 OTC 의약품(모노그래프) — 의약품 시설등록·리스팅, Drug Facts 표시. MoCRA 리스팅 대상 아님 (추정)"
+  - claim: acne
+    effect: needs_special_registration
+    note: "여드름 치료 표방은 OTC 의약품 경로 (추정)"
+  - claim: anti_dandruff
+    effect: needs_special_registration
+    note: "비듬 방지는 OTC 의약품 (추정)"
+  - claim: whitening
+    effect: drug_risk
+    note: "멜라닌 생성 억제·피부 표백 등 생리 작용 표현은 미승인 의약품 위험(하이드로퀴논 OTC 불가). '톤 브라이트닝(외관)'은 화장품 범위 (추정)"
+  - claim: anti_wrinkle
+    effect: drug_risk
+    note: "'주름 외관 완화'는 화장품, '콜라겐 재생·주름 제거' 등 구조·기능 표현은 의약품 위험 (추정)"
+  - claim: hair_loss
+    effect: drug_risk
+    note: "탈모 방지·발모는 의약품 (추정)"
+  - claim: antibacterial
+    effect: drug_risk
+    note: "살균·항균 표방은 OTC 의약품 위험 (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "질병 치료·예방 표현은 화장품 불가 (추정)"
+  - claim: paraben_free
+    effect: ok
+    note: "연방 규정상 금지 없음. 사실·비기만(FTC) 기준 (추정)"
+  - claim: free_from_21
+    effect: ok
+    note: "연방 규정상 금지 없음. 사실·비기만(FTC) 기준 (추정)"
+  - claim: organic
+    effect: ok
+    note: "USDA Organic 표시는 NOP 인증 필요 → USDA_ORGANIC (추정)"
+local_entity:
+  required: true
+  role: "해외 시설의 미국 대리인(미국 거주 또는 미국 사업장에 물리적으로 상주, 사서함·응답서비스 불가). 별도로 라벨에 이상사례 수신용 미국 주소·미국 전화·전자 연락처(웹사이트 가능) 중 하나"
+documents_required:
+  - id: FEI
+    desc: "시설 FEI 번호(등록 전 선행 발급, 통상 7~10영업일)"
+    satisfied_by_hint: []
+    producer: authority
+  - id: facility_registration
+    desc: "시설등록: 소유자·운영자, 시설명·주소·이메일·전화, 미국 대리인, FEI, 전체 브랜드명, 카테고리·RP. 위탁제조 시설은 제조사 또는 RP 중 한 곳이 1회 등록(ISO 22716 보유해도 면제 없음)"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: product_listing
+    desc: "제품 리스팅: 시설 FEI, RP 이름·연락처, 라벨상 제품명, 카테고리, 향료·향미·색소 포함 전성분(21 CFR 701.3 명칭)"
+    satisfied_by_hint: ["draft_from:ingredient_list_*", "draft_from:formula_*", "draft_from:label_kr"]
+    producer: company
+  - id: safety_substantiation
+    desc: "안전성 입증 기록 보관(동물실험 불필요)"
+    satisfied_by_hint: ["draft_from:finished_product_test_report", "draft_from:skin_irritation_test", "draft_from:msds_*"]
+    producer: company
+  - id: adverse_event_process
+    desc: "중대 이상사례 15영업일 내 FDA 보고 체계·기록"
+    satisfied_by_hint: []
+    producer: company
+  - id: label_us
+    desc: "영문 라벨: 제품 정체(701.11), 순내용량(701.13), 제조·포장·유통자 이름·소재지(701.12), 전성분(701.3), 경고문, 미국 연락처(609(a))"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:leaflet_*"]
+    producer: company
+tests_required: [stability, microbiology, challenge_test]
+labeling:
+  language: "영어(푸에르토리코 등 예외). 외국어 표시가 있으면 필수 정보도 그 언어로 병기(21 CFR 701.2)"
+  allergens: null
+  other: ["알레르겐 — 향료 알레르겐 표시 규칙은 MoCRA 위임 사항이나 미공표 — 현재 'fragrance'로 일괄 표시 가능(701.3)", "2024-12-29부터 이상사례 수신용 미국 주소·미국 전화·전자 연락처 중 하나", "제품 정체 표시(주표시면)", "순내용량(주표시면)", "제조·포장·유통자 이름·소재지(대리 시 'Distributed by' 등 수식어)", "전성분 함량 내림차순(701.3)", "원산지 'Made in Korea'(세관 표시 규정, 추정)"]
+animal_testing: not_required
+timeline:
+  lead_time: "FEI 7~10영업일 + Cosmetics Direct 온라인 제출. 신규 시설은 영업 개시 60일 내 등록, 신규 제품은 출시 후 120일 내 리스팅"
+  fee: "등록·리스팅 수수료 없음"
+  validity: "시설등록 2년마다 갱신(최초 등록일 기준), 변경 시 60일 내 수정. 리스팅은 매년 갱신"
+evidence:
+  - url: "https://www.fda.gov/cosmetics/registration-listing-cosmetic-product-facilities-and-products"
+    title: "registration listing cosmetic product facilities and products"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/규제원문_dl_us/rl.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/규제원문_dl_us/cfr701.xml"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-3"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.fda.gov/cosmetics/cosmetics-laws-regulations/modernization-cosmetics-regulation-act-2022-mocra"
+    title: "미국 MoCRA 안내"
+    level: unverified
+    checked: 2026-11-07
+  - url: "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-G/part-700"
+    title: "part 700"
+    level: unverified
+    checked: 2026-11-07
+blocking_rules:
+  - "21 CFR 700 금지 성분 포함 — 비티오놀, 수은화합물(눈 주변 극미량 예외), 염화비닐·지르코늄(에어로졸), 할로겐화 살리실아닐라이드, 클로로포름, 염화메틸렌, CFC 추진제, 금지 소 유래 물질 (추정) [kw:ingredient_present(Bithionol|*Mercur*|Vinyl Chloride|Chloroform|Methylene Chloride|*Salicylanilide*)]"
+conditional_rules:
+  - "미국 대리인 미지정 [kw:local_entity_missing(US)]"
+  - "라벨에 미국 연락처(주소·전화·전자) 미반영 [kw:doc_missing(label_us)]"
+  - "위탁제조 시설 FEI·시설등록 미확인 [kw:doc_missing(facility_registration)]"
+  - "안전성 입증 기록 미비 [kw:doc_missing(safety_substantiation)]"
+  - "색소 사용 — FDA 승인 색소(21 CFR 73·74·82)·배치 인증 대상 확인 필요 (추정) [kw:ingredient_present(CI *|*Lake*|*FD&C*|*D&C*)]"
+  - "헥사클로로펜 사용 — 제한 조건 확인 (추정) [kw:ingredient_present(Hexachlorophene)]"
+  - "INCI 매칭 실패 성분 존재 [kw:ingredient_match_unresolved]"
+notes: "원문 확인(◎): 등록·리스팅 항목, 소기업 면제와 예외, 위탁제조사 1회 등록, 수수료 없음, 2년·1년 갱신, 120일·60일 기한, 해외 시설 미국 대리인, 라벨의 미국 주소·전화·전자 연락처(웹사이트 가능) 중 하나, 의약품 겸용 제품은 리스팅 제외. FDA는 인증서를 발급하지 않음. GMP·향료 알레르겐·탈크 석면 시험 규칙은 미공표·초안 단계. 금지 성분 목록(21 CFR 700)·색소 규정·드럭 표방 경계는 (추정). 캘리포니아 판매 시 US_PROP65 별도."

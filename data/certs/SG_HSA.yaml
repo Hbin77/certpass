@@ -1,0 +1,105 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: SG_HSA
+name_ko: 싱가포르 화장품 노티피케이션(HSA)
+name_en: Singapore HSA Cosmetic Product Notification
+jurisdiction: SG
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 293
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 293번 HSA — 목록 설명은 의료기기이나 HSA가 화장품도 관할)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "싱가포르 공급 화장품 전부 — HSA PRISM 노티피케이션(심사 없음, 접수증 자동 발급 즉시 판매). 색상·향 변형은 별도, 용량 차이는 같은 제품 [kw:target_market(SG)]"
+ingredient_rules: ASEAN
+claim_rules:
+  - claim: whitening
+    effect: drug_risk
+    note: "미백 제품 자체는 ACD상 화장품 범위, 멜라닌 생성 억제·색소 치료 표현은 불가 — 외관 표현으로 바꿔야 함"
+  - claim: anti_wrinkle
+    effect: drug_risk
+    note: "ACD 표방 지침상 '노화로 인한 생리적 변화를 예방·감소·역전' 표현 불가 — 주름 외관 개선 표현으로 바꿔야 함"
+  - claim: acne
+    effect: drug_risk
+    note: "치료 표현은 의약품(건강제품) (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "질병 치료·예방 표현은 ACD 표방 지침상 화장품에 쓸 수 없음"
+local_entity:
+  required: true
+  role: "ACRA 등록 싱가포르 현지 법인 + CorpPass·CRIS 계정 — 외국 제조사 직접 신고 불가"
+documents_required:
+  - id: notification
+    desc: "HSA PRISM 온라인 노티피케이션(제출 서류 없음, CFS·GMP 불요)"
+    satisfied_by_hint: []
+    producer: company
+  - id: formula_pct
+    desc: "전성분·제한성분 함량 — 온라인 입력과 HSA 요청 대응용"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: safety_technical_info
+    desc: "안전성·기술 자료 — HSA 요청 시 제출(공급 기록 2년 보관). 보유 시험성적서·MSDS로 대응 가능"
+    satisfied_by_hint: ["finished_product_test_report", "test_report_*", "msds_*"]
+    producer: manufacturer
+  - id: label_sg
+    desc: "영문 라벨(다른 언어 병기 가능)"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:leaflet_*"]
+    producer: company
+tests_required: [stability, microbiology, heavy_metals]
+labeling:
+  language: "영어 필수(다른 언어는 영어에 덧붙여 병기 가능)"
+  allergens: null
+  other: ["향료 알레르겐 개별 표시 의무 없음 — HSA 게시 ACD 부속서 III(2026-1판)에 해당 항목 없음", "ACD 라벨 항목 준용 (추정)", "스티커 허용 명문 — 미확인"]
+animal_testing: not_required
+timeline:
+  lead_time: "접수 즉시 자동 발급(HSA는 화장품을 심사하지 않음)"
+  fee: "제품(첫 3개 변형까지 각) S$13, 4번째 변형부터 S$8 — 눈·입술 주변·구강 제품·디아민 염모제는 S$28"
+  validity: "1년, 매년 재노티피케이션"
+evidence:
+  - url: "https://www.hsa.gov.sg/cosmetic-products/cosmetic-product-notification/submit/"
+    title: "Submit notification and re-notification | Health Sciences Authority"
+    level: direct
+    checked: 2026-11-07
+    quote: "Register a local entity with the Accounting and Corporate Regulatory Authority (ACRA)"
+  - url: "https://www.hsa.gov.sg/cosmetic-products/cosmetic-product-notification/submit/"
+    title: "Submit notification and re-notification | Health Sciences Authority"
+    level: direct
+    checked: 2026-11-07
+    quote: "Each notification is valid for one year."
+  - url: "https://www.hsa.gov.sg/cosmetic-products/cosmetic-product-notification/submit/"
+    title: "Submit notification and re-notification | Health Sciences Authority"
+    level: direct
+    checked: 2026-11-07
+    quote: "You must submit safety and technical information when requested by us."
+  - url: "https://www.hsa.gov.sg/cosmetic-products/fees/"
+    title: "Fees and turnaround time | Health Sciences Authority"
+    level: direct
+    checked: 2026-11-07
+    quote: "Single product or each of the first 3 variants of a product"
+  - url: "https://www.hsa.gov.sg/cosmetic-products/overview"
+    title: "Regulatory overview of cosmetic products | Health Sciences Authority"
+    level: direct
+    checked: 2026-11-07
+    quote: "The details must be listed in English."
+  - url: "https://file.go.gov.sg/annexes-of-the-asean-cosmetic-directive.pdf"
+    title: "아세안 화장품 지침 ACD 부속서"
+    level: direct
+    checked: 2026-11-07
+    quote: "Version No.: 2026-1, 22nd June 2026"
+  - url: "https://file.go.gov.sg/appendix-iii-asean-cosmetic-claims-guidelines.pdf"
+    title: "appendix iii asean cosmetic claims guidelines"
+    level: direct
+    checked: 2026-11-07
+    quote: "Prevents, reduces or reverses the physiological changes and degeneration conditions brought about by aging"
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules:
+  - "ASEAN 금지성분 포함(EU 준용 대조) [kw:ingredient_banned(ASEAN)]"
+  - "ASEAN 제한성분 한도 초과 [kw:ingredient_restricted_over(ASEAN)]"
+  - "보존제·UV필터·색소가 허용목록 밖 [kw:ingredient_positive_list_missing(ASEAN)]"
+conditional_rules:
+  - "ASEAN 값은 EU 행 대용 — HSA 게시 ACD 부속서(2026-1판)와 대조 필요 [kw:ingredient_list_unavailable(ASEAN_ACD)]"
+  - "제한성분 함량 미상 [kw:ingredient_restricted_conc_unknown(ASEAN)]"
+  - "배합 함량 미보유 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "싱가포르 현지 법인 미지정 [kw:local_entity_missing(SG)]"
+notes: "원문 확인(2026-11-07, HSA overview·submit·fees 페이지, HSA 게시 ACD 문서): ACRA 현지 법인+CorpPass 필수, 심사 없는 순수 노티피케이션(제출 서류 없음, CFS·GMP 불요, 안전성·기술 자료는 요청 시), S$13/제품(눈·입술·구강·디아민 염모 S$28), 유효 1년·매년 재신고, 영어 라벨. 아세안은 향료 알레르겐 표시 의무가 없어 allergens를 비움. 미확인: 변형 정의 세부, 스티커 허용 명문."

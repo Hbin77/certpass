@@ -1,0 +1,92 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: USDA_ORGANIC
+name_ko: 미국 USDA 유기농(NOP) 인증 — 화장품
+name_en: USDA National Organic Program (NOP) certification for personal care products
+jurisdiction: US
+kind: voluntary_certification
+strategic_kr: false
+general_kr_no: 99
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 99번 USDA Organic — 79번 NOP와 같은 제도)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "농산물 원료로 이뤄진 제품이 미국에서 'organic'·USDA 씰을 쓰려 할 때 — FDA는 화장품 'organic'을 정의·규제하지 않고, NOP(7 CFR 205) 기준을 충족하면 USDA 인정 인증기관이 인증. 원료 생산자·취급자·최종 제조자 모두 인증 필요"
+ingredient_rules: none
+claim_rules:
+  - claim: organic
+    effect: ok
+    note: "4등급 — '100% organic'·'organic'(유기농 95% 이상, 물·소금 제외)은 USDA 씰 + 인증기관 이름·주소 표시, 'made with organic ___'(70% 이상)은 씰 불가·주표시면에 성분 3개까지, 70% 미만은 주표시면에 'organic' 불가(성분표에만)"
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: certifier_contract
+    desc: "USDA 인정 인증기관(약 80곳, 대부분 해외 인증 가능) 신청·계약"
+    satisfied_by_hint: []
+    producer: company
+  - id: organic_system_plan
+    desc: "유기 관리 계획(OSP) — 원료·공정·세척·기록"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: formula_pct
+    desc: "전성분·함량(유기농 비율 계산, 물·소금 제외)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: ingredient_organic_certs
+    desc: "유기 농산 원료별 NOP 인증서 — 나머지 5%도 국가 허용 목록(205.605 비농산·205.606 비유기 농산) 물질만"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: handler_inspection
+    desc: "제조(취급)소 현장 검사 — 매년 검토·검사"
+    satisfied_by_hint: []
+    producer: authority
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: ["'100% organic'·'organic' 등급만 USDA 씰, 인증기관 이름·주소 필수", "'made with organic' 등급은 씰 불가", "70% 미만은 성분표에서만 유기 원료 표시"]
+animal_testing: not_required
+timeline:
+  lead_time: "5단계(유기 관리 도입 → 신청·수수료 → 검토 → 현장 검사 → 결정) — 기간 미공개"
+  fee: "인증기관·규모별로 수백~수천 달러(신청비·연 갱신비·생산·매출 부과금·검사비)"
+  validity: "매년 검토·현장 검사로 유지"
+evidence:
+  - url: "https://www.ams.usda.gov/sites/default/files/media/OrganicCosmeticsFactSheet.pdf"
+    title: "OrganicCosmeticsFactSheet"
+    level: direct
+    checked: 2026-11-07
+    quote: "FDA does not define or regulate the term “organic,” as it applies to cosmetics"
+  - url: "https://www.ams.usda.gov/sites/default/files/media/OrganicCosmeticsFactSheet.pdf"
+    title: "OrganicCosmeticsFactSheet"
+    level: direct
+    checked: 2026-11-07
+    quote: "Remaining product ingredients must consist of nonagricultural substances approved on the National List"
+  - url: "https://www.ams.usda.gov/sites/default/files/media/OrganicCosmeticsFactSheet.pdf"
+    title: "OrganicCosmeticsFactSheet"
+    level: direct
+    checked: 2026-11-07
+    quote: "Products cannot use the term “organic” anywhere on the principal display panel."
+  - url: "https://www.ams.usda.gov/services/organic-certification/becoming-certified"
+    title: "Becoming a Certified Operation | Agricultural Marketing Service"
+    level: direct
+    checked: 2026-11-07
+    quote: "Certification costs may range from a few hundred to several thousand dollars."
+  - url: "https://www.ams.usda.gov/node/40242"
+    title: "U.S. Korea Organic Equivalence Arrangement | Agricultural Marketing Service"
+    level: direct
+    checked: 2026-11-07
+    quote: "Are “processed foods,” as defined by the Korean Food Code"
+  - url: "https://www.govinfo.gov/content/pkg/CFR-2025-title7-vol3/xml/CFR-2025-title7-vol3-sec205-301.xml"
+    title: "CFR 2025 title7 vol3 sec205 301.xml"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules:
+  - "국가 허용 목록(205.605·205.606) 밖 합성 원료 — 1,2-헥산다이올·에스터·PEG·실리콘·합성 왁스·합성 산화방지제 등이 있으면 'organic'(95%) 이상 불가 [kw:ingredient_present(PEG-*|*eth-*|*Dimethicone*|*Siloxane*|Synthetic Wax|1,2-Hexanediol|Ethylhexylglycerin|Cetyl Ethylhexanoate|Pentaerythrityl Tetra-di-t-butyl Hydroxyhydrocinnamate|Phenoxyethanol|*paraben)]"
+conditional_rules:
+  - "함량 미보유 — 유기농 비율 계산 불가 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "유기 원료 인증서 없음 [kw:doc_missing(ingredient_organic_certs)]"
+  - "제조소 유기 관리 계획·검사 미실시 [kw:doc_missing(organic_system_plan)]"
+  - "한·미 유기 동등성(2014-07-01)은 가공식품만 — 화장품은 대상 아님 [kw:manual_check(US_KR_equivalence)]"
+notes: "원문 확인(2026-11-07, USDA 화장품 팩트시트·7 CFR 205.301/303/304/305/605/606(govinfo 2025판)·인증 절차 페이지·한미 동등성 페이지·인증기관 목록): 4등급과 표시 규칙, 국가 허용 목록 밖 물질·GMO·이온화 조사 금지, 화장품 전용 목록 없음, 원료 생산자·취급자·최종 제조자 모두 인증, 비용 수백~수천 달러·연 1회 검사, 한미 동등성은 가공식품만. 판정 메모: 4개 제품 모두 농산 원료 유기 비율·허용 목록에 못 미쳐 사실상 재처방(불가)이 필요하지만, 엔진은 이 카드에 성분 속성 검사가 없어 '조건부'로 표시함 — 반영 보고서 '엔진 변경 필요' 참조. 2차: OCCSP 비용 분담(75%·범주당 최대 $750)은 미국 FSA 경유라 해외 기업 적용이 어려움(추정). 미확인: 한국 사무소가 있는 USDA 인정 인증기관, OCCSP 국외 운영자 배제 명문."

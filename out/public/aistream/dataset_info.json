@@ -1,0 +1,16 @@
+{
+  "source": "certcheck_train_v4.csv",
+  "rows": {
+    "train": 50297,
+    "test": 13303
+  },
+  "n_features": 96,
+  "target": "label",
+  "label_map": {
+    "PASS": "통과 가능",
+    "COND": "조건부",
+    "FAIL": "불가",
+    "NOT_APPLICABLE": "해당 없음"
+  },
+  "split": "합성 제품 단위 sha1 % 5 == 0 → test"
+}

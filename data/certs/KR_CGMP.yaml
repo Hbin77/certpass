@@ -1,0 +1,52 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: KR_CGMP
+name_ko: 우수화장품 제조·품질관리기준(CGMP) 적합업소 — 위탁제조사 확인
+name_en: MFDS Cosmetic Good Manufacturing Practice (CGMP) certified site
+jurisdiction: KR
+kind: voluntary_certification
+strategic_kr: false
+general_kr_no: null
+support_rate: null
+applies_to:
+  product_types: [cosmetic]
+  condition: "제조소 단위 인증. 책임판매업자는 제품별로 위탁제조사의 적합업소 여부를 서류로 확인 — 중국 독성시험 면제(정부 발급 GMP 증명), 아세안·중동 GMP 증명 제출의 근거"
+ingredient_rules: none
+claim_rules: []
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: cgmp_certificate
+    desc: "위탁제조사 CGMP 적합업소 지정서 또는 식약처 발급 GMP 증명"
+    satisfied_by_hint: ["manufacturer.certs:CGMP"]
+    producer: authority
+  - id: iso22716
+    desc: "ISO 22716 인증서(해외 바이어·EU GMP 선언 보조)"
+    satisfied_by_hint: ["manufacturer.certs:ISO 22716"]
+    producer: manufacturer
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: []
+animal_testing: not_required
+timeline:
+  lead_time: "(제조사가 새로 신청할 때) 서류 심사·실태조사 수 개월 (추정)"
+  fee: "확인 필요 (추정)"
+  validity: "3년마다 정기 실태조사"
+evidence:
+  - url: "https://www.mfds.go.kr"
+    title: "기관 누리집"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-6"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-8"
+    level: direct
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "위탁제조사 CGMP 미보유 — 중국 일반화장품 독성시험 면제와 해외 GMP 증명 제출 불가 [kw:manufacturer_cert_missing(CGMP)]"
+  - "ISO 22716 미보유 — EU GMP 준수 선언 근거 약함 [kw:manufacturer_cert_missing(ISO 22716)]"
+notes: "원문 확인(문서 §4-6 ◎): 고시 2024-46호 제30조 — 신청서 + 3회 이상 운영 자체평가표·조직·시설·제조품질관리현황, 3년마다 실태조사, 제조소 단위. 책임판매업자인 회사는 직접 받는 인증이 아니라 위탁제조사 인증을 확인하는 항목이라 kind를 company_certification이 아닌 voluntary_certification으로 두어 제품(제조사)별로 판정되게 함. CGMP 증명서는 제조소 단위라 수출 서류로 쓰려면 제조사 협조가 필요하고, 식약처 등록사항 외국어 증명은 1.4만 원(문서 §4-8 ◎). CGMP 영문 증명 발급 절차·수수료·처리기간은 미확인 (추정)."

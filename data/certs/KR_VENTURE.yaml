@@ -1,0 +1,60 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: KR_VENTURE
+name_ko: 벤처기업 확인
+name_en: Korea Venture Business Confirmation
+jurisdiction: KR
+kind: company_certification
+strategic_kr: false
+general_kr_no: null
+support_rate: null
+applies_to:
+  product_types: [cosmetic]
+  condition: "회사 단위(제품 무관). 정부 지원사업 가점·자격 근거"
+ingredient_rules: none
+claim_rules: []
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: application
+    desc: "벤처기업 확인 신청 — 만료 후에는 신규 절차로 다시 신청"
+    satisfied_by_hint: []
+    producer: company
+  - id: rd_lab
+    desc: "(연구개발유형) 기업부설연구소 인정서 — 소기업은 연구 전담요원 3명(창업 3년 내 2명), 대표는 전담요원 불가"
+    satisfied_by_hint: []
+    producer: authority
+  - id: rd_expense
+    desc: "(연구개발유형) 직전 4분기 연구개발비 5천만 원 이상이면서 매출 대비 5% 이상 증빙"
+    satisfied_by_hint: []
+    producer: company
+  - id: innovation_eval
+    desc: "(혁신성장유형) 평가기관 평가만으로 확인"
+    satisfied_by_hint: []
+    producer: authority
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: []
+animal_testing: not_required
+timeline:
+  lead_time: "신청 후 평가 1~2개월 (추정)"
+  fee: "27.5~60.5만 원"
+  validity: "3년, 만료 후 신규 절차"
+evidence:
+  - url: "https://www.smes.go.kr"
+    title: "기관 누리집"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-6"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-8"
+    level: direct
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "기존 확인 만료 — 신규 절차로 재확인 필요 [kw:company_cert_status(venture,expired_2024)]"
+  - "연구소·R&D 투자 요건 판단 데이터 없음 [kw:data_unknown(company.rd_expense)]"
+notes: "원문 확인(문서 §4-6·§4-8 ◎): 연구개발유형 — 기업부설연구소 + 직전 4분기 R&D 5천만 원·매출 5% 이상, 혁신성장유형 — 평가만, 수수료 27.5~60.5만 원, 자본잠식은 결격 사유 아님, 유효 3년·만료 후 신규 절차, 연구소 요건(소기업 전담요원 3명, 창업 3년 내 2명, 대표 불가). 회사 데이터상 2024 만료 — 엔진은 company_certs.venture 상태로 '재취득 안내'를 띄움. 평가 소요기간은 (추정)."

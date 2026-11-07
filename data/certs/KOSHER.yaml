@@ -1,0 +1,53 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: KOSHER
+name_ko: 코셔 인증(화장품)
+name_en: Kosher Certification for Cosmetics
+jurisdiction: GLOBAL
+kind: marketing_label
+strategic_kr: false
+general_kr_no: 527
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 527번 KOSHER)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "코셔 표방(유대교 소비자·특정 유통) — 마케팅성 (추정)"
+ingredient_rules: none
+claim_rules:
+  - claim: kosher
+    effect: ok
+    note: "인증기관 로고 표시 (추정)"
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: application
+    desc: "코셔 인증기관 신청·연간 계약 (추정)"
+    satisfied_by_hint: []
+    producer: company
+  - id: ingredient_review
+    desc: "원료별 코셔 증명 또는 기원 자료(동물 유래·포도 유래 등) (추정)"
+    satisfied_by_hint: ["draft_from:formula_*", "draft_from:ingredient_list_*"]
+    producer: manufacturer
+  - id: plant_inspection
+    desc: "제조소 점검 (추정)"
+    satisfied_by_hint: []
+    producer: authority
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: ["코셔 인증기관 기호 (추정)"]
+animal_testing: not_required
+timeline:
+  lead_time: "1~3개월 (추정)"
+  fee: "연간 계약비 (추정)"
+  validity: "연 단위 (추정)"
+evidence:
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules:
+  - "비코셔 동물 유래 성분 확인(돼지 유래 등) (추정) [kw:ingredient_present(*Porcine*|*Lard*|*Sus Scrofa*)]"
+conditional_rules:
+  - "동물 유래 가능 성분 기원 미확인 [kw:ingredient_origin_unknown(animal)]"
+  - "원료 코셔 증명 없음 [kw:doc_missing(ingredient_review)]"
+notes: "583종 분류(cos_note): 'KOSHER — 코셔 화장품 가능(마케팅)'. 기준·기관·비용은 전부 (추정). 화장품 코셔는 법정 의무가 아님 (추정)."

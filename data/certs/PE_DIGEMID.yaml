@@ -1,0 +1,97 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: PE_DIGEMID
+name_ko: 페루 화장품 위생신고(DIGEMID NSO)
+name_en: Peru DIGEMID Notificacion Sanitaria Obligatoria (Andean Community Decision 833)
+jurisdiction: PE
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 374
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 374번 Registro sanitario)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "페루 판매 화장품 — 안데스공동체 결정 833의 의무위생신고(NSO). 서류가 갖춰지면 추가 절차 없이 코드 부여(제10조). 신청은 VUCE, droguería 등록 선행(2차) [kw:target_market(PE)]"
+ingredient_rules: EU
+claim_rules:
+  - claim: whitening
+    effect: needs_evidence
+    note: "표방 효과를 뒷받침하는 기술·과학 연구를 NSO에 첨부(제9조 m). 치료 효과는 표방 불가"
+  - claim: anti_wrinkle
+    effect: needs_evidence
+    note: "표방 효과 입증 연구 첨부(제9조 m)"
+  - claim: medical
+    effect: not_allowed
+    note: "화장품은 치료 적응증을 표방할 수 없음(결정 833 제3조)"
+local_entity:
+  required: true
+  role: "페루에 법적 주소를 둔 NSO 보유자(제7조) + 약사 기술책임자(제9조 g) — 외국 제조사 직접 신고 불가. 의약품 유통업(droguería) 등록 선행(2차)"
+documents_required:
+  - id: NSO_form
+    desc: "NSO 공동 양식(DIGEMID 양식 FNSOC-004) — 대표권 증빙, 제조사·보유자 정보, 기술책임자, 수수료(TUPA, 금액 미확인)"
+    satisfied_by_hint: []
+    producer: company
+  - id: formula
+    desc: "정성 처방 + 제한성분·주요 활성성분 정량, INCI 명칭(제9조 i·j)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: specs
+    desc: "완제품 관능·이화학 규격, 미생물 규격(제9조 k·l)"
+    satisfied_by_hint: ["finished_product_test_report", "bulk_test_report"]
+    producer: lab
+  - id: lot_coding
+    desc: "로트 코드 체계 설명(제조사별, 제9조 q)"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: GMP_assurance
+    desc: "안데스 밖 제조품은 보유자가 GMP(BPM) 준수를 보장(제52조) — GMP 인증서 제출은 요구하지 않음"
+    satisfied_by_hint: ["manufacturer.certs:ISO 22716", "manufacturer.certs:CGMP"]
+    producer: manufacturer
+  - id: label_pe
+    desc: "스페인어 라벨 또는 시안 — 수입품 스티커 허용(DIGEMID 양식)"
+    satisfied_by_hint: ["draft_from:label_kr"]
+    producer: company
+tests_required: [microbiology]
+labeling:
+  language: "스페인어(INCI 제외) — NSO 서류도 스페인어 번역(제9조)"
+  allergens: null
+  other: ["향료 알레르겐 표시 — 안데스 결의 2108 원문 미확인", "NSO 번호", "스티커 허용(DIGEMID 양식 FNSOC-004)"]
+animal_testing: not_required
+timeline:
+  lead_time: "서류 완비 시 추가 절차 없이 코드 부여(즉시, 제10조)"
+  fee: "DIGEMID TUPA 수수료 — 금액 미확인"
+  validity: "7년, 같은 코드로 연속 갱신(제18조)"
+evidence:
+  - url: "https://sice.oas.org/trade/junac/decisiones/dec833_s.pdf"
+    title: "dec833 s"
+    level: direct
+    checked: 2026-11-07
+    quote: "quien debe tener domicilio legal en el País Miembro de notificación o reconocimiento"
+  - url: "https://sice.oas.org/trade/junac/decisiones/dec833_s.pdf"
+    title: "dec833 s"
+    level: direct
+    checked: 2026-11-07
+    quote: "sin mayor trámite, le asignará un código de identificación"
+  - url: "https://sice.oas.org/trade/junac/decisiones/dec833_s.pdf"
+    title: "dec833 s"
+    level: direct
+    checked: 2026-11-07
+    quote: "El plazo de vigencia de la NSO será de siete años"
+  - url: "https://sice.oas.org/trade/junac/decisiones/dec833_s.pdf"
+    title: "dec833 s"
+    level: direct
+    checked: 2026-11-07
+    quote: "Los productos cosméticos no podrán declarar indicaciones terapéuticas"
+  - url: "https://www.digemid.minsa.gob.pe/Archivos/PortalWeb/Tramites/Empresa/ProductosSanitarios/FORMATO_FNSOC-004_COSMETICOS.pdf"
+    title: "FORMATO FNSOC 004 COSMETICOS"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "안데스 성분 기준은 FDA·PCPC·EU·Cosmetics Europe 목록 중 가장 덜 제한적인 것(제4~5조) — EU 대용 판정은 실제보다 엄격할 수 있음 [kw:ingredient_list_unavailable(ANDEAN)]"
+  - "EU 금지성분 포함 — 안데스 기준 대조 필요 [kw:ingredient_banned(EU)]"
+  - "EU 제한성분 한도 초과 [kw:ingredient_restricted_over(EU)]"
+  - "페루 NSO 보유자·약사 기술책임자 미지정 [kw:local_entity_missing(PE)]"
+  - "페루 CFS 요구 여부 확인 — 결정 833 최종규정 6으로 회원국이 면제 선택 가능 [kw:manual_check(PE_CFS)]"
+notes: "원문 확인(2026-11-07, 안데스 결정 833 전문·DIGEMID 양식 FNSOC-004): CO_INVIMA와 같은 공동체 규정 — NSO 보유자 현지 주소, 약사 기술책임자, 제9조 서류, 즉시 코드, 유효 7년, GMP 인증서 제출 없음, 치료 표방 불가, 스페인어 라벨·스티커 허용. 2차: VUCE 신청, droguería 등록 선행. 미확인: 페루 CFS 요구 여부, TUPA 수수료, 결의 2108·2310 원문(라벨·알레르겐)."

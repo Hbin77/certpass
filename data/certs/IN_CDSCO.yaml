@@ -1,0 +1,113 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: IN_CDSCO
+name_ko: 인도 수입 화장품 등록(CDSCO)
+name_en: India CDSCO Import Registration of Cosmetics (Cosmetics Rules, 2020)
+jurisdiction: IN
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 305
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 305번 CDSCO, 309번 DCGI도 같은 절차)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "인도로 수입하는 화장품 전부 — 수입 전 등록 필수(Cosmetics Rules 2020 제12조), SUGAM 포털 Form COS-1 → 등록증 COS-2 [kw:target_market(IN)]"
+ingredient_rules: EU
+claim_rules:
+  - claim: whitening
+    effect: ok
+    note: "'Skin lightening products'가 등록 카테고리(제4부표)로 있어 미백 화장품 가능. 거짓·오인 표방 금지(제36조)"
+  - claim: acne
+    effect: drug_risk
+    note: "치료 표현은 의약품 (추정)"
+  - claim: hair_loss
+    effect: drug_risk
+    note: "발모·탈모 치료는 의약품 (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "치료·예방 표현 불가 — 거짓·오인 표방 금지(제36조), 의약품 경계는 (추정)"
+local_entity:
+  required: true
+  role: "인도 수입자·공인 대리인·인도 자회사(제조사 본인 신청도 규정상 가능, 제12조 2항) — 라벨에 등록증 보유자(인도) 이름·주소를 표시해야 해 인도 책임자가 사실상 필요"
+documents_required:
+  - id: application
+    desc: "SUGAM 포털 Form COS-1 등록 신청(카테고리·변형·제조소 단위)"
+    satisfied_by_hint: []
+    producer: company
+  - id: authorization_legalized
+    desc: "제조사의 인도 대리인 위임장 — 인도 1급 치안판사·인도 대사관 인증 또는 아포스티유(제12조 3항)"
+    satisfied_by_hint: []
+    producer: company
+  - id: free_sale_or_mfg_license
+    desc: "원산국 제조업 허가·자유판매증명 등 사본 — 당국·관련 기관·협회 발급 인정(제2부표 Part I 2(b)). 국내 발급: 대한화장품협회 제조판매증명서(KR_CFS_EXPORT)"
+    satisfied_by_hint: ["cfs_kcia*", "manufacturer_registration"]
+    producer: authority
+  - id: formula_pct
+    desc: "전성분 명칭과 함량(%), 완제품 규격·시험방법(제2부표 Part I 3)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: bis_standard
+    desc: "BIS 규격 적합 확인 — 스킨크림 IS 6608, 페이스팩 IS 15153 등 제9부표 품목은 규격 적합 필수(제39조), 제9부표에 없는 클렌징은 원산국 규격"
+    satisfied_by_hint: []
+    producer: lab
+  - id: no_animal_testing_declaration
+    desc: "서약서 — 동물실험 화장품을 수입하지 않음(COS-1 서약, 2014-11-12 이후 동물실험 화장품 수입 금지 제18조 4항)"
+    satisfied_by_hint: []
+    producer: company
+  - id: label_in
+    desc: "라벨 — 'RC No.' 등록증 번호와 수입자(등록증 보유자) 이름·주소, 전성분(1% 초과 내림차순, 60ml·30g 이하 면제), 인도 전용 표기는 보세창고 스티커 허용"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:leaflet_*"]
+    producer: company
+tests_required: [heavy_metals, microbiology, physicochemical]
+labeling:
+  language: "영어(제34조에 일반 언어 지정 조항은 없음 — 염모제 경고문만 영어·현지어 필수, 제37조)"
+  allergens: null
+  other: ["향료 알레르겐 개별 표시 조항 없음(규칙 원문 기준)", "수입품: 'RC No.' + 수입자 이름·주소(제34조 5항), 등록증 보유자 이름·주소(제34조 9항)", "인도 전용 표기는 보세창고에서 스티커 부착 허용", "수입 시점 기준 사용기한이 6개월보다 길어야 함(제18조 2항)", "MRP 등 계량법(Legal Metrology) 표기 (2차)"]
+animal_testing: banned
+timeline:
+  lead_time: "신청 후 6개월 안에 허가 또는 반려(제13조 1항) — 실제 처리기간 미확인"
+  fee: "카테고리당 US$1,000 + 제조소당 US$500 + 변형당 US$50(제3부표) — 우리 4종(메이크업 리무버·기타 세정·스킨 라이트닝·페이스 마스크 등 3~4개 카테고리) 약 US$3,500~4,500"
+  validity: "무기한 — 발급 후 5년 안에 등록증 보유 수수료 납부(제14조)"
+evidence:
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+  - url: "https://cdsco.gov.in"
+    title: "기관 누리집"
+    level: unverified
+    checked: 2026-11-07
+  - url: "https://thehealthmaster.com/wp-content/uploads/2020/12/G.S.R.-No.-763E-dt-15-12-20-Cosmetics-Rules-2020.pdf"
+    title: "G.S.R. No. 763E dt 15 12 20 Cosmetics Rules 2020"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://thehealthmaster.com/wp-content/uploads/2020/12/G.S.R.-No.-763E-dt-15-12-20-Cosmetics-Rules-2020.pdf"
+    title: "G.S.R. No. 763E dt 15 12 20 Cosmetics Rules 2020"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://thehealthmaster.com/wp-content/uploads/2020/12/G.S.R.-No.-763E-dt-15-12-20-Cosmetics-Rules-2020.pdf"
+    title: "G.S.R. No. 763E dt 15 12 20 Cosmetics Rules 2020"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://thehealthmaster.com/wp-content/uploads/2020/12/G.S.R.-No.-763E-dt-15-12-20-Cosmetics-Rules-2020.pdf"
+    title: "G.S.R. No. 763E dt 15 12 20 Cosmetics Rules 2020"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://thehealthmaster.com/wp-content/uploads/2020/12/G.S.R.-No.-763E-dt-15-12-20-Cosmetics-Rules-2020.pdf"
+    title: "G.S.R. No. 763E dt 15 12 20 Cosmetics Rules 2020"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://thehealthmaster.com/wp-content/uploads/2020/12/G.S.R.-No.-763E-dt-15-12-20-Cosmetics-Rules-2020.pdf"
+    title: "G.S.R. No. 763E dt 15 12 20 Cosmetics Rules 2020"
+    level: direct
+    checked: 2026-11-07
+blocking_rules:
+  - "2014-11-12 이후 동물실험한 화장품 — 수입 금지(제18조 4항) [kw:animal_test_data_present]"
+  - "헥사클로로펜 함유 — 수입 금지(제18조 3항) [kw:ingredient_present(Hexachlorophene)]"
+conditional_rules:
+  - "인도 성분 규정(IS 4707 Part 2 Annex A 금지 원료, Part 1 색소)은 통합표에 없음 — EU 기준으로 1차 선별만 [kw:ingredient_list_unavailable(IN_BIS)]"
+  - "EU 금지성분 포함 — IS 4707 대조 필요 [kw:ingredient_banned(EU)]"
+  - "EU 제한성분 한도 초과 또는 함량 미상 [kw:ingredient_restricted_over(EU)]"
+  - "배합 함량 미보유 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "인도 대리인·수입자 미지정 [kw:local_entity_missing(IN)]"
+  - "스킨크림(IS 6608)·페이스팩(IS 15153) 해당 제품의 BIS 규격 시험 미실시 [kw:doc_missing(bis_standard)]"
+  - "비의도적 수은 1ppm 초과(눈 주위 보존제용은 70ppm) [kw:test_result_over(heavy_metals_mercury,1ppm)]"
+  - "위임장 치안판사·대사관 인증 또는 아포스티유 미준비 [kw:doc_missing(authorization_legalized)]"
+notes: "원문 확인(2026-11-07, 관보 G.S.R. 763(E) Cosmetics Rules 2020 PDF 텍스트 대조): 등록 없이 수입 불가(제12조), 신청인(제조사·대리인·수입자·자회사), 위임장 인증·아포스티유, 6개월 내 결정, 무기한(5년 내 보유 수수료), 수수료(US$1,000/카테고리·US$500/제조소·US$50/변형), 동물실험 화장품 수입 금지(2014-11-12), 헥사클로로펜 수입 금지, 사용기한 6개월 초과, 라벨 RC No.·수입자·보세창고 스티커, BIS 규격(IS 6608 스킨크림·IS 15153 페이스팩), 수은 1ppm, 카테고리 'Skin lightening products'. ingredient_rules EU는 대용값 — 그래서 성분 규칙을 conditional에만 둠(단, 현재 엔진은 EU 금지성분이면 '불가'를 냄 — 반영 보고서 '엔진 변경 필요' 참조). 원문 PDF는 관보 원본의 미러본(thehealthmaster.com) — cdsco.gov.in은 자동 접속 차단. 미확인: 계량법 세부, 하이드로퀴논 명시 조문, 실제 처리기간. 2차: chemlinked 요약."

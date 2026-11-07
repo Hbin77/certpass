@@ -1,0 +1,9 @@
+id: CN_NMPA_SPECIAL
+name_ko: 중국 특수화장품 注册(미백 등) [테스트용]
+jurisdiction: CN
+kind: mandatory_registration
+applies_to: {product_types: [cosmetic], condition: "미백·자외선·염모 등 특수 화장품만", claims_any: [whitening, sunscreen, hair_dye]}
+ingredient_rules: CN
+claim_rules:
+  - {claim: whitening, effect: needs_special_registration, note: "祛斑美白 = 특수화장품 注册"}
+local_entity: {required: true, role: "중국 내 책임자"}

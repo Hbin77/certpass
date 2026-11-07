@@ -1,0 +1,121 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: UAE_ECAS_GSO1943
+name_ko: UAE 화장품 적합성 인증(ECAS, GSO 1943)
+name_en: UAE MoIAT Emirates Conformity Assessment Scheme for Cosmetics and Personal Care (GSO 1943)
+jurisdiction: AE
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 428
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 428번 ECAS — 429번 EQM 품질마크는 선택)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "UAE 판매 화장품·퍼스널케어 — MoIAT ECAS 적합성 인증서(CoC) 필요(Cabinet Resolution 18/2014, UAE.S GSO 1943), CoC 없으면 통관 불가(2차). 두바이 판매 시 Montaji 등록 추가(2차) [kw:target_market(AE)]"
+ingredient_rules: EU
+claim_rules:
+  - claim: halal
+    effect: ok
+    note: "할랄 국가 마크(Halal National Mark)는 선택 — 할랄을 표방할 때만 인증(UAE.S 2055-4) → HALAL"
+  - claim: medical
+    effect: not_allowed
+    note: "'treating acne'·'stopping aging' 같은 의학 효능 표현 금지 (추정)"
+local_entity:
+  required: true
+  role: "유효한 UAE 산업·무역 면허를 가진 현지 업체 + 유통 계약(Distributor agreement) — 외국 제조사 직접 신청 불가"
+documents_required:
+  - id: application
+    desc: "MoIAT 웹사이트 등록 후 적합성 인증 신청(RFC), 서류 업로드·수수료 납부"
+    satisfied_by_hint: []
+    producer: company
+  - id: trade_license
+    desc: "유효한 UAE 산업·무역 면허"
+    satisfied_by_hint: ["company.local_entities:AE"]
+    producer: company
+  - id: distributor_agreement
+    desc: "유통 계약서"
+    satisfied_by_hint: []
+    producer: company
+  - id: test_reports_accredited
+    desc: "UAE.S GSO 1943 기준 인정 시험소 성적서 — 국내 성적서 항목을 GSO 1943과 대조해 부족분 시험"
+    satisfied_by_hint: []
+    producer: lab
+  - id: formula_pct
+    desc: "제조사 발행 성분·함량(%) 선언서"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: CFS_manufacturer
+    desc: "수입품: 제조사 레터헤드로 발행한 자유판매증명서(공증 불요)"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: GMP_proof
+    desc: "GMP 준수"
+    satisfied_by_hint: ["manufacturer.certs:ISO 22716", "manufacturer.certs:CGMP"]
+    producer: manufacturer
+  - id: safety_report
+    desc: "Cabinet Resolution 18/2014 부속서 3에 따른 제품 안전성 보고서 — 현재 미보유(CPSR 없음)"
+    satisfied_by_hint: []
+    producer: external_expert
+  - id: eDoC
+    desc: "전자 적합성 선언"
+    satisfied_by_hint: []
+    producer: company
+  - id: label_ae
+    desc: "대표 아트워크·라벨 — 아랍어+영어(2차)"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:leaflet_*"]
+    producer: company
+  - id: municipality_registration
+    desc: "두바이 판매 시 Montaji 제품 등록(약 AED 200/증서·5년, 2차)"
+    satisfied_by_hint: []
+    producer: company
+tests_required: [microbiology, heavy_metals, stability]
+labeling:
+  language: "아랍어+영어, 성분은 INCI(2차)"
+  allergens: "GSO 1943 — EU식 향료 알레르겐 표기(2차)"
+  other: ["돼지 유래 등 이슬람 금지 성분 불가(ECAS 'No Islam-prohibited substances', 2차)", "스티커 허용 여부 — 원문 미확인", "할랄 표시는 인증할 때만(Halal National Mark 선택)"]
+animal_testing: not_required
+timeline:
+  lead_time: "서류 완비 후 1.5영업일, 요건을 6개월 안에 못 채우면 신청 취소"
+  fee: "수입자·수출자 부담 — 공식 요율표 미확인"
+  validity: "ECAS 1년 연 갱신(2차). 증서당 1브랜드·1원산지·1카테고리, 최대 25 SKU"
+evidence:
+  - url: "https://cdn3-verigates.bureauveritas.com/sites/verigates/files/2023-02/AE%20-%20MoIAT%20Service%20Cards%2009022023.pdf"
+    title: "AE   MoIAT Service Cards 09022023"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://cdn3-verigates.bureauveritas.com/sites/verigates/files/2023-02/AE%20-%20MoIAT%20Service%20Cards%2009022023.pdf"
+    title: "AE   MoIAT Service Cards 09022023"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://cdn3-verigates.bureauveritas.com/sites/verigates/files/2023-02/AE%20-%20MoIAT%20Service%20Cards%2009022023.pdf"
+    title: "AE   MoIAT Service Cards 09022023"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://cdn3-verigates.bureauveritas.com/sites/verigates/files/2023-02/AE%20-%20MoIAT%20Service%20Cards%2009022023.pdf"
+    title: "AE   MoIAT Service Cards 09022023"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://cdn3-verigates.bureauveritas.com/sites/verigates/files/2023-02/AE%20-%20MoIAT%20Service%20Cards%2009022023.pdf"
+    title: "AE   MoIAT Service Cards 09022023"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://moiat.gov.ae/en/halal"
+    title: "Halal - MOIAT"
+    level: direct
+    checked: 2026-11-07
+    quote: "While the Halal National Mark is optional"
+  - url: "local:조사자료_20261107/규제원문_dl_sa/notif.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "GSO 1943:2024는 유료 표준이라 통합표에 없음 — EU 기준으로 1차 선별만(GSO 1943은 EU 부속서 준용, 2차) [kw:ingredient_list_unavailable(GSO1943)]"
+  - "EU 금지성분 포함 — GSO 1943 대조 필요 [kw:ingredient_banned(EU)]"
+  - "EU 제한성분 한도 초과 [kw:ingredient_restricted_over(EU)]"
+  - "돼지 유래 성분 — ECAS 이슬람 금지 성분(2차) [kw:ingredient_present(*Porcine*|*Lard*|*Sus Scrofa*)]"
+  - "UAE 면허 업체·유통 계약 미확보 [kw:local_entity_missing(AE)]"
+  - "GSO 1943 인정 시험소 성적서 없음 [kw:doc_missing(test_reports_accredited)]"
+  - "부속서 3 제품 안전성 보고서 없음 [kw:doc_missing(safety_report)]"
+  - "2025-08 WTO 통보된 새 Cabinet Decision 초안(GSO 1943·2528·2636 PIF·ISO 22716 인용) 채택 여부 확인 [kw:manual_check(AE_new_decision)]"
+notes: "원문 확인(2026-11-07, Bureau Veritas 게시 MoIAT ECAS 화장품 서비스카드 2023-02-09, MoIAT 할랄 페이지): 신청 요건 — RFC, UAE 면허, GSO 1943 인정 시험소 성적서, 제조사 성분·함량 선언, 제조사 레터헤드 CFS, 유통 계약, GMP, 라벨, Resolution 18/2014 부속서 3 안전성 보고서, 전자 적합성 선언; 1.5영업일, 6개월 미완료 시 취소, 증서당 1브랜드·1원산지·1카테고리 최대 25 SKU. 할랄 국가 마크는 선택. GSO 1943은 걸프 표준·유료(사우디 원문 ◎). 2차: GSO 1943=EU 부속서 준용, EU식 알레르겐 표기, 아랍어+영어 라벨, 돼지 유래 금지, 1년 갱신, Montaji 5년·약 AED 200. 미확인: 공식 수수료표, Montaji 공식 가이드·스티커, 새 Cabinet Decision 채택, GSO 1943:2024 원문(알레르겐·알부틴·알코올 조항)."

@@ -1,0 +1,77 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: EU_PPWR
+name_ko: EU 포장 및 포장폐기물 규정(PPWR)
+name_en: EU Packaging and Packaging Waste Regulation (Regulation (EU) 2025/40)
+jurisdiction: EU
+kind: packaging
+strategic_kr: true
+general_kr_no: null
+support_rate: "50~70%, 최대 1억(중기부 전략인증 — 유럽 PPWR 포장재)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "EU에 포장된 제품을 출시하는 모든 경우(1차·2차·운송·전자상거래 포장). 일반 적용 2026-08-12, 재활용성·재생원료 등은 2030년 이후 단계 적용 (추정) [kw:target_market(EU)]"
+ingredient_rules: none
+claim_rules: []
+local_entity:
+  required: true
+  role: "회원국별 포장 생산자책임(EPR) 등록 주체. EU 수입자가 생산자이거나, 역외 생산자가 직접 판매하면 회원국별 대리인 지정 (추정)"
+documents_required:
+  - id: packaging_spec
+    desc: "포장 재질·구성·중량 사양(용기·캡·펌프·단상자 등 부품별)"
+    satisfied_by_hint: ["packaging_spec_*"]
+    producer: manufacturer
+  - id: heavy_metals_packaging
+    desc: "포장 중금속(납·카드뮴·수은·6가크롬) 합계 100 mg/kg 이하 시험 또는 공급사 선언 (추정)"
+    satisfied_by_hint: []
+    producer: lab
+  - id: substances_of_concern
+    desc: "포장재 우려물질 최소화 자료(공급사 적합 선언) (추정)"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: tech_doc_DoC
+    desc: "기술문서와 EU 적합성 선언(포장 제조자·생산자 작성) (추정)"
+    satisfied_by_hint: []
+    producer: company
+  - id: recyclability_assessment
+    desc: "재활용 설계 등급 평가 — 2030년부터 재활용 가능 포장만 출시 (추정)"
+    satisfied_by_hint: []
+    producer: external_expert
+  - id: recycled_content
+    desc: "플라스틱 포장 재생원료 함량 증빙 — 2030년부터 최소 비율 (추정)"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: EPR_registration
+    desc: "출시 회원국별 포장 생산자 등록·분담금(예: 독일 LUCID) (추정)"
+    satisfied_by_hint: ["company.local_entities:EU"]
+    producer: company
+tests_required: [packaging_heavy_metals]
+labeling:
+  language: null
+  allergens: null
+  other: ["표시 언어 — 출시 회원국 언어(분리배출 안내) (추정)", "재질 구성 조화 라벨(시행법 채택 후 적용) (추정)", "QR 등 디지털 표시 허용 (추정)", "회원국별 분리배출 표시(예: 프랑스 Triman) — 국가 규정 (추정)"]
+animal_testing: not_required
+timeline:
+  lead_time: "포장 사양·공급사 선언 수집 1~3개월 (추정)"
+  fee: "EU 차원 수수료 없음, 회원국 EPR 분담금 별도 (추정)"
+  validity: "포장 변경 시 기술문서·적합성 선언 갱신 (추정)"
+evidence:
+  - url: "https://eur-lex.europa.eu/eli/reg/2025/40/oj"
+    title: "Regulation - EU - 2025/40 - EN - PPWR - EUR-Lex"
+    level: unverified
+    checked: 2026-11-07
+  - url: "https://www.smes.go.kr/globalcerti/info/ktrInfo.do"
+    title: "중기부 해외규격인증 획득지원사업 2026 공고 (전략인증, 일반 583종 목록)"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules:
+  - "포장 중금속 시험 결과 합계 100 mg/kg 초과 (추정) [kw:test_result_over(packaging_heavy_metals,100mg/kg)]"
+conditional_rules:
+  - "포장 사양서 없음 [kw:doc_missing(packaging_spec)]"
+  - "포장 중금속 시험·공급사 선언 없음 [kw:doc_missing(heavy_metals_packaging)]"
+  - "기술문서·EU 적합성 선언 미작성 [kw:doc_missing(tech_doc_DoC)]"
+  - "EPR 생산자 등록 주체 미정 [kw:local_entity_missing(EU)]"
+  - "2030-01-01 이후 출시분 — 재활용 설계 등급·재생원료 비율 미확인 (추정) [kw:date_on_or_after(2030-01-01)] [kw:doc_missing(recyclability_assessment)]"
+notes: "원문 미확인 카드(전 항목 추정). 전략인증 지정 사실만 원문 확인(◎). 핵심만 정리: 2025-01 관보 게재, 일반 적용 2026-08-12, 포장 중금속 한도, 우려물질 최소화, 기술문서·적합성 선언, 2030년 재활용성·재생원료 의무, 빈 공간 비율 제한(묶음·운송·전자상거래 포장), 조화 라벨, 회원국 EPR 등록. 화장품 용기가 '접촉 민감 포장'에 해당하는지, 부피 과장 포장 금지의 화장품 예외 여부는 원문 확인 필요. 583종의 Green Dot(135번, EPR 분담금)은 이 카드의 EPR 항목에 포함. '친환경 포장' 같은 일반 환경 표방은 EU 지침 2024/825(2026-09-27 적용, 추정)로 제한될 수 있음."

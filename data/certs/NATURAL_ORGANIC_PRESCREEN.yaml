@@ -1,0 +1,55 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+# COSMOS 기준서·승인 원료 DB는 쓰지 않는다(기준서 1.2.2 저작권 문구: 서면 허락 없는 복제·이용 제한, 운영처 검토 2026-11-07).
+id: NATURAL_ORGANIC_PRESCREEN
+name_ko: 천연·유기농 인증 사전 점검(COSMOS·ECOCERT·NATRUE 등 공통 원칙)
+name_en: Natural and organic certification pre-screen (common principles, not an official assessment)
+jurisdiction: GLOBAL
+kind: voluntary_certification
+strategic_kr: false
+general_kr_no: null
+support_rate: null
+applies_to:
+  product_types: [cosmetic]
+  condition: "천연·유기농 인증(COSMOS·ECOCERT·NATRUE·USDA 등)을 검토하는 제품 — 성분의 공개 사실(에톡실화·실리콘·기원)만으로 미리 걸러 보는 점검"
+ingredient_rules: none
+claim_rules:
+  - claim: natural_origin_ingredients
+    effect: needs_evidence
+    note: "천연 유래 표방은 원료사 기원 증명과 천연 유래 함량 계산 자료가 필요"
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: raw_material_origin
+    desc: "원료별 기원(식물·광물·발효·석유화학)과 가공 공정 증명(원료사 성적서)"
+    satisfied_by_hint: []
+    producer: manufacturer
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: []
+animal_testing: banned
+timeline:
+  lead_time: "인증기관 심사(인증기관별 상이)"
+  fee: "인증기관별 상이"
+  validity: "인증기관별(보통 매년 갱신)"
+evidence:
+  - url: "https://www.cosmos-standard.org/en/certification/certification-bodies/"
+    title: "COSMOS 인증기관 목록 (링크 안내만, 기준서 원문·DB 미사용)"
+    level: secondary
+    checked: 2026-11-07
+  - url: "https://natrue.org/our-standard/natrue-approved-certifiers-nacs/"
+    title: "NATRUE 승인 인증기관 목록 (링크 안내만)"
+    level: secondary
+    checked: 2026-11-07
+  - url: "https://www.ecfr.gov/current/title-7/subtitle-B/chapter-I/subchapter-M/part-205"
+    title: "미국 유기농 규정 7 CFR Part 205 (National List 포함)"
+    level: direct
+    checked: 2026-11-07
+blocking_rules:
+  - "에톡실화 원료(PEG·글리세레스 등) 또는 실리콘 원료 포함 — 주요 천연·유기농 기준이 공통으로 허용하지 않는 공정·원료"
+conditional_rules:
+  - "석유화학·합성 기원 원료 — 허용 예외(일부 보존제 등) 해당 여부를 인증기관에 확인"
+  - "기원 혼합·미상 원료 — 원료사 기원 증명 필요"
+notes: "판정은 성분 속성표의 공개 사실(에톡실화 여부, 실리콘 여부, 기원)만 쓴다. 인증기관 기준서 원문·표·승인 원료 DB는 쓰지 않고 게재하지 않는다. 인증기관 정식 심사를 대신하지 않는 예비 점검이다."

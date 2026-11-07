@@ -1,0 +1,17 @@
+# Serving의 입출력과 실행 설정입니다. 작성 규칙은 template-inout.md를 참고하세요.
+# 7팀 CertPass: 학습 템플릿(ml/7팀_certpass_rf)이 등록한 랜덤포레스트 모델 버전 하나를 받아 HTTP Serving을 만듭니다.
+inouts:
+  - ioType: INPUT
+    portName: model
+    kind: MLFLOW_MODEL
+    path: /app/volume/models/model
+    format: mlflow
+    isRequired: true
+    portIdx: 0
+  - ioType: OUTPUT
+    portName: serving
+    kind: SERVING
+    format: http
+    isRequired: true
+    portIdx: 0
+runtime: {}

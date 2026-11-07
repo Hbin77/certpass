@@ -1,0 +1,138 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: KR_RESPONSIBLE_SELLER
+name_ko: 화장품책임판매업 의무·포장 표시·표시광고(국내)
+name_en: Korea Cosmetic Responsible Seller obligations, labeling and advertising (Cosmetics Act)
+jurisdiction: KR
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: null
+support_rate: null
+applies_to:
+  product_types: [cosmetic]
+  condition: "국내 유통·수출용으로 화장품을 판매하는 책임판매업자 — 회사 등록, 제품별 품질·안전관리 기록, 포장 표시, 표시·광고"
+ingredient_rules: KR   # 식약처 화장품 사용제한 원료정보 API(국가별 금지·한도)
+claim_rules:
+  - claim: whitening
+    effect: needs_special_registration
+    note: "기능성 보고·심사 품목만 허용, 비기능성 제품의 미백·브라이트닝 표현 금지 (product.functional_kr에 whitening이 있으면 엔진이 통과 처리) → KR_FUNCTIONAL_REPORT"
+  - claim: anti_wrinkle
+    effect: needs_special_registration
+    note: "기능성 보고·심사 품목만 '주름 개선' 표현 허용 (functional_kr에 anti_wrinkle이 있으면 통과) → KR_FUNCTIONAL_REPORT"
+  - claim: free_from_21
+    effect: not_allowed
+    note: "21종 각각 불검출 시험 필요, 배합금지 원료 포함 시 무첨가 표현 금지, 걱정성분은 비방·오인 소지(추정)"
+  - claim: paraben_free
+    effect: needs_evidence
+    note: "HPLC 불검출 성적서 필요"
+  - claim: silicone_free
+    effect: needs_evidence
+    note: "HPLC 불검출 성적서 필요"
+  - claim: skin_barrier
+    effect: needs_evidence
+    note: "'피부 장벽' 표현은 인체적용시험 필수"
+  - claim: hypoallergenic
+    effect: needs_evidence
+    note: "'저자극'은 인체 첩포 시험 성적서 필요"
+  - claim: skin_irritation_tested
+    effect: ok
+    note: "시험 기관·시험 일자 표기"
+  - claim: all_in_one
+    effect: ok
+    note: "피부·모공 노폐물 제거 범위까지 허용('디톡스' 표현 금지)"
+  - claim: deep_cleansing
+    effect: ok
+    note: "피부·모공 노폐물 제거 범위까지 허용('디톡스' 표현 금지)"
+  - claim: natural_origin_ingredients
+    effect: needs_evidence
+    note: "식약처 천연·유기농 인증 폐지 후에도 표시 시 원료 함량 표시 의무, ISO 16128 지수 표시 시 '천연화장품 아님' 병기"
+  - claim: medical
+    effect: not_allowed
+    note: "의약품 오인·기능성 오인·사실과 다른 표시 금지(법 §13①1·2·4호), 최고·최상 표현·비방 금지(별표 5, 2025-08-01 개정)"
+  - claim: children
+    effect: ok
+    note: "영유아·어린이 사용 표시·광고 시 제품별 안전·품질 입증 자료 작성·보관(현행 법 §4의2, 21302호 시행 후 §4의3)"
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: seller_registration
+    desc: "화장품책임판매업 등록"
+    satisfied_by_hint: ["company.role_kr:화장품책임판매업자"]
+    producer: authority
+  - id: quality_procedure
+    desc: "품질관리 절차서(3년 보관)"
+    satisfied_by_hint: ["quality_procedure*"]
+    producer: company
+  - id: market_release_record
+    desc: "시장출하 기록(3년 보관)"
+    satisfied_by_hint: ["market_release_record*"]
+    producer: company
+  - id: safety_info_record
+    desc: "안전관리정보 기록(3년 보관) — 중대 유해사례 15일 내 보고, 회수 시 5일 내 회수계획서"
+    satisfied_by_hint: ["safety_management_record*"]
+    producer: company
+  - id: product_standard
+    desc: "제품표준서(위탁 제조사에서 수령·보관)"
+    satisfied_by_hint: ["product_standard*"]
+    producer: manufacturer
+  - id: lot_quality_records
+    desc: "로트별 품질관리기록서(위탁 제조사에서 수령·보관)"
+    satisfied_by_hint: ["lot_quality_record*", "finished_product_test_report", "bulk_test_report"]
+    producer: manufacturer
+  - id: production_report
+    desc: "생산실적 보고(매년 2월 말, 대한화장품협회 — 미보고 과태료 50만 원)"
+    satisfied_by_hint: ["production_report*"]
+    producer: company
+  - id: ingredient_list_report
+    desc: "원료목록 보고(최초 유통·판매 전, 변경 시 재보고 — 미보고 과태료 50만 원)"
+    satisfied_by_hint: ["ingredient_list_report*"]
+    producer: company
+  - id: manager_designation_training
+    desc: "책임판매관리자 지정(상시 근로자 10명 이하면 대표 겸임 가능)과 교육 수료(최초 6개월 내·매년 1회 — 미이수 과태료 50만 원)"
+    satisfied_by_hint: ["manager_training*"]
+    producer: company
+  - id: label_kr
+    desc: "1차·2차 포장 표시기재(국문)"
+    satisfied_by_hint: ["label_kr"]
+    producer: company
+tests_required: [microbiology, heavy_metals]
+labeling:
+  language: null
+  allergens: "착향제 알레르기 유발성분 25종: 씻어내는 제품 0.01%·바르는 제품 0.001% 초과 시 표시(고시 2026-56 별표 2)"
+  other: ["한국어 표시(한자·외국어 병기 가능)", "2차 포장 10항목 — 전성분, 사용기한 또는 개봉 후 사용기간(+제조연월일), 기능성 도안 등(법 §10·규칙 §19)", "1차 포장 4항목", "10~50mL는 전성분 생략 가능 — 단 타르색소·기능성 성분·사용한도 원료는 표시하고 전성분 확인 방법 안내", "전성분 5포인트 이상, 함량 많은 순(1% 이하는 순서 무관)"]
+animal_testing: banned
+timeline:
+  lead_time: "등록은 회사 단위(보유). 기록·보고는 상시"
+  fee: null
+  validity: "기록 3년 보관, 생산실적 매년 2월 말 보고, 책임판매관리자 교육 매년 1회"
+evidence:
+  - url: "local:조사자료_20261107/국내제도_원문/law/law.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/국내제도_원문/law/rule.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-8"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.law.go.kr"
+    title: "기관 누리집"
+    level: direct
+    checked: 2026-11-07
+blocking_rules:
+  - "국내 사용금지 원료 포함 (식약처 화장품 규제정보 API, 통합표 미포함) [kw:ingredient_banned(KR)]"
+  - "비의도 유래물질 한도 초과 — 납 20·니켈 10·비소 10·수은 1·안티몬 10·카드뮴 5 ㎍/g, 디옥산 100 ㎍/g, 메탄올 0.2%, 포름알데하이드 2,000 ㎍/g, 프탈레이트 합 100 ㎍/g(고시 2026-19 §6) [kw:test_result_over(kr_unintended_substances,limit)]"
+  - "미생물 한도 초과 — 총호기성생균 1,000개/g, 특정균 검출(고시 2026-19 §6) [kw:test_result_over(kr_microbial,limit)]"
+conditional_rules:
+  - "국내 사용금지·제한 원료 목록은 통합표에 없음 — 식약처 API(15111773·15111772) 대조 필요 [kw:ingredient_list_unavailable(KR_MFDS)]"
+  - "책임판매업 미등록 [kw:company_role_missing(화장품책임판매업자)]"
+  - "품질관리 절차서 미보유(AI 초안 1순위) [kw:doc_missing(quality_procedure)]"
+  - "시장출하 기록 미보유 [kw:doc_missing(market_release_record)]"
+  - "안전관리정보 기록 미보유 [kw:doc_missing(safety_info_record)]"
+  - "제품표준서·로트별 품질관리기록서 미수령 — 위탁 제조사에 요청 [kw:doc_missing(product_standard)]"
+  - "생산실적·원료목록 보고 이력 미확인 — 제조판매증명서(KR_CFS_EXPORT) 발급 전제 [kw:doc_missing(production_report)]"
+  - "책임판매관리자 지정·교육 수료 확인 필요 [kw:doc_missing(manager_designation_training)]"
+  - "바르는 제품(무수 제품 제외)은 pH 3~9, 내용량 97% 이상 확인(고시 2026-19 §6) [kw:application(leave_on)]"
+  - "영유아·어린이 표방 — 제품별 안전·품질 입증 자료 작성·보관 [kw:claim(children)]"
+  - "실증 요구 시 15일 내 근거 제출 — 표방 근거 미보유 [kw:claim(paraben_free|silicone_free|skin_barrier|hypoallergenic|natural_origin_ingredients)]"
+notes: "원문 확인(문서 §4-8 ◎, 화장품법 2026-10-20 시행본·시행규칙·고시): 기록 3년 보관(품질관리 절차서·시장출하·안전관리정보), 위탁 제조 시 제품표준서·로트별 품질관리기록서 수령, 생산실적 매년 2월 말 협회 보고(규칙 §13①)·원료목록 유통 전 보고(규칙 §13②), 책임판매관리자(상시 10명 이하 대표 겸임)·교육(최초 6개월·매년), 중대 유해사례 15일·회수계획 5일, 포장 표시(2차 10항목·1차 4항목·10~50mL 예외·5pt), 알레르기 25종 기준, 표시·광고 금지(법 §13·별표 5), 비의도 유래물질·미생물·pH·내용량 기준(고시 2026-19 §6). 상세페이지 문구 판정(§4-8): '21가지 걱정성분 무첨가' 미충족(추정), '파라벤·실리콘 프리' 조건부(HPLC), '올인원 딥클렌징' 조건부 충족, 비기능성 제품 '브라이트닝' 미충족(추정), '피부 장벽' 인체적용시험, '저자극' 첩포 성적서. needs_evidence 효과는 엔진이 조건부로 처리. 동물실험 금지(법 §15의2)와 '21가지' 성분 목록은 미확인 (추정). 회사 폴더의 출하·안전관리 기록(2022, 문서 §3)을 company.documents에 'market_release_record'·'safety_management_record'로 넣으면 충족 처리됨. 라벨 언어는 label_kr 서류로 판정하도록 language를 비움."

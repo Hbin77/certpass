@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # [Deployment 이름 설정] (변경 금지) : Override될 정보로, Deployment 생성 시 지정한 이름으로 변경합니다.
+  name: serving-template
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      # [Deployment App 이름 설정] (변경 금지)
+      app: serving-template
+  template:
+    metadata:
+      labels:
+        # [Deployment App 이름 설정] (변경 금지)
+        app: serving-template
+    spec:
+      containers:
+        # [Deployment App 이름 설정] (변경 금지)
+        - name: serving-template
+          # [도커 이미지 설정] (변경 금지), Override될 정보로, job 생성 시 지정한 이미지로 변경합니다.
+          image: serving-template
+          command: [ "uv", "run", "--active", "--no-sync", "python", "main.py" ]
+          args: []
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  # [Deployment Service 이름 설정] (변경 금지)
+  name: serving-template
+spec:
+  selector:
+    # [Deployment App 이름 설정] (변경 금지)
+    app: serving-template
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+      name: rest-endpoint
+
+  type: ClusterIP

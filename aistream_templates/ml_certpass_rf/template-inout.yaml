@@ -1,0 +1,34 @@
+# 학습 Step(train.py)의 입출력과 실행 설정입니다. 작성 규칙은 template-inout.md를 참고하세요.
+# 7팀 CertPass: 학습용·평가용 CSV 데이터셋을 받아 랜덤포레스트를 학습하고, 학습한 모델을 MLflow 모델로 내보냅니다.
+inouts:
+  train:
+    - ioType: INPUT
+      portName: train_dataset
+      kind: DATASET
+      path: /app/volume/train
+      format: csv
+      isRequired: true
+      portIdx: 0
+    - ioType: INPUT
+      portName: test_dataset
+      kind: DATASET
+      path: /app/volume/test
+      format: csv
+      isRequired: true
+      portIdx: 1
+    - ioType: INPUT
+      portName: base_model
+      kind: MLFLOW_MODEL
+      path: /app/volume/models/base_model
+      format: mlflow
+      isRequired: true
+      portIdx: 2
+    - ioType: OUTPUT
+      portName: trained_model
+      kind: TRAINED_MODEL
+      format: mlflow
+      isRequired: true
+      portIdx: 0
+runtime:
+  train:
+    usesMlflowRun: true

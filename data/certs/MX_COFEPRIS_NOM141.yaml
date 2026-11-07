@@ -1,0 +1,95 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: MX_COFEPRIS_NOM141
+name_ko: 멕시코 화장품 규정 준수(COFEPRIS·NOM-141 라벨)
+name_en: Mexico COFEPRIS cosmetic compliance and NOM-141-SSA1/SCFI-2012 labeling
+jurisdiction: MX
+kind: mandatory_compliance
+strategic_kr: false
+general_kr_no: 263
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 263번 COFEPRIS — 265번 NOM·266번 SSA 관련)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "멕시코 판매 화장품 — 제품 사전 등록·신고 없음(2차), NOM-141-SSA1/SCFI-2012 라벨과 금지·제한 물질 고시(Acuerdo 2007) 준수, 수입업체는 영업신고(Aviso de Funcionamiento, 2차) [kw:target_market(MX)]"
+ingredient_rules: EU
+claim_rules:
+  - claim: whitening
+    effect: ok
+    note: "NOM-141 부록 A에 'Aclarador o despigmentante de la piel'(피부 미백·탈색제) 일반 명칭이 있어 화장품 표방 가능 — 의약 효능 표현은 불가"
+  - claim: sunscreen
+    effect: ok
+    note: "자외선차단 표시 기준 별도 확인 (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "치료·의약 효능 표현 불가"
+local_entity:
+  required: true
+  role: "라벨에 멕시코 내 제품 책임자(수입자) 이름·주소 필수(NOM-141 5.1.6.1) — 사실상 멕시코 수입자 필요"
+documents_required:
+  - id: importer_notice
+    desc: "수입업체 영업신고(Aviso de Funcionamiento) — 2차, 위생규칙(RCSPS) 원문 미확인"
+    satisfied_by_hint: []
+    producer: company
+  - id: label_nom141
+    desc: "NOM-141 스페인어 라벨 — 제품명, 전성분(INCI 내림차순), 순함량, 멕시코 책임자 이름·주소, 원산국, 로트, 사용기한(24개월 이하 제품), 사용법·주의사항. 수입품은 통관 후 판매 전 부착 가능"
+    satisfied_by_hint: ["draft_from:label_kr"]
+    producer: company
+  - id: formula_pct
+    desc: "Acuerdo 2007 제한 성분 함량 확인용 배합(레티놀 0.15% 등)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: no_animal_testing
+    desc: "동물시험 미실시 확인 — 일반보건법 제271조의2(2021-10-14)로 동물시험한 화장품·원료의 제조·수입·판매 금지(예외 4가지)"
+    satisfied_by_hint: []
+    producer: company
+  - id: technical_dossier
+    desc: "CFS·전성분·라벨 등 보유 권장(당국 점검 대응, 2차)"
+    satisfied_by_hint: ["draft_from:finished_product_test_report"]
+    producer: company
+tests_required: [microbiology, stability]
+labeling:
+  language: "스페인어 필수(성분은 INCI 명칭)"
+  allergens: null
+  other: ["향료 알레르겐 표기 의무 없음 — 향료는 성분 공개 없이 표기 가능(NOM-141)", "사용기한 — 24개월 이하 제품만 표시", "수입품은 통관 후 판매 전 라벨 부착 가능(5.1.6.1)", "감독 COFEPRIS·PROFECO", "순함량 표시(NOM-030) (추정)"]
+animal_testing: banned
+timeline:
+  lead_time: "사전 등록 없음 — 라벨·수입 준비 기간"
+  fee: "제품 등록 수수료 없음(2차)"
+  validity: "해당 없음(지속 준수)"
+evidence:
+  - url: "https://dof.gob.mx/nota_detalle_popup.php?codigo=5269348"
+    title: "DOF - Diario Oficial de la Federación"
+    level: direct
+    checked: 2026-11-07
+    quote: "nombre, denominación o razón social y domicilio (...) del responsable del producto"
+  - url: "https://dof.gob.mx/nota_detalle_popup.php?codigo=5269348"
+    title: "DOF - Diario Oficial de la Federación"
+    level: direct
+    checked: 2026-11-07
+    quote: "podrán incorporarse (...) después del despacho aduanero y antes de su comercialización"
+  - url: "https://dof.gob.mx/nota_detalle_popup.php?codigo=5269348"
+    title: "DOF - Diario Oficial de la Federación"
+    level: direct
+    checked: 2026-11-07
+    quote: "Aclarador o despigmentante de la piel"
+  - url: "https://farmacopea.org.mx/Repositorio/LegislacionFiles/Acuerdosustprohperf21mar07.pdf"
+    title: "LegislacionFiles"
+    level: direct
+    checked: 2026-11-07
+    quote: "Hidroquinona. 1,4-Dihidroxibenceno. 0,02 Sistemas de uñas profesionales"
+  - url: "https://mley.mx/LGS/articulo/271-bis/"
+    title: "Artículo 271 bis de la Ley General de Salud | mLey.mx"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "멕시코 금지·제한 물질 고시(Acuerdo 2007)는 통합표에 없음 — EU 기준으로 1차 선별만 [kw:ingredient_list_unavailable(MX_ACUERDO)]"
+  - "EU 금지성분 포함 — 멕시코 고시 대조 필요 [kw:ingredient_banned(EU)]"
+  - "하이드로퀴논(전문가용 인조손톱 0.02%만)·레티노산·수은 함유 [kw:ingredient_present(Hydroquinone|Tretinoin|Retinoic Acid|Mercury*)]"
+  - "레티놀 0.15% 초과 [kw:ingredient_conc_over(Retinol,0.15)]"
+  - "멕시코 수입자(라벨 책임자) 미지정 [kw:local_entity_missing(MX)]"
+  - "NOM-141 스페인어 라벨 미작성 [kw:doc_missing(label_nom141)]"
+  - "2021-10-14 이후 동물시험 원료·완제품 [kw:animal_test_data_present]"
+notes: "원문 확인(2026-11-07): NOM-141-SSA1/SCFI-2012(DOF) 5.1.6.1 멕시코 책임자 표시·수입품 통관 후 라벨 부착, 부록 A 미백 일반 명칭, Acuerdo(DOF 2007-03-21) 하이드로퀴논 인조손톱 0.02%·레티놀 0.15%, 일반보건법 제271조의2(2021-10-14, 법령 미러) 동물시험 화장품 금지. 알부틴·나이아신아마이드·리모넨은 Acuerdo 미등재, 향료 알레르겐 표기 의무 없음 — allergens는 비워 둠. 2차: 사전 등록 없음·수입업체 영업신고, 기술 서류 보유 권장. 미확인: 위생규칙(RCSPS) 원문, 2007 이후 Acuerdo 개정, 통관 때 NOM-141 적합 증명 요구 여부."

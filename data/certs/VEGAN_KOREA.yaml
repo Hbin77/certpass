@@ -1,0 +1,95 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: VEGAN_KOREA
+name_ko: 한국비건인증원 비건 인증
+name_en: Korea Agency of Vegan Certification and Services — Vegan Certification
+jurisdiction: KR
+kind: marketing_label
+strategic_kr: false
+general_kr_no: null
+support_rate: null
+applies_to:
+  product_types: [cosmetic]
+  condition: "비건 표방·비건 유통 채널. 화장품책임판매업자 신청 가능. 국내 인증이지만 해외 바이어 제출용으로도 쓰임 (추정)"
+ingredient_rules: none
+claim_rules:
+  - claim: vegan
+    effect: ok
+    note: "인증 후 인증 마크·번호 표시"
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: application
+    desc: "인증 신청서"
+    satisfied_by_hint: []
+    producer: company
+  - id: business_registration
+    desc: "사업자등록증"
+    satisfied_by_hint: []
+    producer: company
+  - id: OEM_contract
+    desc: "OEM(위탁제조) 위수탁 계약서"
+    satisfied_by_hint: []
+    producer: company
+  - id: ingredient_origin
+    desc: "전성분과 원료별 비동물성 확인 자료(원료사 비건 확인서) — 금지원료 목록은 비공개(원료명만으로 판정 불가)"
+    satisfied_by_hint: ["draft_from:formula_*", "draft_from:ingredient_list_*"]
+    producer: manufacturer
+  - id: no_animal_testing
+    desc: "완제품·원료 동물실험 미실시 확인 — 타사 위탁 실험 포함"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: cross_contamination
+    desc: "교차오염 방지 기준서 — 논비건 제품과 시설 공유 시 철저한 세척·생산 시간 구분"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: animal_dna_test
+    desc: "동물성 유전자 검사(인증원 심사, 제품 분류에 따라 다름)와 현장 조사"
+    satisfied_by_hint: []
+    producer: authority
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: ["인증 마크·인증번호 (추정)", "변경은 전후 10일 안에 신고, 1차 원료 30% 미만 변경은 변경 신청"]
+animal_testing: banned
+timeline:
+  lead_time: "신규 제품 평균 45~60 업무일(수수료 납부 후, 기업 답변 기간 제외)"
+  fee: "비공개(견적)"
+  validity: "1년 또는 2년 선택, 종료 3개월 전부터 연장 신청"
+evidence:
+  - url: "https://vegan-korea.com/services/vegan-certified"
+    title: "한국비건인증원 비건 인증 안내"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://vegan-korea.com/services/vegan-certified"
+    title: "한국비건인증원 비건 인증 안내"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://vegan-korea.com/services/vegan-certified"
+    title: "한국비건인증원 비건 인증 안내"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://vegan-korea.com/services/vegan-certified"
+    title: "한국비건인증원 비건 인증 안내"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://vegan-korea.com/services/faq"
+    title: "한국비건인증원"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-6"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-4"
+    level: direct
+    checked: 2026-11-07
+blocking_rules:
+  - "동물성 원료 포함(육·란·유·젤라틴·곤충·조개(진주)·꿀·로열젤리·밀랍·라놀린·카민·실크·달팽이 점액 등, 특정 성분 제조에 간접 이용 포함) [kw:ingredient_animal_derived]"
+  - "완제품·원료 동물실험 실시(타사 위탁 포함) [kw:animal_test_data_present]"
+conditional_rules:
+  - "기원 확인이 필요한 원료(글리세린·지방산 에스터·세틸알코올·스쿠알란·콜라겐·케라틴 등) [kw:ingredient_origin_unknown(animal)]"
+  - "OEM 계약서 미보유 [kw:doc_missing(OEM_contract)]"
+  - "교차오염 방지 기준서 없음 [kw:doc_missing(cross_contamination)]"
+  - "중국 특수화장품 注册(독성시험 필수)을 함께 추진 — 동물실험 금지 정책과 충돌 가능 (추정) [kw:card_verdict(CN_NMPA_SPECIAL,조건부|통과 가능)]"
+notes: "원문 확인(2026-11-07, vegan-korea.com 인증 안내·FAQ, 문서 §4-6·§4-4 ◎): 기준 3가지(동물 유래 원료 미사용 — 간접 이용 포함, 동물실험 금지 — 타사 위탁 포함, 생산 전·중·후 교차오염 방지), 심사(서류·교차오염 방지 기준서·동물성 유전자 검사·현장 조사), 서류(신청서·OEM 위수탁 계약서·사업자등록증), 45~60 업무일, 1년 또는 2년, 종료 3개월 전 연장, 비용 비공개. 누적 1,879개사·11,508제품(2026-06). 엔진은 id(VEGAN)로 성분 vegan 속성 검사(진주·꿀·밀랍·라놀린·유당 등 불가, 글리세린 등 기원 확인). 미확인: FAQ 2~3쪽(JS), 공장 방문 여부, 유전자 검사 방법, 원료·해외 법정 동물실험 범위, 해외규격인증 지원 대상 여부(국내 인증이라 아닐 가능성, 추정)."

@@ -1,0 +1,114 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: BR_ANVISA
+name_ko: 브라질 화장품 신고·등록(ANVISA)
+name_en: Brazil ANVISA Cosmetic Notification / Registration (RDC 752/2022, Grau 1 / Grau 2)
+jurisdiction: BR
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 281
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 281번 ANVISA)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "브라질 수입·판매 화장품 — 등록은 제34조 9개군(브론저·손소독젤·헤어 스트레이트·펌·자외선차단제·방충제 등)만, 그 밖의 1·2등급은 사전 통지(comunicação prévia)로 포털 공표 즉시 판매(RDC 752/2022 제32·35조). 클렌징밤·폼·마스크는 1등급, 미백·주름 크림은 2등급 [kw:target_market(BR)]"
+ingredient_rules: BR   # 식약처 화장품 사용제한 원료정보 API(국가별 금지·한도)
+claim_rules:
+  - claim: whitening
+    effect: needs_evidence
+    note: "피부 미백(Clareador da pele)은 2등급 — 통지 때 라벨 효능의 입증 자료 요약 필요(제8조 IX). 등록 대상은 아님. 하이드로퀴논 미백 사용 불가 (추정)"
+  - claim: anti_wrinkle
+    effect: needs_evidence
+    note: "주름 제품(Produto para rugas)은 2등급 — 효능 입증 자료 요약 필요(제8조 IX)"
+  - claim: sunscreen
+    effect: needs_special_registration
+    note: "자외선차단제·어린이 자외선차단제는 등록 대상(제34조 VI·VII)"
+  - claim: children
+    effect: needs_evidence
+    note: "어린이용 세정·보호 제품 등은 2등급 목록 — 안전성·효능 자료 필요"
+  - claim: acne
+    effect: needs_evidence
+    note: "여드름 피부용 세정제·마스크는 1등급 예외라 2등급 — 효능 자료 필요"
+  - claim: medical
+    effect: not_allowed
+    note: "수입품은 치료 효능 표방 불가(제22조)"
+local_entity:
+  required: true
+  role: "ANVISA 영업허가(AFE, 수입 등급)와 지방 위생 허가를 가진 브라질 기업(보유자·수입자, 제38조) — 기술책임자·법정대리인이 책임 서약 서명(제33조)"
+documents_required:
+  - id: notification
+    desc: "ANVISA 포털 전자 통지(1·2등급) 또는 등록 신청(제34조 품목) — 포털 공표 후 판매"
+    satisfied_by_hint: []
+    producer: company
+  - id: formula_original
+    desc: "수입품 원본 처방 사본과 정성·정량 처방(INCI, %w/w), 성분 기능(제8조 II·VI·VII)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: specs
+    desc: "완제품 미생물 규격·관능·이화학 규격(제8조 III·IV)"
+    satisfied_by_hint: ["finished_product_test_report", "bulk_test_report"]
+    producer: lab
+  - id: stability_summary
+    desc: "안정성 자료 요약(제8조 XI) — 현재 미보유"
+    satisfied_by_hint: []
+    producer: lab
+  - id: label_br
+    desc: "포르투갈어 라벨 시안(제8조 VIII) — INCI·제품명·상표 제외, 보유자 AFE 번호"
+    satisfied_by_hint: ["draft_from:label_kr"]
+    producer: company
+tests_required: [microbiology]
+labeling:
+  language: "포르투갈어(브라질) — INCI·제품명·상표는 제외(제20조)"
+  allergens: null
+  other: ["향료 알레르겐 개별 표기 조문 없음(RDC 752)", "수입품은 스티커 등으로 누락 정보 보완 가능 — 디지털 형식 불가, 판매 전 부착(제21조)", "치료 효능 표현 금지(제22조)", "보유자 AFE 번호"]
+animal_testing: banned
+timeline:
+  lead_time: "통지 제품은 포털 공표 즉시 판매(제32조) — 등록 처리기간은 미확인"
+  fee: "등록 R$2,500, 변경·면제 R$1,800, 수입 AFE R$6,000(Lei 9.782 위생감시 수수료) — 통지 수수료 실제 부과 여부 미확인"
+  validity: "등록 10년(마지막 해 상반기 갱신), 통지 제품은 갱신 없이 10년마다 계속 판매 의사 신고(제40~41조)"
+evidence:
+  - url: "https://ses.sp.bvs.br/wp-content/uploads/2022/09/U_RS-MS-ANVISA-RDC-752_190922.pdf"
+    title: "U RS MS ANVISA RDC 752 190922"
+    level: direct
+    checked: 2026-11-07
+    quote: "Os produtos dos seguintes grupos estão sujeitos ao procedimento de registro"
+  - url: "https://ses.sp.bvs.br/wp-content/uploads/2022/09/U_RS-MS-ANVISA-RDC-752_190922.pdf"
+    title: "U RS MS ANVISA RDC 752 190922"
+    level: direct
+    checked: 2026-11-07
+    quote: "são isentos de registro e estão sujeitos ao procedimento de comunicação prévia"
+  - url: "https://ses.sp.bvs.br/wp-content/uploads/2022/09/U_RS-MS-ANVISA-RDC-752_190922.pdf"
+    title: "U RS MS ANVISA RDC 752 190922"
+    level: direct
+    checked: 2026-11-07
+    quote: "devem possuir Autorização de Funcionamento de Empresa na Anvisa para importar"
+  - url: "https://ses.sp.bvs.br/wp-content/uploads/2022/09/U_RS-MS-ANVISA-RDC-752_190922.pdf"
+    title: "U RS MS ANVISA RDC 752 190922"
+    level: direct
+    checked: 2026-11-07
+    quote: "Não é obrigatório apresentar o certificado de venda livre (CVL) consularizado ou apostilado"
+  - url: "https://ses.sp.bvs.br/wp-content/uploads/2022/09/U_RS-MS-ANVISA-RDC-752_190922.pdf"
+    title: "U RS MS ANVISA RDC 752 190922"
+    level: direct
+    checked: 2026-11-07
+    quote: "é aceita adequação por meio de etiqueta"
+  - url: "https://ses.sp.bvs.br/wp-content/uploads/2022/09/U_RS-MS-ANVISA-RDC-752_190922.pdf"
+    title: "U RS MS ANVISA RDC 752 190922"
+    level: direct
+    checked: 2026-11-07
+    quote: "O registro tem validade por 10 (dez) anos"
+  - url: "https://static.poder360.com.br/2025/07/dou-lei-15183-2025.pdf"
+    title: "dou lei 15183 2025"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "ANVISA 성분 목록(RDC 529·530·645·528·600·628, 메르코수르·EU 기반)은 통합표에 없음 — EU 기준으로 1차 선별만 [kw:ingredient_list_unavailable(MERCOSUR)]"
+  - "EU 금지성분 포함 — ANVISA 목록 대조 필요 [kw:ingredient_banned(EU)]"
+  - "EU 제한성분 한도 초과 [kw:ingredient_restricted_over(EU)]"
+  - "배합 함량 미보유 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "브라질 AFE 보유 수입자 미지정 [kw:local_entity_missing(BR)]"
+  - "안정성 자료 요약 없음 [kw:doc_missing(stability_summary)]"
+  - "2025-07-31(Lei 15.183) 이후 동물시험 자료로는 판매 허가 불가 [kw:animal_test_data_present] [kw:date_on_or_after(2025-07-31)]"
+notes: "원문 확인(2026-11-07, RDC 752/2022 관보 전문, Lei 15.183/2025 관보 지면): 등록은 제34조 9개군만, 그 외는 사전 통지 후 즉시 판매, 미백(Clareador da pele)·주름(Produto para rugas)은 2등급(효능 자료 요약), 수입 보유자는 AFE+지방 위생 허가, CFS 영사확인·아포스티유 불요(제10조), 포르투갈어 라벨·수입품 스티커 허용, 등록 10년, 2025-07-31 이후 동물시험 자료 사용 불가. 앞선 카드의 '미백·주름 = 별도 등록'은 '통지 + 효능 자료'로 고쳤다. 수수료는 Lei 9.782 원문(보고서 기준, URL 미기록). 미확인: 통지 수수료 실제 부과, RDC 530 하이드로퀴논 원문, 등록 처리기간."

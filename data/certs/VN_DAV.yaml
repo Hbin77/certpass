@@ -1,0 +1,115 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: VN_DAV
+name_ko: 베트남 화장품 공고(DAV)
+name_en: Vietnam DAV Cosmetic Product Notification (Phieu cong bo my pham)
+jurisdiction: VN
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 391
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 391번 DAV)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "베트남 수입·유통 화장품 전부 — 출시 전 공고(công bố)·수리번호 필요(Circular 06/2011/TT-BYT, 개정 32/2019·29/2020·34/2025), 수입품은 국가단일창구(vnsw.gov.vn) 온라인 [kw:target_market(VN)]"
+ingredient_rules: ASEAN
+claim_rules:
+  - claim: whitening
+    effect: drug_risk
+    note: "미백 제품 자체는 ACD상 화장품 범위, 멜라닌 생성 억제·색소 치료 표현은 불가 — 외관 표현으로 바꿔야 함. 광고의 '치료·완치·완전 제거' 표현 금지(2차)"
+  - claim: anti_wrinkle
+    effect: drug_risk
+    note: "ACD 표방 지침상 '노화로 인한 생리적 변화를 예방·감소·역전' 표현 불가 — 주름 외관 개선 표현으로 바꿔야 함"
+  - claim: acne
+    effect: drug_risk
+    note: "치료 표현은 의약품 (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "질병 치료·예방 표현은 ACD 표방 지침상 화장품에 쓸 수 없음"
+local_entity:
+  required: true
+  role: "화장품 영업 기능을 등록한 베트남 조직(공고서 명의인, 시장 출시 책임) — 외국 제조사 직접 신고 불가(Circular 06 제2조 3항·제3조 3항)"
+documents_required:
+  - id: notification
+    desc: "화장품 공고서(01-MP) — 국가단일창구 온라인"
+    satisfied_by_hint: []
+    producer: company
+  - id: CFS_legalized
+    desc: "자유판매증명서(CFS) — 유효기간 안(만료일이 없으면 발급 24개월 이내), 영사확인 필수(CPTPP 원산만 면제, 한국 비해당). 베트남 아포스티유 협약 2026-09-11 발효로 아포스티유 대체 가능성 있으나 DAV 수용 여부 미확인. 국내 발급: 대한화장품협회 제조판매증명서(KR_CFS_EXPORT)"
+    satisfied_by_hint: ["cfs_kcia*"]
+    producer: authority
+  - id: LoA_legalized
+    desc: "제조사·브랜드 소유자 위임장(공증 + 영사확인)"
+    satisfied_by_hint: []
+    producer: company
+  - id: business_registration_vn
+    desc: "베트남 책임 조직의 사업자등록증(화장품 영업 기능)"
+    satisfied_by_hint: ["company.local_entities:VN"]
+    producer: company
+  - id: formula_pct
+    desc: "전성분·제한성분 함량 (추정)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: PIF
+    desc: "제품정보파일(PIF) 4부 — 안전성 평가 포함, 베트남 책임 조직 보관. 현재 안전성 평가서(CPSR) 미보유(접수는 되나 사후관리 위험)"
+    satisfied_by_hint: []
+    producer: external_expert
+  - id: label_vn
+    desc: "베트남어 보조 라벨(원 라벨의 필수 항목 번역)"
+    satisfied_by_hint: ["draft_from:label_kr"]
+    producer: company
+tests_required: [stability, microbiology, heavy_metals]
+labeling:
+  language: "베트남어 — 사용법·책임 조직·주의사항 등 필수 항목(제19조, 2차), 보조 라벨 허용(제2조 11항)"
+  allergens: null
+  other: ["향료 알레르겐 개별 표시 의무 없음 — ACD 부속서 III에 해당 항목 없음", "ACD 라벨 항목 + 공고 수리번호·수입자 정보 (추정)"]
+animal_testing: not_required
+timeline:
+  lead_time: "법정 3영업일(실무 1~3개월, 2차) + CFS·위임장 영사확인 기간"
+  fee: "공고 심사 건당 500,000 VND(Circular 41/2023 별표 I.4)"
+  validity: "5년(무기한화하는 신규 시행령 초안은 2026-06 기준 미공포)"
+evidence:
+  - url: "https://luatvietnam.vn/y-te/thong-tu-06-2011-tt-byt-bo-y-te-59247-d1.html"
+    title: "thong tu 06 2011 tt byt bo y te 59247 d1"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://luatvietnam.vn/y-te/thong-tu-06-2011-tt-byt-bo-y-te-59247-d1.html"
+    title: "thong tu 06 2011 tt byt bo y te 59247 d1"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://luatvietnam.vn/y-te/thong-tu-06-2011-tt-byt-bo-y-te-59247-d1.html"
+    title: "thong tu 06 2011 tt byt bo y te 59247 d1"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://english.luatvietnam.vn/y-te/circular-32-2019-tt-byt-amend-circular-no-06-2011-tt-byt-on-cosmetic-management-179345-d1.html"
+    title: "Circular 32/2019/TT-BYT amend Circular No. 06/2011/TT-BYT on cosmetic management"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://hethongphapluat.com/circular-no-41-2023-tt-btc-dated-june-12-2023-on-rates-collection-transfer-and-use-of-fees-in-the-fields-of-pharmacy-and-cosmetics.html"
+    title: "Circular no. 41/2023/tt-btc dated june 12, 2023 on rates, collection, transfer and use of "
+    level: direct
+    checked: 2026-11-07
+  - url: "https://file.go.gov.sg/annexes-of-the-asean-cosmetic-directive.pdf"
+    title: "아세안 화장품 지침 ACD 부속서"
+    level: direct
+    checked: 2026-11-07
+    quote: "Version No.: 2026-1, 22nd June 2026"
+  - url: "https://file.go.gov.sg/appendix-iii-asean-cosmetic-claims-guidelines.pdf"
+    title: "appendix iii asean cosmetic claims guidelines"
+    level: direct
+    checked: 2026-11-07
+    quote: "Prevents, reduces or reverses the physiological changes and degeneration conditions brought about by aging"
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules:
+  - "ASEAN 금지성분 포함(EU 준용 대조 — 하이드로퀴논·수은·디옥시아르부틴 등) [kw:ingredient_banned(ASEAN)]"
+  - "ASEAN 제한성분 한도 초과 [kw:ingredient_restricted_over(ASEAN)]"
+  - "보존제·UV필터·색소가 허용목록 밖 [kw:ingredient_positive_list_missing(ASEAN)]"
+conditional_rules:
+  - "ASEAN 값은 EU 행 대용 — ACD 부속서(Circular 06 제14~15조 준용)와 차이 확인 [kw:ingredient_list_unavailable(ASEAN_ACD)]"
+  - "제한성분 함량 미상 [kw:ingredient_restricted_conc_unknown(ASEAN)]"
+  - "배합 함량 미보유 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "베트남 책임 조직 미지정 [kw:local_entity_missing(VN)]"
+  - "CFS(영사확인 또는 수용 확인된 아포스티유) 미준비 [kw:doc_missing(CFS_legalized)]"
+  - "위임장 공증·영사확인 미준비 [kw:doc_missing(LoA_legalized)]"
+  - "PIF 안전성 평가 없음 [kw:doc_missing(PIF)]"
+notes: "원문 확인(2026-11-07, Circular 06/2011·32/2019·41/2023, HSA 게시 ACD 문서): 베트남 화장품 영업 조직만 신고, CFS 영사확인 필수(CPTPP 원산 면제 — 한국 비해당), 위임장 공증·영사확인, 건당 500,000 VND, 유효 5년, 보조 라벨 허용. 아세안은 향료 알레르겐 표시 의무가 없어 allergens를 비움. 2차: 실무 처리 1~3개월, 광고 금지 표현·2026-02-15 광고 사전심의 폐지(chemlinked·tuoitre), 제19조 베트남어 필수 항목(원문 인용 미확보). 미확인: 무기한화 신규 시행령 공포 여부, 아포스티유 CFS의 DAV 수용 여부."

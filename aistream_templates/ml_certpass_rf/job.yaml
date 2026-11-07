@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  # [Job 이름 설정] (변경 금지) : Override될 정보로, job 생성 시 지정한 이름으로 변경합니다.
+  name: ml-template
+spec:
+  template:
+    spec:
+      containers:
+        - name: ml-template
+
+          # [도커 이미지 설정] (변경 금지), Override될 정보로, job 생성 시 지정한 이미지로 변경합니다.
+          image: ml-template
+
+          # entrypoint script — 빌드가 Step별 진입점(train.py, evaluate.py)으로 치환합니다.
+          # args는 AIStream 서버/사용자 실행 파라미터가 덮어쓸 수 있으므로 비워둡니다.
+          command:
+            - "uv"
+            - "run"
+            - "--no-sync"
+            - "python"
+            - "__VARIANT_ENTRYPOINT__"
+          args: []
+
+          # [이미지 pull 정책] job 생성 시, 이미지를 매번 갱신합니다.
+          imagePullPolicy: Always
+
+          # [GPU 사용 설정] GPU가 필요하면 아래 주석을 풀고, spec에 runtimeClassName: nvidia를 추가하세요.
+          # resources:
+          #   limits:
+          #     nvidia.com/gpu: "1"
+
+      # Job이 종료되면 컨테이너를 재시작하지 않습니다.
+      restartPolicy: Never
+
+  # 실패 시 재시도 횟수(0이면 재시도 하지 않음)
+  backoffLimit: 0
+
+  # job 완료 후, 몇 초 후 삭제하는 지 지정.(기본 1시간)
+  ttlSecondsAfterFinished: 3600

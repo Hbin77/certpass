@@ -1,0 +1,85 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: VEGAN_SOCIETY
+name_ko: 영국 비건협회 비건 트레이드마크
+name_en: The Vegan Society — Vegan Trademark
+jurisdiction: GLOBAL
+kind: marketing_label
+strategic_kr: false
+general_kr_no: 572
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 572번 Vegan Trademark)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "비건 표방 제품(특히 영국·유럽 유통) (추정)"
+ingredient_rules: none
+claim_rules:
+  - claim: vegan
+    effect: ok
+    note: "등록 후 Vegan Trademark 로고 사용 — 로고 사용 지침(Trademark Usage Guidelines)에 맞게, 함께 쓰는 문구는 인증 상태와 일치해야 함"
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: application
+    desc: "제품 등록 신청 — 기술 전문가 서류 평가, 요청 시 공급망 추적 자료 제출"
+    satisfied_by_hint: []
+    producer: company
+  - id: ingredient_origin
+    desc: "전성분과 원료별 비동물성 선언(공급사) — 동물 유래 원료·부산물·파생물 전무"
+    satisfied_by_hint: ["draft_from:formula_*", "draft_from:ingredient_list_*"]
+    producer: manufacturer
+  - id: no_animal_testing
+    desc: "제품·원료 동물실험 미실시 선언 — 효능·독성·안전성 시험과 모든 관할의 법정 동물실험 포함, 신청자·대리인·실효적 지배 주체가 한 시험 전부"
+    satisfied_by_hint: []
+    producer: company
+  - id: cross_contamination
+    desc: "교차오염 관리 — 동물 유래 오염 최대 100ppm, 비건 생산 전 설비 세척, 직원 교육"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: packaging_materials
+    desc: "포장재에 동물 유래 소재(밀랍·가죽·젤라틴 접착제) 미사용 확인 — 사용하면 인증 불가"
+    satisfied_by_hint: ["packaging_spec_*"]
+    producer: manufacturer
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: ["Vegan Trademark 로고·등록번호 (추정)", "교차오염 가능성은 'may contain'으로 병기 가능"]
+animal_testing: banned
+timeline:
+  lead_time: "30~60 업무일"
+  fee: "비공개(견적)"
+  validity: "12개월 또는 24개월 고정 기간, 만료 시 갱신"
+evidence:
+  - url: "https://www.vegansociety.com/sites/default/files/uploads/downloads/The_Vegan_Trademark_Standards.pdf"
+    title: "영국 비건협회 비건 인증 기준"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.vegansociety.com/sites/default/files/uploads/downloads/The_Vegan_Trademark_Standards.pdf"
+    title: "영국 비건협회 비건 인증 기준"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.vegansociety.com/sites/default/files/uploads/downloads/The_Vegan_Trademark_Standards.pdf"
+    title: "영국 비건협회 비건 인증 기준"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.vegansociety.com/sites/default/files/uploads/downloads/The_Vegan_Trademark_Standards.pdf"
+    title: "영국 비건협회 비건 인증 기준"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.vegansociety.com/sites/default/files/uploads/downloads/The_Vegan_Trademark_Standards.pdf"
+    title: "영국 비건협회 비건 인증 기준"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-6"
+    level: direct
+    checked: 2026-11-07
+blocking_rules:
+  - "동물성 원료 포함(무척추동물 포함 — 진주·밀랍·카민·실크·라놀린 등) [kw:ingredient_animal_derived]"
+  - "완제품·원료 동물실험 실시(수출국 법정 시험 포함) [kw:animal_test_data_present]"
+  - "중국 특수화장품 注册(독성시험 필수) 대상으로 중국 출시 — 법정 동물실험도 불인정 (중국 특수 포기 시 재판정) [kw:target_market(CN)] [kw:card_verdict(CN_NMPA_SPECIAL,조건부|통과 가능)]"
+conditional_rules:
+  - "기원 확인이 필요한 원료 [kw:ingredient_origin_unknown(animal)]"
+  - "중국 일반화장품 수출 — 독성시험 면제(정부 GMP+안전평가) 경로·시판 후 검사 가능성 확인 (추정) [kw:target_market(CN)]"
+  - "동물실험 미실시 선언 미준비 [kw:doc_missing(no_animal_testing)]"
+  - "포장재 동물 유래 소재 확인 안 됨 [kw:doc_missing(packaging_materials)]"
+notes: "원문 확인(2026-11-07, Vegan Trademark Standards PDF): '동물'은 동물계 전체(척추동물+다세포 무척추동물), 동물 유래 원료·부산물·파생물 전무, 동물실험 금지(효능·독성·안전성·화장품 평가, 모든 관할 법정 시험 포함, 신청자·대리인·실효적 지배 주체 — 공급사의 독립 시험은 명시 범위 밖), 동물 유전자·동물 유래 물질을 쓰지 않은 GMO 허용, 교차오염 100ppm, 밀랍·젤라틴 접착제 포장은 인증 불가, 12/24개월. 30~60 업무일(문서 §4-6 ◎). 엔진은 id(VEGAN)로 성분 vegan 속성 검사. 미확인: 공식 신청 단계·필수 서류 목록, 로고 사용 지침, 비용(견적)."

@@ -1,0 +1,59 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: KR_CFS_EXPORT
+name_ko: 대한화장품협회 제조판매증명서(수출용 자유판매증명서, CFS)
+name_en: KCIA Certificate of Manufacturing and Sale (Certificate of Free Sale for export)
+jurisdiction: KR
+kind: mandatory_compliance
+strategic_kr: false
+general_kr_no: null
+support_rate: null
+applies_to:
+  product_types: [cosmetic]
+  condition: "수출국 등록에 자유판매증명(CFS)·원산국 판매증명을 요구할 때 — 베트남·이집트·모로코·이란·캄보디아·미얀마·아르헨티나 카드의 CFS 서류, 중국 已上市销售证明(정부·협회 발급, 중문 발급 가능), 인도 판매·제조 증명"
+ingredient_rules: KR   # 식약처 화장품 사용제한 원료정보 API(국가별 금지·한도)
+claim_rules: []
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: seller_registration
+    desc: "책임판매업 등록필증 — 제조판매증명서는 책임판매업자만 신청"
+    satisfied_by_hint: ["company.role_kr:화장품책임판매업자"]
+    producer: authority
+  - id: production_report_item
+    desc: "생산실적 보고 품목(협회 시스템에서 보고 품목을 선택해 신청)"
+    satisfied_by_hint: ["production_report*"]
+    producer: company
+  - id: ingredient_list_report_item
+    desc: "원료목록 보고 품목"
+    satisfied_by_hint: ["ingredient_list_report*"]
+    producer: company
+  - id: domestic_sales_proof
+    desc: "국내 판매 증명 서류(거래명세서 등) — 일부 증명서 유형 신청 시"
+    satisfied_by_hint: ["domestic_sales_invoice*"]
+    producer: company
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: []
+animal_testing: not_required
+timeline:
+  lead_time: "2영업일(접수·결제일 기준, 보완 기간 제외)"
+  fee: "회원 2만 원·비회원 4만 원(기본 10품목, 1품목 추가마다 1천 원)"
+  validity: "발급일부터 2년"
+evidence:
+  - url: "local:조사자료_20261107/국내제도_원문/agentD/sites/kcia_rule.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-8"
+    level: direct
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "책임판매업 미등록 — 제조판매증명서 신청 불가 [kw:company_role_missing(화장품책임판매업자)]"
+  - "생산실적 보고 이력 미확인 — 보고 품목만 증명 가능 [kw:doc_missing(production_report_item)]"
+  - "원료목록 보고 이력 미확인 [kw:doc_missing(ingredient_list_report_item)]"
+  - "국내 판매 증빙(거래명세서 등)이 필요한 유형 [kw:doc_missing(domestic_sales_proof)]"
+  - "수출국이 공증·아포스티유·영사 확인을 요구(아포스티유 건당 1천 원) [kw:target_market(VN|EG|MA|IR|KH|MM|AR|IN|CN)]"
+notes: "원문 확인(협회 증명서 발급규정, 2025-01-01 적용 ◎ · 문서 §4-8 ◎): 제조판매증명서는 책임판매업자만 발급, 생산실적·원료목록 기보고 품목에서 선택, 일부 유형은 국내 판매 증명(거래명세서 등) 첨부, 처리 2영업일(보완 기간 제외), 유효 2년, 국문·영문·중문(중문은 중국 수출용), 수수료 회원 2만·비회원 4만 원/10품목(추가 품목당 1천 원). 제조증명서는 제조업자(위탁 제조사)만 신청. 관련 수출 서류(문서 §4-8 ◎): 식약처 등록사항 외국어 증명 1.4만 원, 아포스티유 건당 1천 원, 원산지증명 상공회의소(서명등록 1년 5.5만 원·건당 9천 원), HS 크림·마스크 3304.99·클렌징폼 3401.30, 클렌징밤은 품목분류 사전심사 권장(추정), 수출신고 UNI-PASS(수출 요건확인 불필요). 미확인: 협회 증명서 공증 필요 여부, 수출국별 영사 확인 요구. 국가 카드의 CFS 서류는 힌트 'cfs_kcia*'로 이 증명서를 인식 — 발급받으면 company.documents에 'cfs_kcia_...'로 넣을 것."

@@ -1,0 +1,64 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: ECARF
+name_ko: ECARF 알레르기 친화 인증
+name_en: ECARF Quality Seal (European Centre for Allergy Research Foundation)
+jurisdiction: GLOBAL
+kind: marketing_label
+strategic_kr: false
+general_kr_no: 115
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 115번 ECARF)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "저자극·알레르기 친화 표방 제품 (추정)"
+ingredient_rules: none
+claim_rules:
+  - claim: hypoallergenic
+    effect: ok
+    note: "인증 후 'ECARF 인증' 표시 — 알레르기 친화 표방 근거 (추정)"
+  - claim: skin_irritation_tested
+    effect: ok
+    note: "인증 시험이 표방 근거가 됨 (추정)"
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: application
+    desc: "ECARF 신청 (추정)"
+    satisfied_by_hint: []
+    producer: company
+  - id: formula_full
+    desc: "전 성분·함량, 향료 구성 (추정)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: ingredient_review
+    desc: "알레르기 유발 성분 평가(향료·보존제 알레르겐) (추정)"
+    satisfied_by_hint: ["formula_ingredient_statement_allergen*"]
+    producer: external_expert
+  - id: clinical_tests
+    desc: "알레르기 소인자 대상 첩포·사용 시험 (추정)"
+    satisfied_by_hint: []
+    producer: lab
+tests_required: [patch_test, consumer_use_test]
+labeling:
+  language: null
+  allergens: null
+  other: ["ECARF 인증 마크 (추정)"]
+animal_testing: not_required
+timeline:
+  lead_time: "3~6개월(시험 포함) (추정)"
+  fee: "평가·시험 비용 (추정)"
+  validity: "2년 (추정)"
+evidence:
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+  - url: "https://www.ecarf-siegel.org"
+    title: "ECARF-Siegel – ECARF Institute"
+    level: unverified
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "향료 또는 향료 알레르겐 포함 — 무향·저알레르겐 기준 충족 여부 확인 (추정) [kw:ingredient_present(Parfum|Fragrance|Limonene|Linalool|Citral|Geraniol|Citronellol|Eugenol|Coumarin)]"
+  - "고위험 알레르겐 보존제 포함 (추정) [kw:ingredient_present(*Methylisothiazolinone*|*Methylchloroisothiazolinone*)]"
+  - "알레르겐 평가·임상 시험 없음 [kw:doc_missing(clinical_tests)]"
+notes: "583종 분류(cos_note): 'ECARF 알레르기 친화 인증 — 화장품 적용'만 확인. 성분 기준(향료 허용 범위 등)·시험·유효기간·비용은 전부 (추정)."

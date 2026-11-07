@@ -1,0 +1,119 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: AU_AICIS
+name_ko: 호주 산업화학물질 도입제도(AICIS) — 화장품 수입자 등록
+name_en: Australian Industrial Chemicals Introduction Scheme (AICIS) for cosmetic importers
+jurisdiction: AU
+kind: chemical_registration
+strategic_kr: false
+general_kr_no: null
+support_rate: "583종 목록에 없음 — 비공고 규격인증으로 신청 시 운영위원회 심의(지원 여부 미정)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "호주로 화장품을 들여오는 사업자(물량 하한 없음) — 제품 사전 등록·승인은 없고 도입자(introducer)가 사업자 등록 후 성분별 범주를 스스로 판정(Industrial Chemicals Act 2019). 완제품 라벨·안전은 ACCC, 치료 표방·치료 성분은 TGA [kw:target_market(AU)]"
+ingredient_rules: none
+claim_rules:
+  - claim: whitening
+    effect: drug_risk
+    note: "하이드로퀴논처럼 멜라닌 생성을 억제하는 미백제는 치료제(TGA). 'Reduces skin pigmentation and uneven skin tone'은 치료 표방, 'Helps your skin look even and smooth'는 화장품 표방 — 외관 표현으로 바꿔야 함"
+  - claim: anti_wrinkle
+    effect: drug_risk
+    note: "'콜라겐 생성을 촉진해 주름을 안에서부터 개선'은 치료 표방, 'smooth the appearance of fine lines'는 화장품 표방(TGA 2024 가이드)"
+  - claim: sunscreen
+    effect: needs_special_registration
+    note: "자외선차단이 주목적이면 TGA 치료제품(583종 413번 비고). 보조 기능 자외선차단 화장품은 화장품 (추정)"
+  - claim: acne
+    effect: drug_risk
+    note: "치료 표방은 TGA 영역 (추정)"
+  - claim: hair_loss
+    effect: drug_risk
+    note: "치료 표방은 TGA 영역 (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "생리 기능 변화·질병 치료 표방은 화장품 불가 — 치료제(TGA ARTG) 경로"
+local_entity:
+  required: true
+  role: "AICIS에 사업자 등록한 도입자 — 호주 대리점·유통사가 수입하면 그들이 도입자. 외국 기업이 직접 판매하면 ASIC 외국회사 등록번호(ARBN)로 직접 등록 가능, ARBN이 없으면 호주 대리인 필수"
+documents_required:
+  - id: business_registration
+    desc: "AICIS 사업자 등록(AICIS Business Services, 수입 전, 물량 하한 없음)"
+    satisfied_by_hint: ["company.local_entities:AU"]
+    producer: company
+  - id: categorisation
+    desc: "성분별 도입 범주 판정(인벤토리 등재·조건 충족이면 listed — 신고 불필요) 근거 기록 5년 보관. 미등재 성분은 exempted·reported·assessed 판정 필요"
+    satisfied_by_hint: []
+    producer: company
+  - id: annual_declaration
+    desc: "등록연도 말 연례 신고 — 일부 exempted 도입은 11월 30일까지 사후 신고"
+    satisfied_by_hint: []
+    producer: company
+  - id: formula_cas
+    desc: "성분 CAS·함량 — 인벤토리 대조·범주 판정용 (추정)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: label_au
+    desc: "영문 라벨 — 전성분(영문명 또는 INCI) 내림차순, 향료는 'fragrance'·'parfum' 표기 가능(ACCC 화장품 성분 표시 표준)"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:leaflet_*"]
+    producer: company
+tests_required: []
+labeling:
+  language: "영어(영문명 또는 INCI, 다른 언어 병기 가능 — ACCC 표준 제8조)"
+  allergens: null
+  other: ["향료 알레르겐 개별 표시 의무 없음 — ACCC 표준은 향료를 'fragrance'·'parfum'으로 표기 허용(제7조 8항)", "전성분 내림차순(1% 미만·색소는 순서 무관), 용기가 작으면 예외(제7조)", "AICIS는 라벨 요건을 정하지 않음 — 라벨·제품 안전은 ACCC 소관", "원산국 표시 (추정)"]
+animal_testing: not_required
+timeline:
+  lead_time: "온라인 사업자 등록 후 도입 — 등록연도 9/1~8/31"
+  fee: "2026-27 등록: 수수료 A$85 + 전년 도입가치 구간별 부담금(L1 A$5만 미만 0, L2 10, L3 20, L4 35, L5 210, L6 375, L7 2,450, L8 A$1,500만 이상 3,500) — 2027-28부터 한시 할인 종료로 부담금 인상"
+  validity: "등록연도 단위, 매년 9월 1일까지 갱신·납부"
+evidence:
+  - url: "https://www.industrialchemicals.gov.au/business/foreign-companies-and-chemical-data-providers"
+    title: "foreign companies and chemical data providers"
+    level: direct
+    checked: 2026-11-07
+    quote: "There is no low volume limit or threshold."
+  - url: "https://www.industrialchemicals.gov.au/business/foreign-companies-and-chemical-data-providers"
+    title: "foreign companies and chemical data providers"
+    level: direct
+    checked: 2026-11-07
+    quote: "If you’re unable to obtain an ARBN, you will need to use an Australian agent"
+  - url: "https://www.industrialchemicals.gov.au/business/registration-hub/how-much-my-registration-cost"
+    title: "how much my registration cost"
+    level: direct
+    checked: 2026-11-07
+    quote: "Level 1 | $0 to $49,999 | 85 | Nil | 85"
+  - url: "https://www.industrialchemicals.gov.au/cosmetics-and-soap/personal-care-skincare-make-and-other-cosmetic-products"
+    title: "personal care skincare make and other cosmetic products"
+    level: direct
+    checked: 2026-11-07
+    quote: "we don't set or enforce labelling requirements for consumer and cosmetics in Australia"
+  - url: "https://www.industrialchemicals.gov.au/business/use-animal-test-data"
+    title: "use animal test data"
+    level: direct
+    checked: 2026-11-07
+    quote: "any live vertebrate animal (other than a human being) on or after 1 July 2020"
+  - url: "https://www.industrialchemicals.gov.au/business/reporting-and-record-keeping-obligations"
+    title: "reporting and record keeping obligations"
+    level: direct
+    checked: 2026-11-07
+    quote: "you need to submit an online 'annual declaration'"
+  - url: "https://www.legislation.gov.au/F2020L01469/asmade/2020-11-24/text/original/pdf"
+    title: "호주 연방 법령 F2020L01469 원문(PDF)"
+    level: direct
+    checked: 2026-11-07
+    quote: "the word “fragrance”, “fragrances”, “parfum” or “parfums”"
+  - url: "https://www.tga.gov.au/sites/default/files/2024-06/cosmetics-therapeutic-goods-guidance-for-advertisers-suppliers.pdf"
+    title: "cosmetics therapeutic goods guidance for advertisers suppliers"
+    level: direct
+    checked: 2026-11-07
+    quote: "known to inhibit the physiological process of melanin production, are regulated as therapeutic goods"
+  - url: "https://www.legislation.gov.au/C2019A00012/asmade/2019-03-12/text/original/pdf"
+    title: "호주 연방 법령 C2019A00012 원문(PDF)"
+    level: direct
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "AICIS 인벤토리는 통합표에 없음 — 성분별 도입 범주(listed·exempted·reported·assessed) 확인 필요 [kw:ingredient_list_unavailable(AICIS_INVENTORY)]"
+  - "호주 도입자(수입자 또는 ARBN 보유 자사) AICIS 등록 미확인 [kw:local_entity_missing(AU)]"
+  - "CAS 없는 성분(식물추출물 등) — 인벤토리 대조 어려움 [kw:ingredient_match_unresolved]"
+  - "독극물 기준(Poisons Standard) Sch.2·3·4·8 성분이면 치료제 — 확인 필요 [kw:ingredient_list_unavailable(AU_SUSMP)]"
+  - "2020-07-01 이후 생성된 동물시험 자료로 화장품 전용 성분 범주를 판정하면 안 됨 [kw:animal_test_data_present]"
+notes: "원문 확인(2026-11-07, AICIS 페이지 6개·Industrial Chemicals Act 2019·ACCC Consumer Goods (Cosmetics) Information Standard 2020·TGA 2024 가이드): 제품 등록 없음, 도입자 사업자 등록(물량 하한 없음, 수출자는 등록 불요 — 호주 수입자가 도입자, 직접 판매는 ARBN), 2026-27 A$85+부담금, 연례 신고, 기록 5년, AICIS는 라벨 요건을 정하지 않음(ACCC 소관), ACCC 표준은 향료를 'fragrance'로 묶어 표기 허용(알레르겐 표시 의무 없음), 멜라닌 억제 미백제·생리 변화 표방은 TGA 치료제. 동물시험: 2020-07-01 이후 자료를 성분 범주 판정에 쓰지 못하는 것이지 판매·수입 금지가 아니라 animal_testing을 not_required로 고침. 미확인: 우리 제품 전 성분의 인벤토리 등재 여부(CAS 조회 필요), 알부틴·나이아신아마이드의 Poisons Standard 스케줄(추정: 미스케줄)."

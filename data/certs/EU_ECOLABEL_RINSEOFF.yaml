@@ -1,0 +1,80 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: EU_ECOLABEL_RINSEOFF
+name_ko: EU 에코라벨(화장품 — 씻어내는·바르는 제품)
+name_en: EU Ecolabel — Cosmetic Products (Decision (EU) 2021/1870, rinse-off and leave-on)
+jurisdiction: EU
+kind: voluntary_certification
+strategic_kr: false
+general_kr_no: 118
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 118번 Eco-Labeling)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "화장품 전체 — 결정 (EU) 2021/1870 제1조 'shall include rinse-off and leave-on products' (이전 결정 2014/893은 씻어내는 제품만)"
+excluded_basis: "EU 에코라벨 결정 (EU) 2021/1870 부속서 I 기준 4(b) — 농도와 상관없이 처방·혼합물·불순물로도 불가"
+excluded_ingredients: [BHT, BHA, Cocamide DEA, Deltamethrin, Pentetic Acid, Pentasodium Pentetate, EDTA, Disodium EDTA, Tetrasodium EDTA, Trisodium EDTA, Dipotassium EDTA, Calcium Disodium EDTA, "Nonoxynol-*", "Octoxynol-*", Resorcinol, Sodium Hypochlorite, Sodium Chlorite, Chloramine T, Sodium Phosphate, Disodium Phosphate, Trisodium Phosphate, Benzyl Salicylate, Butylphenyl Methylpropional, Tetramethyl Acetyloctahydronaphthalenes, Daidzein, Genistein, Benzalkonium Chloride, DMDM Hydantoin, Imidazolidinyl Urea, Diazolidinyl Urea, Quaternium-15, Sodium Hydroxymethylglycinate, "2-Bromo-2-Nitropropane-1,3-Diol", Methylisothiazolinone, Methylchloroisothiazolinone, Benzisothiazolinone, Kojic Acid, "*paraben", Triclocarban, Triclosan, Benzophenone, "Benzophenone-1", "Benzophenone-2", "Benzophenone-3", "Benzophenone-4", "Benzophenone-5", Ethylhexyl Methoxycinnamate, Homosalate, Octocrylene, Triphenyl Phosphate, "*phthalate", "Perfluoro*", Polytetrafluoroethylene, Musk Ketone, Musk Xylene]
+excluded_check:
+  - {pattern: "glycine max*", message: "콩 원료 — 배제 이소플라본(다이드제인·제니스테인) 포함 여부 확인(기준 4(b) xix)"}
+  - {pattern: "*nano*", message: "나노물질 — 부속서 III·IV·VI 나노 조건 안에서만 허용(기준 4(b) ix)"}
+  - {pattern: "synthetic wax*", message: "합성 왁스 — 미세플라스틱(불용성 합성 고분자 입자) 해당 여부 확인(기준 4(b) vii)"}
+  - {pattern: "*polyethylene*", message: "폴리에틸렌 — 미세플라스틱 해당 여부 확인(기준 4(b) vii)"}
+ingredient_rules: none
+claim_rules: []
+local_entity:
+  required: false
+  role: "EU 회원국 관할기관(Competent Body)에 신청 — 역외 제조사도 신청 가능 (추정)"
+documents_required:
+  - id: application
+    desc: "관할기관 신청서·신청비 (추정)"
+    satisfied_by_hint: []
+    producer: company
+  - id: formula_full
+    desc: "전 성분·함량(미량 성분 포함) (추정)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: ingredient_declarations
+    desc: "원료별 공급사 선언(생분해성·수생독성·배제 물질) (추정)"
+    satisfied_by_hint: ["msds_*"]
+    producer: manufacturer
+  - id: CDV_calc
+    desc: "희석 임계부피(CDV)·생분해성 계산 (추정)"
+    satisfied_by_hint: []
+    producer: external_expert
+  - id: packaging_data
+    desc: "포장 영향 비율·재활용 설계 자료 (추정)"
+    satisfied_by_hint: ["packaging_spec_*"]
+    producer: manufacturer
+  - id: fitness_for_use
+    desc: "사용 적합성(성능) 시험 (추정)"
+    satisfied_by_hint: []
+    producer: lab
+tests_required: [biodegradability, aquatic_toxicity, consumer_use_test]
+labeling:
+  language: null
+  allergens: null
+  other: ["표시 언어 — 출시국 언어 (추정)", "EU 에코라벨 로고·등록번호 (추정)"]
+animal_testing: banned
+timeline:
+  lead_time: "2~6개월 (추정)"
+  fee: "신청비 + 연회비(매출 기준) (추정)"
+  validity: "기준 유효기간까지, 기준 개정 시 재인증 (추정)"
+evidence:
+  - url: "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32021D1870"
+    level: direct
+    checked: 2026-11-07
+    quote: "The product group 'Cosmetic products' shall include rinse-off and leave-on products"
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+  - url: "https://environment.ec.europa.eu/topics/circular-economy/eu-ecolabel_en"
+    title: "eu ecolabel en"
+    level: unverified
+    checked: 2026-11-07
+blocking_rules:
+  - "EU 화장품 규정 판정이 불가 [kw:card_verdict(EU_CPNP,불가)]"
+conditional_rules:
+  - "에코라벨 배제·제한 물질 기준은 통합표에 없음 [kw:ingredient_list_unavailable(EU_ECOLABEL)]"
+  - "배제 가능성이 높은 성분(트리클로산·폴리에틸렌 등 미세플라스틱·이소티아졸리논) (추정) [kw:ingredient_present(Triclosan|Triclocarban|Polyethylene|Nylon-*|*Methylisothiazolinone*)]"
+  - "전 성분 함량 미보유 — CDV 계산 불가 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "원료 공급사 생분해성·수생독성 선언 없음 [kw:doc_missing(ingredient_declarations)]"
+  - "EU 화장품 규정 판정이 조건부 [kw:card_verdict(EU_CPNP,조건부)]"
+notes: "583종 분류(cos_note): 'EU Ecolabel — 씻어내는 화장품(rinse-off) 기준 존재 → 클렌징밤·폼 해당'. 기준 결정 번호(2021/1870로 추정)·적용 범위·배제 물질·수수료·유효기간은 전부 (추정). 신청은 출시 회원국 관할기관 (추정). 583종 138번 Nordic Swan도 화장품 기준 보유 — 카드 미작성."

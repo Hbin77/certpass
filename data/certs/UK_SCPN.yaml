@@ -1,0 +1,106 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: UK_SCPN
+name_ko: 영국 화장품 신고(SCPN)
+name_en: UK Submit Cosmetic Product Notification (SCPN)
+jurisdiction: UK
+kind: mandatory_registration
+strategic_kr: true
+general_kr_no: null
+support_rate: "50~70%, 최대 1억(중기부 전략인증 — 영국 SCPN)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "그레이트브리튼(잉글랜드·스코틀랜드·웨일스) 출시 화장품. 북아일랜드는 EU 절차(CPNP) [kw:target_market(UK)]"
+ingredient_rules: EU
+claim_rules:
+  - claim: whitening
+    effect: ok
+    note: "EU와 같은 틀(영국판 1223/2009). 의약적 표현 불가 (추정)"
+  - claim: anti_wrinkle
+    effect: ok
+    note: "외관 효과 표현 가능, 근거 PIF 보관 (추정)"
+  - claim: sunscreen
+    effect: ok
+    note: "화장품. UV필터는 GB 부속서 VI (추정)"
+  - claim: acne
+    effect: drug_risk
+    note: "치료 표현은 의약품(MHRA) (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "질병 치료·예방 표현 불가 (추정)"
+  - claim: paraben_free
+    effect: not_allowed
+    note: "EU 공통기준을 영국도 유지 (추정)"
+  - claim: free_from_21
+    effect: not_allowed
+    note: "EU 공통기준을 영국도 유지 (추정)"
+local_entity:
+  required: true
+  role: "영국 소재 책임자(Responsible Person). GB 출시 전 SCPN 신고, PIF 보관"
+documents_required:
+  - id: RP_mandate
+    desc: "UK RP 지정 위임·수락(영국 소재 법인·개인)"
+    satisfied_by_hint: ["company.local_entities:UK"]
+    producer: company
+  - id: PIF
+    desc: "제품정보파일(영국 RP 주소에 보관, SCPN에 보관 장소 입력)"
+    satisfied_by_hint: []
+    producer: company
+  - id: CPSR_signed
+    desc: "안전성 보고서(영국판 부속서 I), 자격 있는 평가자 서명"
+    satisfied_by_hint: ["draft_from:formula_*", "draft_from:finished_product_test_report"]
+    producer: external_expert
+  - id: formula_conc
+    desc: "물질 정보·성분 요약(농도 또는 프레임 포뮬레이션)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: allergen_info
+    desc: "향료 알레르기 성분 구성"
+    satisfied_by_hint: ["formula_ingredient_statement_allergen*"]
+    producer: manufacturer
+  - id: test_reports
+    desc: "안정성·미생물·챌린지 시험 결과"
+    satisfied_by_hint: ["stability_test*", "challenge_test*", "draft_from:finished_product_test_report", "draft_from:bulk_test_report", "draft_from:test_report_*"]
+    producer: lab
+  - id: label_uk
+    desc: "영문 라벨 이미지·포장 사진(SCPN 입력 항목)"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:leaflet_*"]
+    producer: company
+tests_required: [stability, microbiology, challenge_test, packaging_compatibility, heavy_metals]
+labeling:
+  language: "영어 (추정)"
+  allergens: "향료 알레르기 성분 바르는 제품 0.001%·씻어내는 제품 0.01% 초과 시 표시. EU 2023/1545 확대 목록의 영국 도입 여부는 미확인 — 현재 26종 기준 (추정)"
+  other: ["영국 RP 이름·주소(영국 주소)", "원산국(수입품)", "내용량", "최소 내구일자 또는 PAO", "사용상 주의", "로트번호", "기능", "전성분 (추정)"]
+animal_testing: banned
+timeline:
+  lead_time: "SCPN 온라인 제출은 즉시. 사전 준비는 CPNP와 동일 (추정)"
+  fee: "무료 (추정)"
+  validity: "기한 없음. 변경 시 갱신 (추정)"
+evidence:
+  - url: "https://www.gov.uk/guidance/submit-a-cosmetic-product-notification"
+    title: "영국 SCPN 화장품 신고 안내"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.legislation.gov.uk/eur/2009/1223/contents"
+    title: "Regulation (EC) No 1223/2009 of the European Parliament and of the Council of 30 November "
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-3"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.smes.go.kr/globalcerti/info/ktrInfo.do"
+    title: "중기부 해외규격인증 획득지원사업 2026 공고 (전략인증, 일반 583종 목록)"
+    level: direct
+    checked: 2026-11-07
+blocking_rules:
+  - "EU 금지성분 포함(GB 부속서 II도 대부분 동일, 추정) [kw:ingredient_banned(EU)]"
+  - "제한성분 한도 초과 [kw:ingredient_restricted_over(EU)]"
+  - "색소·보존제·UV필터가 허용목록 밖 [kw:ingredient_positive_list_missing(EU)]"
+conditional_rules:
+  - "GB 부속서(영국판 XML)는 통합표에 없음 — EU 기준으로 1차 선별만 됨 [kw:ingredient_list_unavailable(UK_ANNEX)]"
+  - "제한성분 함량 미상 [kw:ingredient_restricted_conc_unknown(EU)]"
+  - "배합 농도 미보유 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "UK RP 미지정 [kw:local_entity_missing(UK)]"
+  - "서명된 안전성 보고서 없음 [kw:doc_missing(CPSR_signed)]"
+  - "향료 알레르기 성분 구성 미보유 [kw:doc_missing(allergen_info)]"
+  - "나노물질 포함 — 출시 6개월 전 별도 신고 (추정) [kw:ingredient_nano]"
+notes: "SCPN 입력 항목(원문 ◎): 카테고리·제품명, RP, PIF 보관 장소, 긴급연락처, 나노, CMR, 물질 정보, 성분 요약, 라벨 이미지, 포장 사진. 영국판 1223/2009 부속서 XML(2026-08-15 시점, OGL v3.0) 확보됨 — 통합표에 UK 관할을 추가하면 ingredient_list_unavailable(UK_ANNEX)는 자동 해소. EU CPNP와 서류 대부분을 공유하므로 엔진은 EU_CPNP 준비 서류를 재사용 표시. 라벨 세부 항목·수수료·나노 신고 기한은 (추정)."

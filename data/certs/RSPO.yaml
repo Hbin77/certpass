@@ -1,0 +1,61 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: RSPO
+name_ko: RSPO 지속가능 팜유 공급망 인증
+name_en: Roundtable on Sustainable Palm Oil (RSPO) Supply Chain Certification
+jurisdiction: GLOBAL
+kind: voluntary_certification
+strategic_kr: false
+general_kr_no: 553
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 553번 RSPO)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "팜 유래 가능 성분(글리세린·지방산·지방알코올·에스터·계면활성제 등)을 쓰는 제품. 바이어 요구 시 [kw:ingredient_origin_unknown(palm)]"
+ingredient_rules: none
+claim_rules:
+  - claim: sustainable_palm
+    effect: ok
+    note: "RSPO 상표 표시는 공급망 인증과 상표 라이선스 필요 (추정)"
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: membership
+    desc: "RSPO 회원 가입 (추정)"
+    satisfied_by_hint: []
+    producer: company
+  - id: SCC_audit
+    desc: "공급망 인증 심사(IP·SG·MB 모델) — 제조소 포함 (추정)"
+    satisfied_by_hint: []
+    producer: authority
+  - id: palm_derivative_inventory
+    desc: "팜 유래 원료 목록과 공급사 RSPO 인증서 (추정)"
+    satisfied_by_hint: ["draft_from:formula_*", "draft_from:ingredient_list_*"]
+    producer: manufacturer
+  - id: credits
+    desc: "Book & Claim 크레딧 구매(물리적 공급망 대안) (추정)"
+    satisfied_by_hint: []
+    producer: company
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: ["RSPO 상표·라이선스 번호, 인증 모델별 문구 (추정)"]
+animal_testing: not_required
+timeline:
+  lead_time: "심사 1~3개월 (추정)"
+  fee: "회원비 + 심사비 (추정)"
+  validity: "인증 5년, 연차 감사 (추정)"
+evidence:
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+  - url: "https://rspo.org"
+    title: "A global partnership to make palm oil sustainable - Roundtable on Sustainable Palm Oil (RS"
+    level: unverified
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "팜 유래 가능 성분 포함 — 원료 공급망 RSPO 인증 확인 필요 [kw:ingredient_origin_unknown(palm)]"
+  - "공급사 RSPO 인증서 없음 [kw:doc_missing(palm_derivative_inventory)]"
+  - "위탁제조사 공급망 인증 미보유 (추정) [kw:doc_missing(SCC_audit)]"
+notes: "583종 분류(cos_note): 'RSPO — 팜유 유래 성분(글리세린·지방산 에스터) 공급망 인증'. 인증 모델·비용·유효기간·상표 사용 조건은 (추정). 팜 유래 판단은 성분명만으로 불확실 — 공급사 확인이 필요해 이 카드는 '통과 가능'이 나오기 어려움."

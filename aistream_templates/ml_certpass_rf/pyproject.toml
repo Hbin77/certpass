@@ -1,0 +1,21 @@
+[project]
+name = "ml-template"
+version = "0.4.0"
+description = "AISTREAM 시스템에서 학습·평가에 사용할 ML Job입니다. 7팀 CertPass 인증 판정 랜덤포레스트 학습."
+authors = []
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "click>=8.1.7,<9.0.0",
+    "mlflow==3.13.0",
+    "pandas>=2.2,<3.0",
+    "scikit-learn>=1.5,<1.8",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "pytest>=8.1.1,<9.0.0",
+]

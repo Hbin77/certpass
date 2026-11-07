@@ -1,0 +1,115 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: JP_COSMETIC_NOTIFICATION
+name_ko: 일본 화장품 製造販売届 + 외국제조업자届
+name_en: Japan Cosmetics Marketing Notification (化粧品製造販売届) and Foreign Manufacturer Notification (外国製造業者届)
+jurisdiction: JP
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 235
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 235번 PMDA)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "일본에 업으로 수입·판매하는 화장품(의약부외품 표방 제외) [kw:target_market(JP)]"
+ingredient_rules: JP
+claim_rules:
+  - claim: whitening
+    effect: quasi_drug
+    note: "멜라닌 생성 억제·기미 예방 등 미백은 의약부외품 승인 → JP_QUASI_DRUG. 메이크업 효과로 희게 보이게 하는 표현만 화장품 가능 (추정)"
+  - claim: anti_wrinkle
+    effect: quasi_drug
+    note: "'주름 개선'은 의약부외품 → JP_QUASI_DRUG. 화장품은 '건조로 인한 잔주름을 눈에 띄지 않게' 수준만(효능 시험 필요) (추정)"
+  - claim: acne
+    effect: quasi_drug
+    note: "여드름 예방 등 약용 효과는 의약부외품(Q&A 72 원문) → JP_QUASI_DRUG"
+  - claim: antibacterial
+    effect: quasi_drug
+    note: "피부 살균 효과는 약용화장품=의약부외품(Q&A 72 원문) → JP_QUASI_DRUG"
+  - claim: hair_dye
+    effect: quasi_drug
+    note: "염모제는 지정 의약부외품(Q&A 71 원문) → JP_QUASI_DRUG. 일시 염색료는 화장품 (추정)"
+  - claim: hair_loss
+    effect: quasi_drug
+    note: "육모·탈모 예방은 의약부외품 (추정) → JP_QUASI_DRUG"
+  - claim: sunscreen
+    effect: ok
+    note: "화장품으로 가능. SPF·PA 표시는 업계 기준 시험 (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "질병 치료·예방 표현 불가 (추정)"
+  - claim: paraben_free
+    effect: ok
+    note: "사실이면 가능. 경품표시법상 오인 표시 금지 (추정)"
+  - claim: free_from_21
+    effect: ok
+    note: "사실이면 가능. 경품표시법상 오인 표시 금지 (추정)"
+local_entity:
+  required: true
+  role: "일본 화장품 製造販売業 허가 보유자(일본 법인). 일본 내 표시·보관 공정은 화장품 製造業(포장·표시·보관) 허가 필요 (추정)"
+documents_required:
+  - id: MAH_license
+    desc: "일본 製造販売業許可証(통관 시 사본 제시, Q&A 2·3)"
+    satisfied_by_hint: ["company.local_entities:JP"]
+    producer: company
+  - id: foreign_manufacturer_notification
+    desc: "外国製造業者届(PMDA 경유, 서식 C73) — 한국 제조소 단위"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: marketing_notification
+    desc: "化粧品製造販売届書(MAH가 출시 전 도도부현에 제출) — 통관 시 접수 증명 사본 제시"
+    satisfied_by_hint: []
+    producer: company
+  - id: formula_check
+    desc: "化粧品基準(별표1 금지·별표2 한도·별표3 보존제·별표4 UV흡수제, 타르색소 省令) 적합 확인용 전성분·배합량"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: label_jp
+    desc: "일본어 법정 표시 라벨"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:leaflet_*"]
+    producer: company
+  - id: quality_safety_records
+    desc: "MAH의 품질관리(GQP)·제조판매후 안전관리(GVP) 기록, 안전성 확인 자료 (추정)"
+    satisfied_by_hint: ["draft_from:finished_product_test_report", "draft_from:msds_*"]
+    producer: company
+tests_required: [stability, microbiology, challenge_test]
+labeling:
+  language: "일본어"
+  allergens: null
+  other: ["알레르겐 — 향료 알레르겐 개별 표시 의무 없음 — 전성분에 '香料' 표시 가능 (추정)", "製造販売業者 이름·주소", "名称", "製造番号 또는 記号", "内容量", "全成分(일본 표시명칭) (추정)", "使用期限(3년 내 변질 우려 제품) (추정)", "原産国 (추정)", "使用上の注意 (추정)"]
+animal_testing: not_required
+timeline:
+  lead_time: "届出 자체는 즉시 — MAH 확보가 선결 조건 (추정)"
+  fee: "届出 무료, MAH 대행 비용 별도 (추정)"
+  validity: "届 유효기간 없음, 변경 시 변경届. MAH 허가 5년 갱신 (추정)"
+evidence:
+  - url: "local:조사자료_20261107/규제원문_dl_jp/qa_r7.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/규제원문_dl_jp/qa_h27.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/규제원문_dl_jp/pmda_c73.pdf"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/규제원문_dl_jp/std1.pdf"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-3"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.mhlw.go.jp"
+    title: "기관 누리집"
+    level: unverified
+    checked: 2026-11-07
+blocking_rules:
+  - "일본 화장품 금지성분(별표1) 포함 [kw:ingredient_banned(JP)]"
+  - "배합 한도(별표2) 초과 [kw:ingredient_restricted_over(JP)]"
+  - "보존제·UV흡수제·타르색소가 포지티브 리스트 밖 [kw:ingredient_positive_list_missing(JP)]"
+conditional_rules:
+  - "의약부외품 표방(미백·주름 개선·약용 여드름·살균·염모·육모) — 화장품 届 경로 아님: 표방을 화장품 범위로 고치거나 JP_QUASI_DRUG [kw:claim(whitening|anti_wrinkle|acne|antibacterial|hair_dye|hair_loss)]"
+  - "배합 한도 성분 함량 미상 [kw:ingredient_restricted_conc_unknown(JP)]"
+  - "배합량 미보유 — 化粧品基準 적합 확인 불가 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "일본 MAH 미확보 [kw:local_entity_missing(JP)]"
+  - "위탁제조사 外国製造業者届 미제출 [kw:doc_missing(foreign_manufacturer_notification)]"
+  - "일본어 라벨 미작성 [kw:doc_missing(label_jp)]"
+  - "INCI 매칭 실패 성분 존재 [kw:ingredient_match_unresolved]"
+notes: "원문 확인(◎): 업으로 수입하려면 製造販売業 허가와 품목별 届 필요(R7 Q&A 1), 통관 시 業許可証 사본과 製造販売届書 사본(접수 증명) 제시(Q&A 2·3), 개별 원료 수입은 불필요하나 벌크 등 중간제품은 필요(Q&A 18), 수입신고(輸入届) 제도는 2016년 폐지(H27 Q&A), 약용화장품=의약부외품(Q&A 72), 염모제=지정 의약부외품(Q&A 71), 化粧品基準 별표1~4. 미백·주름 → 의약부외품 판단은 문서 §4-3 ○(일반 지식). 라벨 항목·MAH 갱신·화장품 효능 범위는 (추정)."

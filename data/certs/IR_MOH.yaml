@@ -1,0 +1,77 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: IR_MOH
+name_ko: 이란 화장품 등록(보건부 IFDA)
+name_en: Iran Ministry of Health / IFDA Cosmetic Import Health License
+jurisdiction: IR
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 425
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 425번 MOH)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "이란 수입·판매 화장품 — IFDA 수입 보건허가 + 수입자 IRC 코드 + TTAC 정품 라벨(2차). 2019-05 화장품 수입 전면 금지(향수 제외) 뒤 2024 해제가 공표됐으나 주문 등록이 안 돼 미집행 논란(2차) [kw:target_market(IR)]"
+ingredient_rules: EU
+claim_rules:
+  - claim: whitening
+    effect: ok
+    note: "화장품 범위 표방 가능 (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "치료 표현 불가 (추정)"
+local_entity:
+  required: true
+  role: "상업카드를 가진 이란 수입자 등록 + 책임기술자(مسئول فنی) 의무(Mehr News 2026-05 보도) — 외국 기업 직접 수입 불가"
+documents_required:
+  - id: application
+    desc: "IFDA 수입 보건허가(پروانه بهداشتی ورود) — 상표 등록(약 40일) → 보건부 승인(약 2개월) → GMP 실사(최대 1년)·제품 등록(2016 기준, 2차)"
+    satisfied_by_hint: []
+    producer: company
+  - id: CFS_legalized
+    desc: "자유판매증명·공장 허가(이란 대사관 영사확인) (추정) — 국내 발급: 대한화장품협회 제조판매증명서(KR_CFS_EXPORT)"
+    satisfied_by_hint: ["cfs_kcia*"]
+    producer: authority
+  - id: GMP_proof
+    desc: "제조사 GMP 증빙·실사 대응(2차)"
+    satisfied_by_hint: ["manufacturer.certs:ISO 22716", "manufacturer.certs:CGMP"]
+    producer: manufacturer
+  - id: formula_pct
+    desc: "전성분·함량 (추정)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: label_ir
+    desc: "페르시아어 라벨과 TTAC 정품 라벨(보도·2차)"
+    satisfied_by_hint: ["draft_from:label_kr"]
+    producer: company
+tests_required: [microbiology, heavy_metals]
+labeling:
+  language: "페르시아어 필수(Mehr News 2026-05 보도: 유효 수입허가와 페르시아어 라벨이 없으면 국경 무역 금지)"
+  allergens: null
+  other: ["TTAC 정품 라벨(2차)", "돼지 유래 금지·알코올 제한 가능 (추정)", "알레르겐 — 확인 필요 (추정)"]
+animal_testing: not_required
+timeline:
+  lead_time: "상표 등록 약 40일 → 보건부 승인 약 2개월 → GMP 실사 최대 1년(2016 기준, 2차)"
+  fee: "미확인"
+  validity: "미확인"
+evidence:
+  - url: "https://www.mehrnews.com/news/6828394/"
+    title: "ابلاغ شیوه‌نامه واردات فرآورده‌های آرایشی و بهداشتی - خبرگزاری مهر | اخبار ایران و جهان | "
+    level: secondary
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-4"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+  - url: "https://www.fda.gov.ir"
+    title: "기관 누리집"
+    level: unverified
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "화장품 수입 금지(2019) 해제가 실제로 집행되는지 먼저 확인 — 막혀 있으면 서류를 갖춰도 수출 불가 [kw:manual_check(IR_import_ban)]"
+  - "이란 성분 규정은 통합표에 없음 — EU 기준으로 1차 선별만 (추정) [kw:ingredient_list_unavailable(IR_IFDA)]"
+  - "EU 금지성분 포함 — 이란 규정 대조 필요 [kw:ingredient_banned(EU)]"
+  - "이란 수입자·책임기술자 미지정 [kw:local_entity_missing(IR)]"
+  - "국제 제재로 송금·물류 제약 — 수출 가능 여부 별도 확인 (추정) [kw:manual_check(IR_sanctions)]"
+notes: "국가 절차는 2차 자료(Mehr News 2026-05·2019 기사, CosmeticOBS 2016, 이탈리아 대사관 'Agenti e importatori in Iran')로만 확인 — fda.gov.ir·ttac.ir 접속 불가. 원문은 중기부 일반목록 425번(문서 §4-4 ◎)뿐. 583종 424번 ISIRI 강제인증은 화장품 포함 여부 미확인(U). 수입 금지·제재는 재처방으로 풀리는 문제가 아니라 엔진 등급(불가=재처방 필요)으로 표현되지 않아 조건부로 남음 — 반영 보고서 '엔진 변경 필요' 참조. 미확인: 수입 금지 해제 현황(2025~26), 공식 서류·수수료·유효기간."

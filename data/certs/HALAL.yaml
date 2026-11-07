@@ -1,0 +1,126 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: HALAL
+name_ko: 할랄 인증(화장품, 국제)
+name_en: Halal Certification for Cosmetics (KMF·KHA·JAKIM·BPJPH routes)
+jurisdiction: GLOBAL
+kind: voluntary_certification
+strategic_kr: true
+general_kr_no: null
+support_rate: "50~70%, 최대 1억(중기부 전략인증 — 국제 HALAL, 식품·화장품 등)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "모든 화장품에 신청 가능(자발 인증). 인도네시아 화장품 할랄 의무는 PP 40/2026(2026-10-14)으로 2028-10-17까지 유예 — 그 뒤 미인증 제품은 인증 또는 비할랄 표시 필요(ID_BPOM 참조). 말레이시아·UAE는 할랄을 표방할 때만"
+ingredient_rules: none
+claim_rules:
+  - claim: halal
+    effect: ok
+    note: "인증 후 인증기관 로고·번호 표시. 말레이시아는 수입품을 할랄로 표시하려면 JAKIM 공인 해외기관 인증 + 그 기관명 표기(거래표시명령 2011), 인도네시아 할랄 로고는 BPJPH 인증(또는 해외 인증서 등록) 후만. 미인증 할랄 표방 불가"
+local_entity:
+  required: false
+  role: "인도네시아 유통 시 해외 할랄 인증서를 BPJPH(SIHALAL)에 등록할 수입자 또는 인도네시아 공식 대리인"
+documents_required:
+  - id: application
+    desc: "인증 신청서, 사업자등록증, 제조업 등록·위탁제조 계약서 — KMF·KHA 신청 서류 세부는 미확인(사이트 접속 불가)"
+    satisfied_by_hint: ["company.role_kr:화장품책임판매업자", "manufacturer_registration"]
+    producer: company
+  - id: product_formula
+    desc: "제품별 전성분·원료 목록(원료 제조사·공급사 포함)"
+    satisfied_by_hint: ["formula_*", "ingredient_list_*"]
+    producer: manufacturer
+  - id: ingredient_halal_docs
+    desc: "원료별 할랄 인증서 또는 등록번호 — 없으면 공정 흐름도·조성·CoA와 돼지·개 무관(bebas najis berat)·동물 무관 진술서, MSDS·시험성적서(Kepka 370/2026). 클렌징밤은 글리세린·지방산 에스터 등 7종 기원 증빙 필요"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: process_flow
+    desc: "제조 공정도, 공용 설비 목록·세척 검증 기록 — 돼지·개 오염 설비는 완전 분리, 비할랄 성분이 없는 비인증 제품과의 설비 공용은 세척 검증 문서로 허용"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: HAS_manual
+    desc: "할랄 보증 체계(SJPH) 매뉴얼·할랄 정책, 할랄 감독자(Penyelia Halal) 임명·교육 — 해외 기업은 감독자 역량시험 필수, 내부감사·경영검토 연 1회, 조성·공정 변경은 6개월마다 BPJPH 보고"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: packaging_docs
+    desc: "포장재·어플리케이터·세척제 할랄 증빙(Kepka 370 원료 범위에 포함)"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: site_audit
+    desc: "인증기관 제조소 현장 심사"
+    satisfied_by_hint: []
+    producer: authority
+  - id: BPJPH_registration
+    desc: "인도네시아 유통 시 해외 할랄 인증서 BPJPH 등록(SIHALAL) — 수입자·공식 대리인이 신청, 해외기업 위임계약서·수입자 NIB·인증서 사본(인니 공관 영사확인 또는 아포스티유)·HS코드 품목표·진술서"
+    satisfied_by_hint: []
+    producer: authority
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: ["인증기관 할랄 로고·인증번호", "인도네시아: 할랄 로고는 BPJPH 인증 후, 비할랄 원료 제품은 'NON HALAL' 또는 'MENGANDUNG BABI'+돼지 그림 표시로 판매 가능(Peraturan BPJPH 3/2026, 2026-07-23 시행, 2차)", "말레이시아: 수입품 할랄 표시 때 JAKIM 공인 해외 인증기관 이름 표기", "물이 스며들지 않는 제품(불투수)은 '불투수' 표시와 기도 전 제거 안내가 있으면 인증 가능(MUI 파트와 60/2020) — 씻어내는 제품은 해당 없음"]
+animal_testing: not_required
+timeline:
+  lead_time: "BPJPH 인증 3~9개월(2차), JAKIM 직접 신청 약 6개월(2차) — KMF·KHA 기간 미확인"
+  fee: "BPJPH 해외 인증서 등록 건당 Rp800,000, 외국기업 직접 신청 건당 Rp12,500,000(PMK 57/2021, 2022 보도, 2차), JAKIM 연 RM100~1,000(규모별, 2차) — KMF·KHA 수수료 미확인"
+  validity: "BPJPH 인증은 조성·공정이 그대로면 무기한(2차), JAKIM 약 3년(2차) — KMF·KHA 유효기간 미확인. JAKIM의 해외 기관 인정 유효 3년"
+evidence:
+  - url: "https://bpjph.halal.go.id/main/read/penyesuaian-penahapan-kewajiban-sertifikasi-halal-diatur-dalam-pp-40-tahun-2026-begini-rinciannya"
+    title: "인도네시아 할랄제품보장청 BPJPH 할랄 의무화 일정"
+    level: direct
+    checked: 2026-11-07
+    quote: "masa penahapan wajib halalnya diperpanjang sampai dengan 17 Oktober 2028"
+  - url: "https://www.halal.gov.my/pdf/cb/FHCB21August2026.pdf"
+    title: "공식 문서(PDF): \"72. Korea Muslim Federation\""
+    level: direct
+    checked: 2026-11-07
+    quote: "72. Korea Muslim Federation"
+  - url: "https://www.halal.gov.my/pdf/cb/FHCB21August2026.pdf"
+    title: "공식 문서(PDF): \"72. Korea Muslim Federation\""
+    level: direct
+    checked: 2026-11-07
+    quote: "certified as halal by the foreign halal certification body recognized by JAKIM"
+  - url: "https://halalmui.org/wp-content/uploads/2026/05/Salinan-370.2026.-Pedoman-Pelaksanaan-SJPH-Kosmetik-1.pdf"
+    title: "인도네시아 MUI 화장품 할랄 보증 지침"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://halalmui.org/wp-content/uploads/2026/05/Salinan-370.2026.-Pedoman-Pelaksanaan-SJPH-Kosmetik-1.pdf"
+    title: "인도네시아 MUI 화장품 할랄 보증 지침"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://lph.uin-alauddin.ac.id/assets/download/Kepkaban_No_20_Tahun_2023_Perubahan_SJPH_3_bca72daa00.pdf"
+    title: "Kepkaban No 20 Tahun 2023 Perubahan SJPH 3 bca72daa00"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://bpjph.halal.go.id/read/kabar-baik-registrasi-sertifikat-halal-luar-negeri-dibuka-di-menu-sihalal"
+    title: "Kabar Baik, Registrasi Sertifikat Halal Luar Negeri Dibuka di Menu Sihalal - Berita - BPJP"
+    level: direct
+    checked: 2026-11-07
+    quote: "importir dan/atau perwakilan resmi di Indonesia"
+  - url: "https://fatwamui.com/storage/139/Fatwa-MUI-No.-11-Tahun-2018-tentang-Produk-Kosmetika-Mengandung-Alkohol.pdf"
+    title: "Fatwa MUI No. 11 Tahun 2018 tentang Produk Kosmetika Mengandung Alkohol"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://moiat.gov.ae/en/halal"
+    title: "Halal - MOIAT"
+    level: direct
+    checked: 2026-11-07
+    quote: "While the Halal National Mark is optional"
+  - url: "https://www.smes.go.kr/globalcerti/info/ktrInfo.do"
+    title: "중기부 해외규격인증 획득지원사업 2026 공고 (전략인증, 일반 583종 목록)"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-6"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://pasal.id/peraturan/perban/peraturan-bpjph-no-3-tahun-2026"
+    title: "PERBAN Nomor 3 Tahun 2026 — Bentuk dan Tata Car… | Pasal.id"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules:
+  - "돼지 유래 성분 확인 [kw:ingredient_present(*Porcine*|*Lard*|*Sus Scrofa*|*Pig *)]"
+conditional_rules:
+  - "동물 유래 가능 성분(글리세린·지방산 에스터·스테아르산·스쿠알렌 등) 기원 미확인 — 공급사 할랄 인증서 또는 기원 진술서 [kw:ingredient_origin_unknown(animal)]"
+  - "에탄올 사용 — 주류(khamr) 산업 유래면 불가, 그 밖의 에탄올은 함량 제한 없음(MUI 파트와 11/2018) [kw:ingredient_present(Alcohol|Alcohol Denat.|Ethanol)]"
+  - "발효·효소 원료 — 배지에 돼지 유래 물질 사용 여부 확인(Kepka 20/2023) [kw:ingredient_present(*Ferment*|*Lysate*)]"
+  - "원료 할랄 증빙 없음 [kw:doc_missing(ingredient_halal_docs)]"
+  - "제조소 할랄 보증 체계·현장 심사 미실시 [kw:doc_missing(HAS_manual)]"
+  - "인도네시아 출시 — 2028-10-17 이후 인증서 미보유·미등록 [kw:target_market(ID)] [kw:date_on_or_after(2028-10-17)] [kw:doc_missing(BPJPH_registration)]"
+notes: "원문 확인(2026-11-07): BPJPH 공지 — PP 40/2026으로 화장품 할랄 의무 2026-10-17 → 2028-10-17 연장(화장품은 기업 규모 제한 없음). JAKIM 공인 해외기관 목록(2026-08-21 시행판) 72번 KMF·73번 KHA, 인정 3년 — 수입품 할랄 표시는 공인 기관 인증+기관명. Kepka 370/2026(화장품 SJPH 지침, 2026-10-18 시행): 원료 범위에 포장재·어플리케이터·세척 검증 매체 포함, 인체 유래(태반·혈액·모발·소변) 금지, 해외 기업 할랄 감독자 역량시험, 6개월 보고. Kepka 20/2023: 돼지·혈액·khamr 등 금지, 수생동물 전부 할랄(흑진주는 유리). MUI 파트와 11/2018(khamr 아닌 에탄올은 함량 제한 없음)·26/2013·60/2020. BPJPH 해외 인증서 등록: 수입자·공식 대리인이 SIHALAL 신청, 인증서 영사확인(아포스티유 가능 — 요지만 확인). UAE 할랄 국가 마크는 선택, GCC 화장품 할랄 표준은 GSO 2055-4:2021(유료, 본문 미열람). 앞선 카드의 '2026-10-17 의무(PP 42/2024)'를 고쳤다. 판정: 금지 원료가 없으면 '조건부'(원료 기원 증빙 + 제조소 할랄 관리). 2차: 비할랄 표시(BPJPH 3/2026 법령 미러), 수수료, 유효기간, JAKIM 직접 신청 절차(ChemLinked MPPHM 2020). 미확인: KMF·KHA 절차·서류·비용·기간·유효기간(사이트 접속 불가), KMF-BS2016 원문, MS 2634 원문·에탄올 조항, Kepka 90/2023 원문, LPPOM 수수료, GSO 2055-4 본문, JAKIM 목록의 품목 범위."

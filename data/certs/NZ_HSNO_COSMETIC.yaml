@@ -1,0 +1,106 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: NZ_HSNO_COSMETIC
+name_ko: 뉴질랜드 화장품 그룹 표준(HSNO)
+name_en: New Zealand EPA Cosmetic Products Group Standard 2020 (HSR002552, HSNO Act)
+jurisdiction: NZ
+kind: mandatory_compliance
+strategic_kr: false
+general_kr_no: 501
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 501번 HSNO APPROVAL)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "뉴질랜드 수입·판매 화장품 — 사전 등록 없음, 그룹 표준 범위 안 제품은 자동 승인(HSNO 제96E조 3항). 2026-01-01 개정판부터 비위험 제품이라도 위험 성분(피부 과민성 등)을 함유하면 적용(cl.4(2)(b)) [kw:target_market(NZ)]"
+ingredient_rules: EU
+claim_rules:
+  - claim: whitening
+    effect: ok
+    note: "외관 변화 수준이면 화장품 (추정). 하이드로퀴논(Sch.4 #1339)·데옥시아르부틴(#1657) 금지"
+  - claim: anti_wrinkle
+    effect: ok
+    note: "외관 변화 수준이면 화장품 (추정) — 치료 효능 주장 시 의약품·관련 제품"
+  - claim: sunscreen
+    effect: ok
+    note: "자외선차단제 안전 기준 별도 확인 (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "화장품으로 공급하는 제품에는 치료 표방 불가(Medsafe)"
+local_entity:
+  required: true
+  role: "라벨에 연락 가능한 뉴질랜드 수입자(또는 제조자) 정보 필수(라벨 고시 2017 cl.12) — 법인 설립 의무 조항은 없음, 수입자가 범위 적합을 판단하고 근거 기록 보관"
+documents_required:
+  - id: group_standard_record
+    desc: "그룹 표준 범위 적합 판단 근거 기록 — 수입자 보관, 검사 시 제시(조건 10)"
+    satisfied_by_hint: []
+    producer: company
+  - id: safety_basis
+    desc: "조건 7('must not cause harm') 입증용 안전성 근거 — CPSR 의무는 아님, 보유 시험성적서로 대응 가능"
+    satisfied_by_hint: ["finished_product_test_report", "test_report_*", "msds_*"]
+    producer: manufacturer
+  - id: formula_pct
+    desc: "전성분·함량 — 부속서(Sch.4~8) 대조와 알레르겐 표기 판단용"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: label_nz
+    desc: "영문 라벨 — 전성분(1% 이상 내림차순, INCI 가능), 알레르겐 별도 표기, 배치코드, NZ 수입자 연락처"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:leaflet_*"]
+    producer: company
+tests_required: []
+labeling:
+  language: "영어 (추정)"
+  allergens: "EU 26종 체계 — 리모넨·리날룰·시트랄 등 바르는 제품 0.001%·씻어내는 제품 0.01% 초과 시 전성분에 표기(Sch.5 #67~92)"
+  other: ["배치코드", "NZ 수입자 연락처(라벨 고시 cl.12(1))", "AU·US·CA·UK·EU 화장품 라벨 규정을 지키면 전성분 요건 대체 인정(조건 1(11)) — 연락처 요건은 별도", "향료는 'parfum/fragrance' 표기 가능하나 알레르겐은 별도 표기", "소형 포장은 리플릿·판매점 표시 가능", "IFRA 기준 준수(조건 9)"]
+animal_testing: not_required
+timeline:
+  lead_time: "사전 등록 없음(자동 승인)"
+  fee: "등록비 없음"
+  validity: "지속 준수 — 개정 전 기준 제품은 2026-12-31까지 공급, 2027-06-30까지 폐기. PFAS 함유 제품은 수입·제조 2026-12-31, 공급 2027-12-31까지"
+evidence:
+  - url: "https://www.epa.govt.nz/assets/RecordsAPI/Cosmetic-Products-Group-Standard-2020-HSR002552-Consolidated-and-current.pdf"
+    title: "Cosmetic Products Group Standard 2020 HSR002552 Consolidated and current"
+    level: direct
+    checked: 2026-11-07
+    quote: "is deemed to have been approved by the Authority under section 29"
+  - url: "https://www.epa.govt.nz/assets/RecordsAPI/Cosmetic-Products-Group-Standard-2020-HSR002552-Consolidated-and-current.pdf"
+    title: "Cosmetic Products Group Standard 2020 HSR002552 Consolidated and current"
+    level: direct
+    checked: 2026-11-07
+    quote: "does not classify as hazardous but contains a component that classifies as hazardous"
+  - url: "https://www.epa.govt.nz/assets/RecordsAPI/Cosmetic-Products-Group-Standard-2020-HSR002552-Consolidated-and-current.pdf"
+    title: "Cosmetic Products Group Standard 2020 HSR002552 Consolidated and current"
+    level: direct
+    checked: 2026-11-07
+    quote: "The presence of the substance must be indicated in the list of ingredients"
+  - url: "https://www.epa.govt.nz/assets/RecordsAPI/Cosmetic-Products-Group-Standard-2020-HSR002552-Consolidated-and-current.pdf"
+    title: "Cosmetic Products Group Standard 2020 HSR002552 Consolidated and current"
+    level: direct
+    checked: 2026-11-07
+    quote: "compliant with current labelling requirements for cosmetic products of Australia"
+  - url: "https://www.epa.govt.nz/assets/RecordsAPI/Cosmetic-Products-Group-Standard-2020-HSR002552-Consolidated-and-current.pdf"
+    title: "Cosmetic Products Group Standard 2020 HSR002552 Consolidated and current"
+    level: direct
+    checked: 2026-11-07
+    quote: "may continue to supply cosmetic products that comply with the Pre-Amendment scope"
+  - url: "https://www.epa.govt.nz/assets/Uploads/Documents/Hazardous-Substances/EPA-Notices/Hazardous-Substances-Labelling-Notice-2017.pdf"
+    title: "Hazardous Substances Labelling Notice 2017"
+    level: direct
+    checked: 2026-11-07
+    quote: "enable the New Zealand importer or manufacturer to be contacted in person or by telephone"
+  - url: "https://www.medsafe.govt.nz/regulatory/categorisation-of-products.asp"
+    title: "Categorisation of Products"
+    level: direct
+    checked: 2026-11-07
+    quote: "Therapeutic claims are not permitted for products supplied as dietary supplements, supplemented foods or cosmetics."
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules:
+  - "하이드로퀴논(Sch.4 #1339, 인조손톱 전문가용 0.02% 제외)·데옥시아르부틴(#1657) 함유 [kw:ingredient_present(Hydroquinone|Deoxyarbutin)]"
+conditional_rules:
+  - "그룹 표준 부속서(Sch.4~8, EU 1223/2009 기반)는 통합표에 없음 — EU 부속서로 1차 선별 [kw:ingredient_list_unavailable(NZ_GROUP_STANDARD)]"
+  - "EU 금지성분 포함 — 그룹 표준 대조 필요 [kw:ingredient_banned(EU)]"
+  - "EU 제한성분 한도 초과 [kw:ingredient_restricted_over(EU)]"
+  - "향료 알레르겐이 임계(바르는 0.001%·씻어내는 0.01%)를 넘는데 전성분 미표기 [kw:ingredient_present(Parfum|Fragrance|Limonene|Linalool|Citral)]"
+  - "뉴질랜드 수입자 미지정·라벨 연락처 없음 [kw:local_entity_missing(NZ)]"
+  - "나노물질 함유 — 최초 수입 때 EPA 서면 통지 [kw:ingredient_nano]"
+  - "PFAS 함유 — 수입·제조 2026-12-31, 공급 2027-12-31까지만 [kw:manual_check(NZ_PFAS)]"
+notes: "원문 확인(2026-11-07, EPA 그룹 표준 2020 통합본(2026-01-01, 2025-07-08 개정 반영)·라벨 고시 2017·Medsafe 분류 페이지): 사전 등록 없이 자동 승인, 비위험 제품도 위험 성분 함유 시 적용, 수입자가 범위 적합 기록 보관, 부속서는 EU 1223/2009 기반(하이드로퀴논·데옥시아르부틴 금지, 알파알부틴·나이아신아마이드 미수록), EU식 향료 알레르겐 표기(그래서 allergens를 채움 — 엔진이 향료 제품에 알레르겐 구성 확인 요구), NZ 수입자 연락처, 다른 나라 라벨 규정 준수 시 전성분 요건 대체, 치료 표방 불가. 2차: NZ 내 화장품 동물시험만 금지. 미확인: 알파알부틴 EU 제한의 NZ 반영(2025-07-08 판에는 없음), Medsafe 하이드로퀴논 분류 현행 고시, 라벨 언어 명문."

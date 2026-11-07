@@ -1,0 +1,141 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: CN_NMPA_GENERAL
+name_ko: 중국 일반화장품 备案(NMPA)
+name_en: China NMPA Ordinary Cosmetics Filing (普通化妆品备案)
+jurisdiction: CN
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 349
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 349번 NMPA)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "중국 일반무역으로 수입하는 화장품 중 특수화장품(염모·펌·祛斑美白·자외선차단·탈모방지·신규효능) 외 전부 [kw:target_market(CN)]"
+ingredient_rules: CN
+claim_rules:
+  - claim: whitening
+    effect: needs_special_registration
+    note: "祛斑美白는 특수화장품 注册 대상 → CN_NMPA_SPECIAL (원문 확인)"
+  - claim: sunscreen
+    effect: needs_special_registration
+    note: "자외선차단은 특수화장품 → CN_NMPA_SPECIAL"
+  - claim: hair_dye
+    effect: needs_special_registration
+    note: "염모는 특수화장품 → CN_NMPA_SPECIAL"
+  - claim: perm
+    effect: needs_special_registration
+    note: "펌은 특수화장품 → CN_NMPA_SPECIAL"
+  - claim: hair_loss
+    effect: needs_special_registration
+    note: "탈모방지는 특수화장품 → CN_NMPA_SPECIAL"
+  - claim: new_efficacy
+    effect: needs_special_registration
+    note: "분류목록에 없는 신규 효능은 특수화장품 → CN_NMPA_SPECIAL"
+  - claim: anti_wrinkle
+    effect: ok
+    note: "일반화장품 효능. 효능 표방 평가(인체시험·소비자시험·실험실 중 택일) 근거와 요약 공개 필요 (추정)"
+  - claim: skin_barrier
+    effect: ok
+    note: "修护(장벽 개선) 표방은 인체 효능시험 필요 (추정)"
+  - claim: acne
+    effect: ok
+    note: "祛痘는 일반 효능이나 인체 효능시험 필요. 치료 표현은 불가 (추정)"
+  - claim: children
+    effect: ok
+    note: "영유아·어린이 표방 시 독성시험 면제 불가(32호 33조 2항 1호 원문)"
+  - claim: medical
+    effect: not_allowed
+    note: "의료 작용 표현 금지 (추정)"
+local_entity:
+  required: true
+  role: "境内责任人(중국 내 책임자). 授权书 원본과 공증서 원본 제출, 같은 제품에 책임자 1곳만(32호 10조·16조)"
+documents_required:
+  - id: user_info
+    desc: "注册人备案人 정보표·质量安全负责人 이력, 품질관리체계 개요, 이상반응 모니터링·평가 체계 개요(10조)"
+    satisfied_by_hint: []
+    producer: company
+  - id: DRP_authorization
+    desc: "境内责任人 授权书 원본과 공증서 원본(이름·관계·범위·기간 명시)(10조 5호, 16조)"
+    satisfied_by_hint: ["company.local_entities:CN"]
+    producer: company
+  - id: overseas_GMP_proof
+    desc: "해외 생산기업 생산규범 증명 원본(10조 6호). 정부 발급 GMP 증명이면 독성시험 면제 요건 충족 가능(33조 2항)"
+    satisfied_by_hint: ["manufacturer.certs:CGMP"]
+    producer: authority
+  - id: info_table
+    desc: "化妆品注册备案信息表와 분류 코드(26·27조)"
+    satisfied_by_hint: []
+    producer: company
+  - id: marketing_proof
+    desc: "원산국 정부·협회 발급 已上市销售证明(27조 4호). 2026 제70호: '중국 최초 출시' 성명으로 대체 가능 — 국내 발급: 대한화장품협회 제조판매증명서(KR_CFS_EXPORT)"
+    satisfied_by_hint: ["cfs_kcia*"]
+    producer: authority
+  - id: product_name_basis
+    desc: "제품명 명명 근거(상표명·통용명·속성명, 외국어명과 중문명 대응)(28조)"
+    satisfied_by_hint: []
+    producer: company
+  - id: formula_pct
+    desc: "配方表: 전 원료 표준 중문명·INCI, 질량 백분율 내림차순, 사용목적, 복합 원료 구성(29조)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: executive_standard
+    desc: "产品执行的标准: 전성분, 생산공정 개요, 관능·미생물·이화학 지표와 관리, 사용법, 보관조건, 사용기한(30조)"
+    satisfied_by_hint: ["draft_from:bulk_test_report", "draft_from:finished_product_test_report"]
+    producer: manufacturer
+  - id: label_draft
+    desc: "产品标签样稿, 원산국 판매 포장(설명서 포함)과 외국어 라벨 중문 번역본, 판매 포장 전면 이미지(31·32조)"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:packaging_spec_*", "draft_from:brochure_*"]
+    producer: company
+  - id: test_reports_cn
+    desc: "중국 注册备案检验机构 발행 검사보고서: 미생물·이화학, 독성(면제 조건 있음), 인체 안전성(33조)"
+    satisfied_by_hint: []
+    producer: lab
+  - id: safety_assessment
+    desc: "产品安全评估报告(34조)"
+    satisfied_by_hint: ["draft_from:formula_*", "draft_from:msds_*"]
+    producer: external_expert
+  - id: efficacy_summary
+    desc: "효능 표방 근거와 요약(효능 표방 시) (추정)"
+    satisfied_by_hint: ["skin_irritation_test"]
+    producer: lab
+tests_required: [microbiology, physicochemical, toxicology, local_lab_test, stability]
+labeling:
+  language: "중국어(규범 한자). 수입품은 중문 라벨 부착 가능 (추정)"
+  allergens: null
+  other: ["알레르겐 — 향료 알레르겐 표시 의무 없음 — 배합표에 '香精'만 기재 가능. 라벨에 개별 향료 성분을 표시하면 배합표 비고에 기재(29조 4항)", "중문 제품명(상표명·통용명·속성명)", "备案번호", "전성분(표준 중문명, 함량 순)", "备案人·境内责任人 이름·주소", "생산기업 이름·주소·원산국", "순함량", "사용기한", "사용법·안전 경고", "보관 조건 (추정)"]
+animal_testing: required_for_some
+timeline:
+  lead_time: "备案 자료 제출 시 备案번호 발급(사후 검토). 중국 지정 검사기관 시험 포함 3~6개월 (추정)"
+  fee: "정부 备案 수수료 없음, 검사·대행 비용 별도 (추정)"
+  validity: "유효기간 없음. 매년 연차보고, 변경 시 변경 备案 (추정)"
+evidence:
+  - url: "local:조사자료_20261107/규제원문_dl_cn/reg32.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/규제원문_dl_cn/iecic1.xlsx"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-3"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.nmpa.gov.cn"
+    title: "기관 누리집"
+    level: unverified
+    checked: 2026-11-07
+blocking_rules:
+  - "중국 금지성분 포함 [kw:ingredient_banned(CN)]"
+  - "중국 제한성분 한도 초과 [kw:ingredient_restricted_over(CN)]"
+conditional_rules:
+  - "특수화장품 표방(祛斑美白·자외선차단·염모·펌·탈모방지·신규효능) — 일반 备案 경로 아님: 표방 삭제 시 일반 备案, 유지 시 CN_NMPA_SPECIAL [kw:claim(whitening|sunscreen|hair_dye|perm|hair_loss|new_efficacy)]"
+  - "IECIC(已使用化妆品原料目录) 미등재 확인 원료 — 신원료 注册·备案 또는 대체 원료 필요 [kw:ingredient_not_in_inventory(CN)]"
+  - "통합표 CN 금지표는 2015 규범 기준 — 2021 제74호·2026 제99호 개정분 미반영 [kw:ingredient_list_unavailable(CN_BANNED_2021_74)]"
+  - "제한성분 함량 미상 [kw:ingredient_restricted_conc_unknown(CN)]"
+  - "배합 백분율 미보유 — 配方表 작성 불가 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "境内责任人 미지정 [kw:local_entity_missing(CN)]"
+  - "제조사 정부 발급 GMP 증명 없음 — 독성시험 면제 불가 [kw:manufacturer_cert_missing(CGMP)]"
+  - "영유아·어린이 표방 — 독성시험 면제 불가 [kw:claim(children)]"
+  - "중국 지정 검사기관 검사보고서 없음 [kw:doc_missing(test_reports_cn)]"
+  - "효능 표방 근거·요약 미보유 [kw:claim(anti_wrinkle|skin_barrier|acne)] [kw:doc_missing(efficacy_summary)]"
+  - "무첨가(free-from) 표방 — 근거·오인 여부 확인 (추정) [kw:claim(paraben_free|free_from_21)]"
+  - "IECIC 매칭 실패 성분 존재 — 표준 중문명 대조 필요 [kw:ingredient_match_unresolved]"
+  - "已上市销售证明 또는 '중국 최초 출시' 성명 미준비 [kw:doc_missing(marketing_proof)]"
+notes: "원문 확인(2021 제32호 ◎): 사용자 정보 자료(10조), 제품 자료 7종(26조: 정보표·제품명·배합·집행표준·라벨 시안·검사보고서·안전평가), 판매증명(27조), 배합 백분율(29조), 라벨(31·32조), 검사기관 보고서와 독성시험 면제 조건 — 정부 발급 GMP + 안전평가, 단 영유아·어린이 표방·신원료 사용·중점관리 대상 제외(33조). 2026 제70호(2026-07-29, 문서 ◎): 원료 안전정보·报送码 불필요, '중국 최초 출시' 성명으로 판매증명 대체 가능. 통합표 CN = 2015 규범 금지·제한 + IECIC 인벤토리(약 8,965행). 동물실험: 한국 CGMP(정부 발급) 위탁제조사면 일반화장품 독성시험 면제 가능 → animal_testing은 required_for_some. 효능 평가 방식·라벨 세부·연차보고·소요기간은 (추정)."

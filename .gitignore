@@ -1,0 +1,23 @@
+data/private/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.log
+*.pid
+.env*
+.DS_Store
+# 실행 산출물(out/)은 올리지 않는다. AIStream 데이터셋 설명 두 파일만 예외(train·test csv는 제외)
+out/*
+!out/public/
+out/public/*
+!out/public/aistream/
+out/public/aistream/*
+!out/public/aistream/dataset_info.json
+!out/public/aistream/feature_columns.json
+
+# AI Hub에서 받은 데이터·파생 표는 이용약관상 공개 저장소에 올리지 않는다(대회 서버 배포에만 포함)
+data/aihub/
+
+# 서버 전용 설정(서빙 주소 등)
+deploy/server.env

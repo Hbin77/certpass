@@ -1,0 +1,143 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: ID_BPOM
+name_ko: 인도네시아 화장품 노티피카시(BPOM)
+name_en: Indonesia BPOM Cosmetic Notification (Notifikasi Kosmetika)
+jurisdiction: ID
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 317
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 317번 BPOM)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "인도네시아 수입·유통 화장품 전부(출시 전 노티피카시, Notifkos 3.0, PerBPOM 20/2026). 화장품 할랄 의무는 PP 40/2026으로 2028-10-17까지 유예 — 판정일 기준 자발 [kw:target_market(ID)]"
+ingredient_rules: ASEAN
+claim_rules:
+  - claim: whitening
+    effect: drug_risk
+    note: "미백 제품 자체는 ACD상 화장품 범위, 멜라닌 생성 억제·색소 치료 같은 기전·치료 표현은 불가 — 한국 기능성 미백 문구는 외관 표현으로 바꿔야 함. 인도네시아 표방 규정(PerBPOM 3/2022)의 'memutihkan' 허용 범위는 미확인"
+  - claim: anti_wrinkle
+    effect: drug_risk
+    note: "ACD 표방 지침상 '노화로 인한 생리적 변화를 예방·감소·역전' 표현 불가 — 주름 외관 개선 표현으로 바꿔야 함"
+  - claim: acne
+    effect: drug_risk
+    note: "치료 표현은 의약품 (추정)"
+  - claim: hair_loss
+    effect: drug_risk
+    note: "발모·탈모 치료 표현은 의약품 (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "질병 치료·예방 표현은 ACD 표방 지침상 화장품에 쓸 수 없음"
+  - claim: halal
+    effect: ok
+    note: "할랄 로고는 BPJPH 할랄 인증(또는 인정 해외기관 인증서의 BPJPH 등록) 후에만 표시 → HALAL. 화장품 할랄 의무는 2028-10-17부터(PP 40/2026)"
+local_entity:
+  required: true
+  role: "인도네시아 수입자(Importir)만 신청 가능 — 지방 UPT BPOM 시설 점검(기술책임자, 위생·보관시설, 입출고·불만·회수 절차서) 후 '노티피카시 신청인 추천서'를 받아야 함. 외국 기업 직접 신청 불가"
+documents_required:
+  - id: notification
+    desc: "BPOM Notifkos 3.0 노티피카시 신청(PerBPOM 20/2026, 2026-10-23 제정 — 21/2022 대체, 기존 신고는 만료까지 유효)"
+    satisfied_by_hint: []
+    producer: company
+  - id: importer_docs
+    desc: "수입자 서류 — UPT BPOM 노티피카시 신청인 추천서(Rekomendasi sebagai Pemohon Notifikasi), 임원 무범죄 진술서(제20조)"
+    satisfied_by_hint: []
+    producer: authority
+  - id: LoA
+    desc: "대리점 지정서(LoA) — 인도네시아어/영어, 제조사 대표 서명, 유효기간·브랜드·신고·수입·유통 권한 명기(제20조)"
+    satisfied_by_hint: []
+    producer: company
+  - id: CFS
+    desc: "자유판매증명서(CFS) — 아세안 밖 수입품 필수, 원산국 당국 발행(제20조). 국내 발급: 대한화장품협회 제조판매증명서(KR_CFS_EXPORT). 20/2026 본문에서 아포스티유·영사확인 조항은 찾지 못함(21/2022에는 있었음 — 실무 확인)"
+    satisfied_by_hint: ["cfs_kcia*"]
+    producer: authority
+  - id: GMP_certificate
+    desc: "제조사 GMP 인증서 — 아세안 밖은 정부 발행 또는 정부 확인서가 있는 공인기관 발행(제20조). 식약처 CGMP 적합업소는 정부 발행, 민간 ISO 22716만 있으면 인정 여부 확인 필요"
+    satisfied_by_hint: ["manufacturer.certs:CGMP"]
+    producer: manufacturer
+  - id: formula_pct
+    desc: "전성분·함량(신고 입력·DIP용)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: PIF
+    desc: "제품정보문서(DIP, ASEAN PIF) — 수입자 기술책임자가 이해·보관, 점검 시 제출. 안전성 평가서(CPSR) 미보유"
+    satisfied_by_hint: []
+    producer: external_expert
+  - id: label_id
+    desc: "인도네시아어 라벨 — 용도·사용법·경고/주의 필수, 1차·2차 포장 모두, 2D 바코드(PerBPOM 18/2024)"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:leaflet_*"]
+    producer: company
+tests_required: [stability, microbiology, heavy_metals]
+labeling:
+  language: "인도네시아어 — 용도·사용법·경고/주의사항은 필수, 제품명·성분·제조국·신고번호 등은 라틴 문자 외국어 허용(PerBPOM 18/2024 제9조)"
+  allergens: null
+  other: ["향료 알레르겐 개별 표시 의무 없음 — PerBPOM 25/2025(ACD 준용)·ACD 부속서 III에 해당 항목 없음", "1차·2차 포장 모두 표기, 2D 바코드 필수", "BPOM 노티피카시 번호", "할랄 로고는 BPJPH 인증 후에만. 비할랄 원료 제품은 'NON HALAL' 등 표시로 판매 가능(Peraturan BPJPH 3/2026, 2차)", "스티커 라벨 — 명문 없음, 표시(Penandaan) 정의에 '부착'이 포함돼 허용으로 해석 (추정)", "광고는 신고 완료 제품만, 인도네시아어(PerBPOM 18/2024 제13~14조)"]
+animal_testing: not_required
+timeline:
+  lead_time: "결제 후 신청 ID 발급 → 최대 14영업일(time-to-respond, 향수 3일)"
+  fee: "아세안 밖 생산 품목당 Rp1,500,000(PP 15/2026 상한제, 2차)"
+  validity: "최대 3년, 갱신(pembaruan)으로 연장"
+evidence:
+  - url: "https://standar-otskk.pom.go.id/regulasi/perbpom-no-20-tahun-2026"
+    title: "perbpom no 20 tahun 2026"
+    level: direct
+    checked: 2026-11-07
+    quote: "surat Rekomendasi sebagai Pemohon Notifikasi dari Kepala UPT BPOM setempat"
+  - url: "https://standar-otskk.pom.go.id/regulasi/perbpom-no-20-tahun-2026"
+    title: "perbpom no 20 tahun 2026"
+    level: direct
+    checked: 2026-11-07
+    quote: "certificate of free sale untuk Kosmetik Impor yang berasal dari negara di luar ASEAN"
+  - url: "https://standar-otskk.pom.go.id/regulasi/perbpom-no-20-tahun-2026"
+    title: "perbpom no 20 tahun 2026"
+    level: direct
+    checked: 2026-11-07
+    quote: "dilaksanakan paling lama 14 (empat belas) Hari menggunakan mekanisme time to respond"
+  - url: "https://standar-otskk.pom.go.id/regulasi/perbpom-no-20-tahun-2026"
+    title: "perbpom no 20 tahun 2026"
+    level: direct
+    checked: 2026-11-07
+    quote: "Notifikasi berlaku paling lama 3 (tiga) tahun dan dapat diperpanjang melalui pembaruan."
+  - url: "https://pasal.id/peraturan/perban/peraturan-bpom-no-18-tahun-2024"
+    title: "PERBAN Nomor 18 Tahun 2024 — Penandaan, Promosi… | Pasal.id"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://standar-otskk.pom.go.id/regulasi/perbpom-no-25-tahun-2025"
+    title: "perbpom no 25 tahun 2025"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://bpjph.halal.go.id/main/read/penyesuaian-penahapan-kewajiban-sertifikasi-halal-diatur-dalam-pp-40-tahun-2026-begini-rinciannya"
+    title: "인도네시아 할랄제품보장청 BPJPH 할랄 의무화 일정"
+    level: direct
+    checked: 2026-11-07
+    quote: "masa penahapan wajib halalnya diperpanjang sampai dengan 17 Oktober 2028"
+  - url: "https://file.go.gov.sg/annexes-of-the-asean-cosmetic-directive.pdf"
+    title: "아세안 화장품 지침 ACD 부속서"
+    level: direct
+    checked: 2026-11-07
+    quote: "Version No.: 2026-1, 22nd June 2026"
+  - url: "https://file.go.gov.sg/appendix-iii-asean-cosmetic-claims-guidelines.pdf"
+    title: "appendix iii asean cosmetic claims guidelines"
+    level: direct
+    checked: 2026-11-07
+    quote: "Prevents, reduces or reverses the physiological changes and degeneration conditions brought about by aging"
+  - url: "https://pasal.id/peraturan/perban/peraturan-bpjph-no-3-tahun-2026"
+    title: "PERBAN Nomor 3 Tahun 2026 — Bentuk dan Tata Car… | Pasal.id"
+    level: secondary
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules:
+  - "ASEAN 금지성분 포함(EU 준용 대조 — 하이드로퀴논·수은 등) [kw:ingredient_banned(ASEAN)]"
+  - "ASEAN 제한성분 한도 초과 [kw:ingredient_restricted_over(ASEAN)]"
+  - "보존제·UV필터·색소가 허용목록 밖 [kw:ingredient_positive_list_missing(ASEAN)]"
+conditional_rules:
+  - "2028-10-17 이후 출시 — BPJPH 할랄 인증 미확보면 인증 취득 또는 비할랄 표시 [kw:date_on_or_after(2028-10-17)] [kw:card_verdict(HALAL,불가|조건부)]"
+  - "ASEAN 값은 EU 행 대용 — PerBPOM 25/2025(ACD 준용)와 차이 확인 [kw:ingredient_list_unavailable(ID_BPOM_INGREDIENTS)]"
+  - "제한성분 함량 미상 [kw:ingredient_restricted_conc_unknown(ASEAN)]"
+  - "배합 함량 미보유 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "현지 수입자 미지정 [kw:local_entity_missing(ID)]"
+  - "CFS 미준비 [kw:doc_missing(CFS)]"
+  - "정부 발행 GMP 인증서 없음(식약처 CGMP 미보유 제조사) [kw:manufacturer_cert_missing(CGMP)]"
+  - "DIP(PIF)·안전성 평가서 없음 [kw:doc_missing(PIF)]"
+notes: "원문 확인(2026-11-07): PerBPOM 20/2026(2026-10-23, 신청인·추천서·제20조 서류·14영업일·유효 3년), PerBPOM 25/2025(ACD 준용), PerBPOM 18/2024(라벨 언어·2D 바코드·광고), BPJPH 공지(PP 40/2026, 2026-10-14 — 화장품 할랄 의무 2026-10-17 → 2028-10-17 연장). 앞선 카드의 '2026-10-17 할랄 의무(PP 42/2024)'는 PP 40/2026으로 바뀌어 할랄 인증서를 필수 서류에서 뺐다. 2028-10-17 이후 할랄 판정은 날짜 조건이라 엔진이 아직 평가하지 못함(conditional_rules만 기록). 2차: 수수료 Rp1,500,000(CIRS 요약), 비할랄 표시(BPJPH 3/2026 법령 미러). 미확인: 20/2026의 CFS·GMP 아포스티유·영사확인 요건, PP 15/2026 실제 요율, PerBPOM 3/2022 'memutihkan' 허용 여부, 스티커 라벨 명문, 민간 ISO 22716 수용 여부."

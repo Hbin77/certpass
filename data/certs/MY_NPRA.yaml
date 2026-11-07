@@ -1,0 +1,130 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: MY_NPRA
+name_ko: 말레이시아 화장품 노티피케이션(NPRA)
+name_en: Malaysia NPRA Cosmetic Product Notification (ASEAN Cosmetic Directive)
+jurisdiction: MY
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 261
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 261번 NPRA)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "말레이시아 수입·판매 화장품 전부(출시 전 노티피케이션, NPRA QUEST 3+ 온라인) [kw:target_market(MY)]"
+ingredient_rules: ASEAN
+claim_rules:
+  - claim: whitening
+    effect: drug_risk
+    note: "미백 제품 자체는 화장품 범위지만 말레이시아 표방 지침은 'inhibition of melanin synthesis'(멜라닌 합성 억제)와 색소·기미 치료 표현을 불가로 둠 — 한국 기능성 미백 문구는 '피부 톤이 밝아 보이게' 같은 외관 표현으로 바꿔야 함. 하이드로퀴논은 ACD 부속서 II 금지(인조손톱 전문가용 0.02% 제외), 알부틴·나이아신아마이드는 ACD 목록에 없어 사용 가능"
+  - claim: anti_wrinkle
+    effect: drug_risk
+    note: "'Prevent/ reduce ... wrinkle' 같은 외관 표현은 허용, ACD 표방 지침의 '노화로 인한 생리적 변화를 예방·감소·역전' 표현은 불가 — 한국 '주름 개선' 기능성 문구는 외관 표현으로 바꿔야 함"
+  - claim: sunscreen
+    effect: ok
+    note: "ASEAN에서는 화장품, UV필터는 ACD 부속서 VII (추정)"
+  - claim: acne
+    effect: drug_risk
+    note: "'여드름성 피부용'은 가능, 치료 표현은 의약품 (추정)"
+  - claim: hair_loss
+    effect: drug_risk
+    note: "발모·탈모 치료 표현은 의약품 (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "질병 치료·예방 표현은 ACD 표방 지침상 화장품에 쓸 수 없음"
+  - claim: halal
+    effect: ok
+    note: "화장품 할랄 로고는 자발 사용(NPRA 지침 3.4). 수입품 할랄 표시는 JAKIM 또는 JAKIM 공인 해외기관(KMF·KHA) 인증 필요 → HALAL"
+local_entity:
+  required: true
+  role: "말레이시아 설립 법인(SSM 등록, 화장품 사업)인 제품 노티피케이션 보유자(CNH) — 외국 기업 직접 신고 불가, CNH가 제품 소유자가 아니면 위임장(LoA) 필요. CNH가 PIF 보관·제조사 GMP 보증 책임"
+documents_required:
+  - id: notification
+    desc: "NPRA QUEST 3+ 온라인 노티피케이션(제조사·전성분·라벨 입력 — 신고 때 따로 내는 서류는 없음, CFS 불필요)"
+    satisfied_by_hint: []
+    producer: company
+  - id: LoA
+    desc: "브랜드 소유자가 현지 CNH에 준 위임장(CNH가 제품 소유자가 아닐 때)"
+    satisfied_by_hint: []
+    producer: company
+  - id: PIF
+    desc: "ASEAN 제품정보파일(PIF) — 서명된 인체 안전성 평가서와 평가자 이력서(CV) 포함, 현지 CNH 보관(사후 점검 대상). 현재 안전성 평가서(CPSR) 미보유"
+    satisfied_by_hint: []
+    producer: external_expert
+  - id: formula_pct
+    desc: "전성분과 제한성분 함량(QUEST 입력·PIF용)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: GMP_proof
+    desc: "제조사 GMP 증빙 — NPRA 요청 시 제시, ISO 22716 동등 인정(원산국 공인기관 발행·배서 조건)"
+    satisfied_by_hint: ["manufacturer.certs:ISO 22716", "manufacturer.certs:CGMP"]
+    producer: manufacturer
+  - id: label_my
+    desc: "영어 및/또는 말레이어 라벨(현지 CNH 이름·주소 포함)"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:leaflet_*"]
+    producer: company
+tests_required: [stability, microbiology, heavy_metals]
+labeling:
+  language: "영어 및/또는 말레이어(ACD 라벨 요건)"
+  allergens: null
+  other: ["향료 알레르겐 개별 표시 의무 없음 — ACD 부속서 III(2026-1판)에 해당 항목이 없고, 향료는 'perfume'·'fragrance'로 묶어 표기 가능", "ACD 라벨 항목: 제품명·기능, 사용법, 전성분(INCI, 1% 초과 내림차순), 제조국, 현지 책임 회사 이름·주소, 내용량, 배치번호, 제조일 또는 사용기한(30개월 미만 제품은 사용기한), 주의사항", "스티커 라벨 허용 여부 — 말레이시아 개별 규정(Annex I part 7) 미확인"]
+animal_testing: not_required
+timeline:
+  lead_time: "결제 확인 후 1~3일 발급(NPRA FAQ)"
+  fee: "제품(변형)당 RM50, QUEST 계정 RM260~290(2년)"
+  validity: "2년, 만료 1개월 전 갱신(RM50)"
+evidence:
+  - url: "https://www.npra.gov.my/images/Guidelines_Central/Guidelines_on_Cosmetic/GUIDELINES_FOR_CONTROL_OF_COSMETIC_PRODUCTS_IN_MALAYSIA.pdf"
+    title: "GUIDELINES FOR CONTROL OF COSMETIC PRODUCTS IN MALAYSIA"
+    level: direct
+    checked: 2026-11-07
+    quote: "The CNH must be a locally incorporated company or legal entity in the field of cosmetics"
+  - url: "https://www.npra.gov.my/images/Guidelines_Central/Guidelines_on_Cosmetic/GUIDELINES_FOR_CONTROL_OF_COSMETIC_PRODUCTS_IN_MALAYSIA.pdf"
+    title: "GUIDELINES FOR CONTROL OF COSMETIC PRODUCTS IN MALAYSIA"
+    level: direct
+    checked: 2026-11-07
+    quote: "The processing fee for notification of a cosmetic product is RM50.00 for each product"
+  - url: "https://www.npra.gov.my/images/Guidelines_Central/Guidelines_on_Cosmetic/GUIDELINES_FOR_CONTROL_OF_COSMETIC_PRODUCTS_IN_MALAYSIA.pdf"
+    title: "GUIDELINES FOR CONTROL OF COSMETIC PRODUCTS IN MALAYSIA"
+    level: direct
+    checked: 2026-11-07
+    quote: "The notification of a cosmetic product shall be valid for 2 years."
+  - url: "https://www.npra.gov.my/images/Guidelines_Central/Guidelines_on_Cosmetic/Annex_I_part_13-GUIDELINE_FOR_PRODUCT_INFORMATION_FILE_PIF.pdf"
+    title: "Annex I part 13 GUIDELINE FOR PRODUCT INFORMATION FILE PIF"
+    level: direct
+    checked: 2026-11-07
+    quote: "Curriculum Vitae of the safety assessor"
+  - url: "https://www.npra.gov.my/images/Guidelines_Central/Guidelines_on_Cosmetic/Annex_I_part_8-GUIDELINE_FOR_COSMETIC_CLAIMS.pdf"
+    title: "Annex I part 8 GUIDELINE FOR COSMETIC CLAIMS"
+    level: direct
+    checked: 2026-11-07
+    quote: "inhibition of melanin synthesis"
+  - url: "https://file.go.gov.sg/annexes-of-the-asean-cosmetic-directive.pdf"
+    title: "아세안 화장품 지침 ACD 부속서"
+    level: direct
+    checked: 2026-11-07
+    quote: "Version No.: 2026-1, 22nd June 2026"
+  - url: "https://file.go.gov.sg/appendix-iii-asean-cosmetic-claims-guidelines.pdf"
+    title: "appendix iii asean cosmetic claims guidelines"
+    level: direct
+    checked: 2026-11-07
+    quote: "Prevents, reduces or reverses the physiological changes and degeneration conditions brought about by aging"
+  - url: "https://file.go.gov.sg/appendix-ii-asean-cosmetic-labelling-requirements.pdf"
+    title: "appendix ii asean cosmetic labelling requirements"
+    level: direct
+    checked: 2026-11-07
+    quote: "may be referred to by the word “perfume”, “fragrance”, “aroma” or “flavor”"
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules:
+  - "ASEAN 금지성분 포함(EU 부속서 II 준용 대조 — 하이드로퀴논·수은·디옥시아르부틴 등) [kw:ingredient_banned(ASEAN)]"
+  - "ASEAN 제한성분 한도 초과 [kw:ingredient_restricted_over(ASEAN)]"
+  - "보존제·UV필터·색소가 ACD 허용목록 밖 [kw:ingredient_positive_list_missing(ASEAN)]"
+conditional_rules:
+  - "ASEAN 값은 EU 행 대용 — ACD 부속서 2026-1판과 차이 확인(EU 2024/996 알부틴·알파알부틴 제한은 ACD에 없음) [kw:ingredient_list_unavailable(ASEAN_ACD)]"
+  - "제한성분 함량 미상 [kw:ingredient_restricted_conc_unknown(ASEAN)]"
+  - "배합 함량 미보유 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "말레이시아 CNH 미지정 [kw:local_entity_missing(MY)]"
+  - "PIF의 서명 안전성 평가서·평가자 CV 없음 [kw:doc_missing(PIF)]"
+  - "제조사 GMP 증빙 없음(요청 시 제시) [kw:manufacturer_cert_missing(ISO 22716|CGMP)]"
+  - "한국 기능성 미백·주름 문구를 그대로 번역해 사용 [kw:claim(whitening|anti_wrinkle)]"
+notes: "원문 확인(2026-11-07, NPRA 지침·Annex I part 8·12·13, HSA 게시 ACD 부속서 2026-1판·표방 지침·라벨 요건): CNH는 말레이시아 설립 법인, 신고 때 제출 서류 없음(CFS 불필요, GMP 증빙은 요청 시), PIF에 서명 안전성 평가서·평가자 CV, 제품당 RM50·유효 2년, 할랄 로고는 자발. 아세안은 EU식 향료 알레르겐 표시 의무가 없어 allergens를 비움(엔진이 향료 알레르겐 구성 확인을 요구하지 않음). 미확인: 라벨 Annex I part 7 원문(404)과 스티커 허용, QUEST 신고 때 LoA 업로드 여부, 미백 제품 COA 1개월 내 제출(구 FAQ)의 현행 적용 여부."

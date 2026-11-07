@@ -1,0 +1,4 @@
+# 로컬 개발·검증용 (가능성 확인 학습 train_local.py, 테스트)
+-r requirements.txt
+scikit-learn==1.9.1
+pytest==9.2.0

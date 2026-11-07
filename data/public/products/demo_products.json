@@ -1,0 +1,668 @@
+{
+  "_note": "공개 데모용 가상 데이터 — 성분 목록은 포장에 공개된 전성분 순서, 함량은 그 순서만으로 만든 가상 값(실제 배합비를 읽지 않고 생성, 기능성 성분은 고시 기준값). 서류 번호·날짜도 가상.",
+  "company": {
+    "name": "데모 화장품사(가상)",
+    "role_kr": "화장품책임판매업자(가상)",
+    "own_manufacturing": false,
+    "export_history": [],
+    "company_certs": {
+      "venture": "expired_2024",
+      "innobiz": "none",
+      "mainbiz": "none"
+    },
+    "local_entities": {},
+    "financial": {
+      "fiscal_year": 2025,
+      "_source": "데모(가상)"
+    }
+  },
+  "products": [
+    {
+      "id": "D1",
+      "name_kr": "데모 클렌징 밤",
+      "name_en": "Demo Cleansing Balm",
+      "status": "on_market",
+      "net_content": "50 ml (1.69 fl.oz)",
+      "product_type": "cleanser_balm",
+      "application": "rinse_off",
+      "body_area": [
+        "face"
+      ],
+      "functional_kr": [],
+      "claims": [
+        "deep_cleansing",
+        "makeup_removal",
+        "all_in_one",
+        "free_from_21",
+        "paraben_free",
+        "silicone_free",
+        "natural_origin_ingredients",
+        "skin_irritation_tested"
+      ],
+      "manufacturer": {
+        "name": "위탁제조사(가상)",
+        "country": "KR",
+        "certs": [
+          "CGMP",
+          "ISO 22716",
+          "IFRA",
+          "ISO 9001",
+          "ISO 14001",
+          "ISO 45001"
+        ]
+      },
+      "documents": [
+        "formula_ingredient_statement_allergen_demo",
+        "ingredient_list_demo",
+        "finished_product_test_report",
+        "bulk_test_report",
+        "test_report_demo_01",
+        "packaging_spec_demo_01",
+        "label_kr",
+        "detail_page_kr",
+        "leaflet_kr_en_ja",
+        "skin_irritation_test"
+      ],
+      "formula_known": "ingredients_only_no_concentration",
+      "ingredients": [
+        {
+          "no": 1,
+          "kr": "세틸에틸헥사노에이트",
+          "inci": "Cetyl Ethylhexanoate"
+        },
+        {
+          "no": 2,
+          "kr": "피이지-20글리세릴트라이아이소스테아레이트",
+          "inci": "PEG-20 Glyceryl Triisostearate"
+        },
+        {
+          "no": 3,
+          "kr": "카프릴릭/카프릭트라이글리세라이드",
+          "inci": "Caprylic/Capric Triglyceride"
+        },
+        {
+          "no": 4,
+          "kr": "합성왁스",
+          "inci": "Synthetic Wax"
+        },
+        {
+          "no": 5,
+          "kr": "피이지-10아이소스테아레이트",
+          "inci": "PEG-10 Isostearate"
+        },
+        {
+          "no": 6,
+          "kr": "솔비탄세스퀴올리에이트",
+          "inci": "Sorbitan Sesquioleate"
+        },
+        {
+          "no": 7,
+          "kr": "오렌지껍질오일",
+          "inci": "Citrus Aurantium Dulcis (Orange) Peel Oil"
+        },
+        {
+          "no": 8,
+          "kr": "레몬껍질오일",
+          "inci": "Citrus Limon (Lemon) Peel Oil"
+        },
+        {
+          "no": 9,
+          "kr": "비타민나무오일",
+          "inci": "Hippophae Rhamnoides Oil"
+        },
+        {
+          "no": 10,
+          "kr": "자몽껍질오일",
+          "inci": "Citrus Paradisi (Grapefruit) Peel Oil"
+        },
+        {
+          "no": 11,
+          "kr": "라임전초오일",
+          "inci": "Citrus Aurantifolia (Lime) Oil"
+        },
+        {
+          "no": 12,
+          "kr": "포트마리골드꽃수",
+          "inci": "Calendula Officinalis Flower Water"
+        },
+        {
+          "no": 13,
+          "kr": "글리세린",
+          "inci": "Glycerin",
+          "cas": "56-81-5"
+        },
+        {
+          "no": 14,
+          "kr": "1,2-헥산다이올",
+          "inci": "1,2-Hexanediol",
+          "cas": "6920-22-5"
+        },
+        {
+          "no": 15,
+          "kr": "펜타에리스리틸테트라-다이-t-부틸하이드록시하이드로신나메이트",
+          "inci": "Pentaerythrityl Tetra-di-t-butyl Hydroxyhydrocinnamate"
+        },
+        {
+          "no": 16,
+          "kr": "에틸헥실글리세린",
+          "inci": "Ethylhexylglycerin"
+        },
+        {
+          "no": 17,
+          "kr": "카프릴릴글라이콜",
+          "inci": "Caprylyl Glycol",
+          "cas": "1117-86-8"
+        },
+        {
+          "no": 18,
+          "kr": "리모넨",
+          "inci": "Limonene",
+          "cas": "5989-27-5",
+          "role": "allergen_from_fragrance"
+        },
+        {
+          "no": 19,
+          "kr": "알파-터피넨",
+          "inci": "Alpha-Terpinene",
+          "role": "allergen_from_fragrance"
+        },
+        {
+          "no": 20,
+          "kr": "피넨",
+          "inci": "Pinene",
+          "role": "allergen_from_fragrance"
+        }
+      ]
+    },
+    {
+      "id": "D2",
+      "name_kr": "데모 클렌징 폼",
+      "name_en": "Demo Cleansing Foam",
+      "status": "on_market",
+      "net_content": "150 ml",
+      "product_type": "cleanser_foam",
+      "application": "rinse_off",
+      "body_area": [
+        "face"
+      ],
+      "functional_kr": [],
+      "claims": [
+        "cleansing"
+      ],
+      "manufacturer": {
+        "name": "위탁제조사(가상)",
+        "country": "KR",
+        "certs": [
+          "CGMP",
+          "ISO 22716",
+          "IFRA",
+          "ISO 9001",
+          "ISO 14001",
+          "ISO 45001"
+        ]
+      },
+      "documents": [
+        "formula_composition_with_percent",
+        "finished_product_test_report",
+        "test_report_demo_02",
+        "packaging_spec_demo_02",
+        "label_kr"
+      ],
+      "formula_known": "full_with_concentration",
+      "ingredients": [
+        {
+          "kr": "정제수",
+          "inci": "Water",
+          "cas": "7732-18-5",
+          "pct": 69.41
+        },
+        {
+          "kr": "소듐라우로일이세티오네이트",
+          "inci": "Sodium Lauroyl Isethionate",
+          "cas": "7381-01-3",
+          "pct": 8.94
+        },
+        {
+          "kr": "글리세린",
+          "inci": "Glycerin",
+          "cas": "56-81-5",
+          "pct": 5.67
+        },
+        {
+          "kr": "소듐코코일글라이시네이트",
+          "inci": "Sodium Cocoyl Glycinate",
+          "cas": "90387-74-9",
+          "pct": 4.08
+        },
+        {
+          "kr": "하이드록시프로필스타치포스페이트",
+          "inci": "Hydroxypropyl Starch Phosphate",
+          "cas": "113894-91-1",
+          "pct": 3.33
+        },
+        {
+          "kr": "데실글루코사이드",
+          "inci": "Decyl Glucoside",
+          "cas": "141464-42-8",
+          "pct": 2.07
+        },
+        {
+          "kr": "마그네슘알루미늄실리케이트",
+          "inci": "Magnesium Aluminum Silicate",
+          "cas": "12199-37-0",
+          "pct": 1.56
+        },
+        {
+          "kr": "소듐클로라이드",
+          "inci": "Sodium Chloride",
+          "cas": "7647-14-5",
+          "pct": 1.29
+        },
+        {
+          "kr": "코카마이드미파",
+          "inci": "Cocamide MIPA",
+          "cas": "68333-82-4",
+          "pct": 0.889
+        },
+        {
+          "kr": "소듐라우로일락틸레이트",
+          "inci": "Sodium Lauroyl Lactylate",
+          "cas": "13557-75-0",
+          "pct": 0.797
+        },
+        {
+          "kr": "베타인",
+          "inci": "Betaine",
+          "cas": "107-43-7",
+          "pct": 0.539
+        },
+        {
+          "kr": "소듐벤조에이트",
+          "inci": "Sodium Benzoate",
+          "cas": "532-32-1",
+          "pct": 0.3,
+          "role": "preservative"
+        },
+        {
+          "kr": "시트릭애씨드",
+          "inci": "Citric Acid",
+          "cas": "77-92-9",
+          "pct": 0.285
+        },
+        {
+          "kr": "향료",
+          "inci": "Fragrance",
+          "pct": 0.2,
+          "role": "fragrance",
+          "_note": "향료 알러젠 구성 미보유(리모넨 0.000000 표기)"
+        },
+        {
+          "kr": "트레할로오스",
+          "inci": "Trehalose",
+          "cas": "99-20-7",
+          "pct": 0.19
+        },
+        {
+          "kr": "소듐폴리아크릴로일다이메틸타우레이트",
+          "inci": "Sodium Polyacryloyldimethyl Taurate",
+          "cas": "35641-59-9",
+          "pct": 0.152
+        },
+        {
+          "kr": "카프릴릴글라이콜",
+          "inci": "Caprylyl Glycol",
+          "cas": "1117-86-8",
+          "pct": 0.092
+        },
+        {
+          "kr": "잔탄검",
+          "inci": "Xanthan Gum",
+          "cas": "11138-66-2",
+          "pct": 0.082
+        },
+        {
+          "kr": "포트마리골드추출물",
+          "inci": "Calendula Officinalis Extract",
+          "pct": 0.051
+        },
+        {
+          "kr": "다이소듐이디티에이",
+          "inci": "Disodium EDTA",
+          "cas": "6381-92-6",
+          "pct": 0.05
+        },
+        {
+          "kr": "1,2-헥산다이올",
+          "inci": "1,2-Hexanediol",
+          "cas": "6920-22-5",
+          "pct": 0.027
+        },
+        {
+          "kr": "리모넨",
+          "inci": "Limonene",
+          "cas": "5989-27-5",
+          "pct": null,
+          "role": "allergen_from_fragrance"
+        }
+      ]
+    },
+    {
+      "id": "D3",
+      "name_kr": "데모 브라이트닝 크림",
+      "name_en": "Demo Brightening Cream",
+      "status": "pilot_production",
+      "net_content": "50 g",
+      "product_type": "face_cream",
+      "application": "leave_on",
+      "body_area": [
+        "face"
+      ],
+      "functional_kr": [
+        "whitening",
+        "anti_wrinkle"
+      ],
+      "functional_basis_kr": "기능성화장품 심사제외품목 보고(고시 성분: 나이아신아마이드 2% 미백, 아데노신 0.04% 주름개선)",
+      "claims": [
+        "whitening",
+        "anti_wrinkle",
+        "moisturizing",
+        "skin_barrier",
+        "marine_bio_wando"
+      ],
+      "manufacturer": {
+        "name": "위탁제조사(가상)",
+        "country": "KR",
+        "certs": [
+          "화장품제조업 등록",
+          "공장등록"
+        ]
+      },
+      "documents": [
+        "formula_ingredient_statement_kr_en_demo",
+        "msds_kr_en",
+        "test_report_KTR_kr_en",
+        "functional_report_exemption",
+        "brochure_kr_en_zh",
+        "manufacturer_registration",
+        "label_kr"
+      ],
+      "formula_known": "full_with_concentration",
+      "ingredients": [
+        {
+          "no": 1,
+          "kr": "정제수",
+          "inci": "Water",
+          "cas": "7732-18-5",
+          "pct": 78.59
+        },
+        {
+          "no": 2,
+          "kr": "글리세린",
+          "inci": "Glycerin",
+          "cas": "56-81-5",
+          "pct": 8.43
+        },
+        {
+          "no": 3,
+          "kr": "부틸렌글라이콜",
+          "inci": "Butylene Glycol",
+          "cas": "107-88-0",
+          "pct": 4.01
+        },
+        {
+          "no": 4,
+          "kr": "카프릴릭/카프릭트라이글리세라이드",
+          "inci": "Caprylic/Capric Triglyceride",
+          "cas": "65381-09-1",
+          "pct": 2.48
+        },
+        {
+          "no": 5,
+          "kr": "1,2-헥산다이올",
+          "inci": "1,2-Hexanediol",
+          "cas": "6920-22-5",
+          "pct": 1.81
+        },
+        {
+          "no": 6,
+          "kr": "세틸에틸헥사노에이트",
+          "inci": "Cetyl Ethylhexanoate",
+          "cas": "59130-69-7",
+          "pct": 1.01
+        },
+        {
+          "no": 7,
+          "kr": "글리세레스-26",
+          "inci": "Glycereth-26",
+          "cas": "31694-55-0",
+          "pct": 0.637
+        },
+        {
+          "no": 8,
+          "kr": "나이아신아마이드",
+          "inci": "Niacinamide",
+          "cas": "98-92-0",
+          "pct": 2.0,
+          "role": "functional_whitening_kr"
+        },
+        {
+          "no": 9,
+          "kr": "사이클로펜타실록세인",
+          "inci": "Cyclopentasiloxane",
+          "cas": "541-02-6",
+          "pct": 0.324
+        },
+        {
+          "no": 10,
+          "kr": "세테아릴알코올",
+          "inci": "Cetearyl Alcohol",
+          "cas": "8005-44-5",
+          "pct": 0.138
+        },
+        {
+          "no": 11,
+          "kr": "사이클로헥사실록세인",
+          "inci": "Cyclohexasiloxane",
+          "cas": "540-97-6",
+          "pct": 0.086
+        },
+        {
+          "no": 12,
+          "kr": "베타인",
+          "inci": "Betaine",
+          "cas": "107-43-7",
+          "pct": 0.07
+        },
+        {
+          "no": 13,
+          "kr": "글리세릴스테아레이트에스이",
+          "inci": "Glyceryl Stearate SE",
+          "cas": "11099-07-3",
+          "pct": 0.049
+        },
+        {
+          "no": 14,
+          "kr": "시어버터",
+          "inci": "Butyrospermum Parkii (Shea) Butter",
+          "cas": "68920-03-6",
+          "pct": 0.03
+        },
+        {
+          "no": 15,
+          "kr": "글리세릴스테아레이트",
+          "inci": "Glyceryl Stearate",
+          "cas": "123-94-4",
+          "pct": 0.017
+        },
+        {
+          "no": 16,
+          "kr": "피이지-100스테아레이트",
+          "inci": "PEG-100 Stearate",
+          "cas": "9004-99-3",
+          "pct": 0.011
+        },
+        {
+          "no": 17,
+          "kr": "아라키딜글루코사이드",
+          "inci": "Arachidyl Glucoside",
+          "pct": 0.0062
+        },
+        {
+          "no": 18,
+          "kr": "미역귀추출물",
+          "inci": "Undaria Pinnatifida Sporophyll Extract",
+          "pct": 0.0038
+        },
+        {
+          "no": 19,
+          "kr": "아라키딜알코올",
+          "inci": "Arachidyl Alcohol",
+          "cas": "629-96-9",
+          "pct": 0.0027
+        },
+        {
+          "no": 20,
+          "kr": "베헤닐알코올",
+          "inci": "Behenyl Alcohol",
+          "cas": "661-19-8",
+          "pct": 0.0013
+        },
+        {
+          "no": 21,
+          "kr": "카보머",
+          "inci": "Carbomer",
+          "cas": "9003-01-4",
+          "pct": 0.001
+        },
+        {
+          "no": 22,
+          "kr": "다이메티콘",
+          "inci": "Dimethicone",
+          "cas": "9006-65-9",
+          "pct": 0.0006
+        },
+        {
+          "no": 23,
+          "kr": "트로메타민",
+          "inci": "Tromethamine",
+          "cas": "77-86-1",
+          "pct": 0.0005
+        },
+        {
+          "no": 24,
+          "kr": "향료",
+          "inci": "Fragrance",
+          "pct": 0.2,
+          "role": "fragrance",
+          "_note": "알러젠 구성 미보유"
+        },
+        {
+          "no": 25,
+          "kr": "아데노신",
+          "inci": "Adenosine",
+          "cas": "58-61-7",
+          "pct": 0.04,
+          "role": "functional_antiwrinkle_kr"
+        },
+        {
+          "no": 26,
+          "kr": "다시마추출물",
+          "inci": "Laminaria Japonica Extract",
+          "cas": "92128-82-0",
+          "pct": 0.0005
+        },
+        {
+          "no": 27,
+          "kr": "다이소듐이디티에이",
+          "inci": "Disodium EDTA",
+          "cas": "139-33-3",
+          "pct": 0.05
+        },
+        {
+          "no": 28,
+          "kr": "콩추출물",
+          "inci": "Glycine Max (Soybean) Seed Extract",
+          "pct": 0.0005
+        },
+        {
+          "no": 29,
+          "kr": "효모발효여과물",
+          "inci": "Saccharomyces Ferment Filtrate",
+          "pct": 0.0005
+        },
+        {
+          "no": 30,
+          "kr": "비피다발효용해물",
+          "inci": "Bifida Ferment Lysate",
+          "cas": "96507-89-0",
+          "pct": 0.0005
+        },
+        {
+          "no": 31,
+          "kr": "세라마이드엔피",
+          "inci": "Ceramide NP",
+          "pct": 0.0005
+        },
+        {
+          "no": 32,
+          "kr": "병풀추출물",
+          "inci": "Centella Asiatica Extract",
+          "cas": "84696-21-9",
+          "pct": 0.0005
+        },
+        {
+          "no": 33,
+          "kr": "락토오스",
+          "inci": "Lactose",
+          "cas": "63-42-3",
+          "pct": 0.0005
+        }
+      ]
+    },
+    {
+      "id": "D4",
+      "name_kr": "데모 진주 시트마스크(기획)",
+      "name_en": "Demo Pearl Sheet Mask (concept)",
+      "status": "in_development",
+      "net_content": null,
+      "product_type": "sheet_mask",
+      "application": "leave_on",
+      "body_area": [
+        "face"
+      ],
+      "functional_kr": [
+        "whitening_planned"
+      ],
+      "claims": [
+        "whitening",
+        "radiance",
+        "moisturizing",
+        "pearl_protein_minerals"
+      ],
+      "manufacturer": {
+        "name": "위탁제조사(가상)",
+        "country": "KR",
+        "certs": []
+      },
+      "documents": [
+        "concept_brochure_pdf"
+      ],
+      "formula_known": "concept_only",
+      "sheet_material": "bio-cellulose",
+      "ingredients": [
+        {
+          "kr": "흑진주추출물/진주가루",
+          "inci": "Pearl Powder / Pearl Extract (TBD)",
+          "role": "key_concept",
+          "_note": "기획서 기준, 처방 미확정"
+        },
+        {
+          "kr": "나이아신아마이드",
+          "inci": "Niacinamide",
+          "cas": "98-92-0",
+          "role": "functional_whitening_planned"
+        }
+      ]
+    }
+  ]
+}

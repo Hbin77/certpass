@@ -1,0 +1,144 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: EU_CPNP
+name_ko: EU 화장품 신고(CPNP)
+name_en: EU Cosmetic Products Notification Portal (Regulation (EC) No 1223/2009 Art. 13)
+jurisdiction: EU
+kind: mandatory_registration
+strategic_kr: true
+general_kr_no: null
+support_rate: "50~70%, 최대 1억(중기부 해외규격인증 전략인증 — 전략지원은 KTR 별도 공고, 2026-11-30 마감)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "EU 회원국(북아일랜드 포함)에 출시하는 모든 화장품. CPNP에 한 번 신고하면 회원국별 추가 신고 불필요 [kw:target_market(EU)]"
+ingredient_rules: EU
+claim_rules:
+  - claim: whitening
+    effect: ok
+    note: "피부톤 개선 등 화장품 범위 표현은 가능. 색소질환 치료 등 의약적 표현은 불가. 알부틴·코직산 등은 부속서 III 한도 적용 (추정)"
+  - claim: anti_wrinkle
+    effect: ok
+    note: "외관상 주름 완화 표현은 가능, 근거를 PIF(11조 2항 d)에 보관. 콜라겐 생성 촉진 등 생리작용 표현은 의약품 오인 위험 (추정)"
+  - claim: sunscreen
+    effect: ok
+    note: "EU에서는 화장품. UV필터는 부속서 VI만 허용, SPF 시험·표시는 권고 2006/647/EC (추정)"
+  - claim: acne
+    effect: drug_risk
+    note: "'여드름성 피부용'은 가능, '여드름 치료'는 의약품 (추정)"
+  - claim: medical
+    effect: not_allowed
+    note: "질병 치료·예방 표현은 화장품 불가 (추정)"
+  - claim: paraben_free
+    effect: not_allowed
+    note: "'파라벤 프리' 등 합법 성분군을 깎아내리는 free-from 표방은 EU 표시 기술문서(Reg. 655/2013 공통기준)상 불인정 (추정)"
+  - claim: free_from_21
+    effect: not_allowed
+    note: "'파라벤 프리' 등 합법 성분군을 깎아내리는 free-from 표방은 EU 표시 기술문서(Reg. 655/2013 공통기준)상 불인정 (추정)"
+  - claim: silicone_free
+    effect: ok
+    note: "무향·무알코올 등 소비자 선택 정보형은 사실이면 가능 (추정)"
+  - claim: natural_origin_ingredients
+    effect: ok
+    note: "법정 정의 없음. ISO 16128 산출 등 근거 보관 권장 (추정)"
+  - claim: skin_irritation_tested
+    effect: ok
+    note: "'피부 자극 시험 완료' 표방은 시험 근거를 PIF에 보관 (추정)"
+  - claim: hypoallergenic
+    effect: ok
+    note: "알레르기 유발 가능성을 줄인 설계와 근거 자료가 있어야 함 (추정)"
+local_entity:
+  required: true
+  role: "EU 소재 책임자(Responsible Person). 역외 제조사는 서면 위임으로 지정하고 RP가 서면 수락(4조 4·5항). 수입자는 기본적으로 RP"
+documents_required:
+  - id: RP_mandate
+    desc: "EU RP 지정 위임장·수락서(4조)"
+    satisfied_by_hint: ["company.local_entities:EU"]
+    producer: company
+  - id: PIF
+    desc: "제품정보파일(11조): 제품 설명, 안전성 보고서, 제조방법·GMP 준수 선언, 효능 근거, 동물실험 자료. RP 라벨 주소에서 마지막 배치 출시 후 10년 보관"
+    satisfied_by_hint: []
+    producer: company
+  - id: CPSR_signed
+    desc: "화장품 안전성 보고서(10조·부속서 I Part A·B), 자격 있는 평가자 서명"
+    satisfied_by_hint: ["draft_from:formula_*", "draft_from:finished_product_test_report", "draft_from:msds_*"]
+    producer: external_expert
+  - id: formula_conc
+    desc: "정확 농도·범위 또는 프레임 포뮬레이션(13조 1항 h) — CPNP 입력과 CPSR 노출량 계산용"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: allergen_info
+    desc: "향료 알레르기 성분 구성·함량(부속서 III '기타' 열 표시 대상) — 향료 공급사 자료"
+    satisfied_by_hint: ["formula_ingredient_statement_allergen*"]
+    producer: manufacturer
+  - id: GMP_statement
+    desc: "GMP(ISO 22716) 준수 선언(8조)"
+    satisfied_by_hint: ["manufacturer.certs:ISO 22716", "manufacturer.certs:CGMP"]
+    producer: manufacturer
+  - id: test_reports
+    desc: "안정성·미생물·보존력(챌린지)·포장 적합성 시험 결과(CPSR Part A 입력)"
+    satisfied_by_hint: ["stability_test*", "challenge_test*", "draft_from:finished_product_test_report", "draft_from:bulk_test_report", "draft_from:test_report_*"]
+    producer: lab
+  - id: raw_material_data
+    desc: "원료 규격·SDS·불순물(중금속 등) 자료, 향료 IFRA 적합 증명"
+    satisfied_by_hint: ["msds_*", "manufacturer.certs:IFRA"]
+    producer: manufacturer
+  - id: claim_evidence
+    desc: "효능 표방 근거(11조 2항 d, Reg. 655/2013)"
+    satisfied_by_hint: ["skin_irritation_test", "draft_from:functional_report_*"]
+    producer: lab
+  - id: label_eu
+    desc: "출시 회원국 언어 라벨·포장 원본과 포장 사진(13조 2항)"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:packaging_spec_*"]
+    producer: company
+tests_required: [stability, microbiology, challenge_test, packaging_compatibility, heavy_metals, physicochemical]
+labeling:
+  language: "출시 회원국 법이 정한 언어(19조 5항). 독일어권(AT·DE)은 독일어 (추정)"
+  allergens: "부속서 III 향료 알레르기 성분은 바르는 제품 0.001%, 씻어내는 제품 0.01% 초과 시 전성분에 표시(통합본 원문 확인). Reg. 2023/1545 확대 목록 적용 — 신규 출시품 2026-07-31부터, 기존 유통품 2028-07-31까지 전환 (전환일은 추정)"
+  other: ["RP 이름·주소(여러 주소면 PIF 보관 주소 강조)", "원산국(수입품)", "내용량", "최소 내구일자 또는 PAO(내구 30개월 초과 시 PAO 기호)", "사용상 주의(부속서 III~VI 문구)", "로트번호", "제품 기능(외관상 불명확 시)", "전성분('Ingredients' 표제, 1% 미만은 순서 무관, 나노는 '(nano)', 색소는 CI 번호)"]
+animal_testing: banned
+timeline:
+  lead_time: "CPNP 입력은 온라인 즉시. 사전 준비(CPSR·PIF·시험)는 수 주~수 개월 (추정)"
+  fee: "CPNP 신고 무료. RP 대행·안전성 평가 비용 별도 (추정)"
+  validity: "기한 없음. 제품·RP·라벨 변경 시 갱신. PIF는 마지막 배치 출시 후 10년 보관(11조)"
+evidence:
+  - url: "http://publications.europa.eu/resource/celex/02009R1223-20260518"
+    title: "EU 화장품규정 1223/2009 통합본(2026-05-18) 기계가독본"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/규제원문_dl_eurlex/cons.html"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/규제원문_dl_cpnp/art13.pdf"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://api.tech.ec.europa.eu/cosing20/1.0/api/annexes/II/export-csv"
+    title: "export csv"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.smes.go.kr/globalcerti/info/ktrInfo.do"
+    title: "중기부 해외규격인증 획득지원사업 2026 공고 (전략인증, 일반 583종 목록)"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://eur-lex.europa.eu/eli/reg/2023/1545/oj"
+    title: "Regulation - 2023/1545 - EN - EUR-Lex"
+    level: unverified
+    checked: 2026-11-07
+  - url: "https://eur-lex.europa.eu/eli/reg/2013/655/oj"
+    title: "Regulation - 655/2013 - EN - EUR-Lex"
+    level: unverified
+    checked: 2026-11-07
+blocking_rules:
+  - "EU 금지성분(부속서 II, CMR 포함) 포함 [kw:ingredient_banned(EU)]"
+  - "제한성분(부속서 III) 한도 초과 [kw:ingredient_restricted_over(EU)]"
+  - "색소·보존제·UV필터 용도 성분이 부속서 IV·V·VI 허용목록 밖 [kw:ingredient_positive_list_missing(EU)]"
+conditional_rules:
+  - "제한성분(부속서 III) 함량 미상 [kw:ingredient_restricted_conc_unknown(EU)]"
+  - "배합 농도 미보유 — CPNP 농도 입력·CPSR 노출량 계산 불가 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "향료 알레르기 성분 구성 미보유 [kw:doc_missing(allergen_info)]"
+  - "EU RP 미지정 [kw:local_entity_missing(EU)]"
+  - "서명된 CPSR 없음 [kw:doc_missing(CPSR_signed)]"
+  - "안정성·미생물·챌린지 시험 자료 없음 [kw:doc_missing(test_reports)]"
+  - "제조사 GMP(ISO 22716·CGMP) 증빙 없음 [kw:manufacturer_cert_missing(ISO 22716|CGMP)]"
+  - "INCI·CAS 매칭이 안 된 성분 존재 [kw:ingredient_match_unresolved]"
+  - "폄하형 free-from 표방 [kw:claim(paraben_free|free_from_21)]"
+  - "나노물질 포함 — 출시 6개월 전 16조 나노 신고 필요 [kw:ingredient_nano]"
+notes: "CPNP 신고 성공이 1223/2009 적합을 뜻하지 않음(매뉴얼 1.1 원문). 판정 핵심은 ① 성분(통합표 EU) ② RP 지정 ③ 서명 CPSR·PIF ④ 출시국 언어 라벨. 통합표 EU banned의 D4 행(부속서 II ref 1388)에 INCI 'CYCLOMETHICONE'이 붙어 있어 사이클로메티콘 표기 제품은 D4 금지로 잡힘 — 혼합물 구성(D5·D6) 확인 후 판정(EU_REACH_D4D5D6 참조). 포장은 EU_PPWR, 씻어내는 제품 친환경 라벨은 EU_ECOLABEL_RINSEOFF. 2023/1545 확대 알레르겐 전환일(2026-07-31 신규·2028-07-31 기존)과 free-from·저자극 표방 기준은 (추정)."

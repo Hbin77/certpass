@@ -1,0 +1,108 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: CO_INVIMA
+name_ko: 콜롬비아 화장품 의무위생신고(INVIMA NSO)
+name_en: Colombia INVIMA Notificacion Sanitaria Obligatoria (Andean Community Decision 833)
+jurisdiction: CO
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 376
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 376번 INVIMA)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "콜롬비아 판매 화장품 — 안데스공동체 결정 833의 의무위생신고(NSO). 서류가 갖춰지면 추가 절차 없이 코드 부여(제10조), 다른 회원국 NSO 인정 가능(제19조) [kw:target_market(CO)]"
+ingredient_rules: EU
+claim_rules:
+  - claim: whitening
+    effect: needs_evidence
+    note: "표방 효과를 뒷받침하는 기술·과학 연구를 NSO에 첨부(제9조 m, 목적·결론은 스페인어 번역). 치료 효과는 표방 불가"
+  - claim: anti_wrinkle
+    effect: needs_evidence
+    note: "표방 효과 입증 연구 첨부(제9조 m)"
+  - claim: medical
+    effect: not_allowed
+    note: "화장품은 치료 적응증을 표방할 수 없음(결정 833 제3조)"
+local_entity:
+  required: true
+  role: "NSO 신고국에 법적 주소를 둔 NSO 보유자(제7조) + 약사(Químico Farmacéutico) 기술책임자(제9조 g) — 외국 제조사 직접 신고 불가. 병행 수입자는 같은 NSO 코드로 신고(제11조)"
+documents_required:
+  - id: NSO_form
+    desc: "NSO 공동 양식(선서 진술서) — 법정대리인 대표권 증빙, 제조사·보유자 정보, 제품명·제형, 기술책임자, 회원국 수수료 납부(제9조 a~h)"
+    satisfied_by_hint: []
+    producer: company
+  - id: formula
+    desc: "정성 처방 + 제한성분·주요 활성성분 정량, INCI 명칭(제9조 i·j)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: specs
+    desc: "완제품 관능·이화학 규격, 미생물 규격(제9조 k·l)"
+    satisfied_by_hint: ["finished_product_test_report", "bulk_test_report"]
+    producer: lab
+  - id: lot_coding
+    desc: "로트 코드 체계 설명(제조사별, 제9조 q)"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: GMP_assurance
+    desc: "안데스 밖 제조품은 보유자가 GMP(BPM) 준수를 보장(제52조) — GMP 인증서 제출은 요구하지 않음"
+    satisfied_by_hint: ["manufacturer.certs:ISO 22716", "manufacturer.certs:CGMP"]
+    producer: manufacturer
+  - id: label_co
+    desc: "라벨 또는 라벨 시안(시안 제출 시 판매 시작 즉시 실제 라벨 제출), 사용법, 포장재(제9조 n~p) — 스페인어"
+    satisfied_by_hint: ["draft_from:label_kr"]
+    producer: company
+tests_required: [microbiology]
+labeling:
+  language: "스페인어(INCI 제외) — NSO 서류도 스페인어 번역(제9조)"
+  allergens: null
+  other: ["향료 알레르겐 표시 — 안데스 결의 2108 원문 미확인", "NSO 번호(Decreto 857로 표기 완화, 2차)", "스티커 허용 — 페루 DIGEMID 양식 기준 원문, 콜롬비아 개별 규정은 미확인"]
+animal_testing: banned
+timeline:
+  lead_time: "서류 완비 시 추가 절차 없이 코드 부여(즉시, 제10조)"
+  fee: "INVIMA 코드 93015 = 292.83 UVB(Res. 2026058314, 2차)"
+  validity: "7년, 같은 코드로 연속 갱신(제18조)"
+evidence:
+  - url: "https://sice.oas.org/trade/junac/decisiones/dec833_s.pdf"
+    title: "dec833 s"
+    level: direct
+    checked: 2026-11-07
+    quote: "quien debe tener domicilio legal en el País Miembro de notificación o reconocimiento"
+  - url: "https://sice.oas.org/trade/junac/decisiones/dec833_s.pdf"
+    title: "dec833 s"
+    level: direct
+    checked: 2026-11-07
+    quote: "Nombre del responsable técnico (Químico Farmacéutico)"
+  - url: "https://sice.oas.org/trade/junac/decisiones/dec833_s.pdf"
+    title: "dec833 s"
+    level: direct
+    checked: 2026-11-07
+    quote: "sin mayor trámite, le asignará un código de identificación"
+  - url: "https://sice.oas.org/trade/junac/decisiones/dec833_s.pdf"
+    title: "dec833 s"
+    level: direct
+    checked: 2026-11-07
+    quote: "El plazo de vigencia de la NSO será de siete años"
+  - url: "https://sice.oas.org/trade/junac/decisiones/dec833_s.pdf"
+    title: "dec833 s"
+    level: direct
+    checked: 2026-11-07
+    quote: "Los productos cosméticos no podrán declarar indicaciones terapéuticas"
+  - url: "https://sice.oas.org/trade/junac/decisiones/dec833_s.pdf"
+    title: "dec833 s"
+    level: direct
+    checked: 2026-11-07
+    quote: "los Países Miembros utilizarán el listado menos restrictivo"
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+  - url: "https://www.invima.gov.co"
+    title: "기관 누리집"
+    level: unverified
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "안데스 성분 기준은 FDA·PCPC·EU·Cosmetics Europe 목록 중 가장 덜 제한적인 것(결정 833 제4~5조) — EU 대용 판정은 실제보다 엄격할 수 있음 [kw:ingredient_list_unavailable(ANDEAN)]"
+  - "EU 금지성분 포함 — 안데스 기준(다른 목록 허용 여부) 대조 필요 [kw:ingredient_banned(EU)]"
+  - "EU 제한성분 한도 초과 [kw:ingredient_restricted_over(EU)]"
+  - "배합 정보 부족 [kw:formula_known(concept_only)]"
+  - "콜롬비아 NSO 보유자·약사 기술책임자 미지정 [kw:local_entity_missing(CO)]"
+  - "동물실험 자료 존재 — 콜롬비아 동물실험 금지 (추정) [kw:animal_test_data_present]"
+notes: "원문 확인(2026-11-07, 안데스 결정 833 전문): NSO 보유자는 신고국 법적 주소(제7조), 약사 기술책임자(제9조 g), 제9조 서류(정성 처방+정량 일부, INCI, 규격, 표방 입증 연구, 라벨, 로트 체계 — 스페인어 번역), 완비 시 즉시 코드(제10조), 유효 7년(제18조), 회원국 인정(제19조), GMP 인증서 제출 없음(제52조 보장 의무), 치료 표방 불가(제3조), 성분은 가장 덜 제한적 목록(제4조). CFS는 제9조에 없고 최종규정 6으로 회원국이 면제 선택 — INVIMA는 요구하지 않음(2차). 2차: 수수료 292.83 UVB, Decreto 857. 미확인: 결의 2108·2310 원문(라벨·알레르겐), UVB 페소 환산, 콜롬비아 동물실험 금지법."

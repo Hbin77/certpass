@@ -1,0 +1,127 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: EG_EDA
+name_ko: 이집트 화장품 등록(EDA)
+name_en: Egyptian Drug Authority (EDA) Cosmetic Notification (Decree 122/2022)
+jurisdiction: EG
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 440
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 440번 EDA)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "이집트 수입·유통 화장품 — EDA 전자 노티피케이션 번호 발급 전 수입·유통 금지(Decree 122/2022, 가이드 GL.CAPP.009). 향수·오드투알레트·코롱·비누·단일 오일은 제외 [kw:target_market(EG)]"
+ingredient_rules: EU
+claim_rules:
+  - claim: whitening
+    effect: needs_evidence
+    note: "피부 미백 제품은 화장품 범주(가이드 Annex 1) — 외포장 표방은 과학 문헌·연구로 효과 입증 자료 제출"
+  - claim: anti_wrinkle
+    effect: needs_evidence
+    note: "주름·노화 방지 제품은 화장품 범주(Annex 1) — 표방 입증 자료 제출"
+  - claim: acne
+    effect: not_allowed
+    note: "'Anti Pimple'·'Anti Acne'는 화장품 금지 표방(클레임 가이드 v6 제5항)"
+  - claim: medical
+    effect: not_allowed
+    note: "슬리밍·피부 조임(tightening)·항염·셀룰라이트·튼살 등 금지 표방 목록과 EU 금지 표방(클레임 가이드 v6)"
+local_entity:
+  required: true
+  role: "이집트 현지 대리인(제품 소유사가 노티 권한을 위임한 회사) — 위임장은 원산국 공인기관 날인 + 이집트 대사관·영사 인증. 현지 법인만 신청(KOTRA, 2차), 독점 분쟁 시 10년 묶임(2차)"
+documents_required:
+  - id: factory_registration
+    desc: "해외 제조소 1회 등록(Manufacturing List, 3영업일 승인)"
+    satisfied_by_hint: []
+    producer: company
+  - id: notification
+    desc: "EDA 전자 플랫폼 노티피케이션 — 제품명, 회사 정보, 아트워크, 수수료 영수증, 사용기한"
+    satisfied_by_hint: []
+    producer: company
+  - id: formula_pct
+    desc: "조성표 — 성분 학명·함량(w/w% 또는 w/v%)·기능"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: reference_country_CFS
+    desc: "참조국(EU 27개국·영국·미국·캐나다·호주·일본·스위스, 2026-06-29 결정) 자유판매를 증명하는 CFS — 원산국 공인기관 날인 + 이집트 대사관·영사 인증. 한국은 비참조국이라 한국 CFS만으로는 부족(참조국 판매 이력 필요)"
+    satisfied_by_hint: []
+    producer: authority
+  - id: authorization_legalized
+    desc: "제품 소유사의 이집트 대리인 노티 위임장 — 원산국 공인기관 날인 + 이집트 대사관·영사 인증"
+    satisfied_by_hint: []
+    producer: company
+  - id: PIF
+    desc: "PIF(화장품 안전성 보고서 포함) — 출시 때 보관, 요청 시 5영업일(긴급 48시간) 안에 제출, 10년 보관(Decree 122/2022). 현재 안전성 보고서(CPSR) 미보유"
+    satisfied_by_hint: []
+    producer: external_expert
+  - id: animal_testing_certificate
+    desc: "회사 확인서 — 제조사·대리인·공급사가 제품·원료 안전성 평가를 위해 동물시험을 했는지(Decree 122/2022)"
+    satisfied_by_hint: []
+    producer: company
+  - id: label_eg
+    desc: "라벨 — 수입품은 성분 영어 INCI, 사용법·경고는 아랍어 및/또는 영어, 노티피케이션 번호"
+    satisfied_by_hint: ["draft_from:label_kr", "draft_from:leaflet_*"]
+    producer: company
+tests_required: [microbiology, heavy_metals, stability]
+labeling:
+  language: "아랍어 및/또는 영어(수입품) — 성분은 영어 INCI, 현지 제조품은 아랍어 필수"
+  allergens: "EU 규정의 알레르기 유발 향료 성분은 'perfume'·'fragrance'와 함께 성분표에 표기(노티 가이드)"
+  other: ["노티피케이션 번호", "비분해성 마이크로비즈 함유 제품은 노티 불가", "GOEIC 등록 요건 — 언급 없음(미확인)"]
+animal_testing: not_required
+timeline:
+  lead_time: "요건 충족·수수료 납부 후 자동 발급 — 일반 10영업일, 패스트 3영업일(실무 12~16주, KOTRA 2차)"
+  fee: "수입품 일반 3,000 EGP·패스트 12,000 EGP(KOTRA, 2차)"
+  validity: "10년, 마지막 1년 안에 갱신 신청"
+evidence:
+  - url: "https://edaegypt.gov.eg/media/f3zmtxtc/regulatory-guide-for-cosmayic-notification.pdf"
+    title: "regulatory guide for cosmayic notification"
+    level: direct
+    checked: 2026-11-07
+    quote: "the product notification shall be valid for ten years from the date of its issuance"
+  - url: "https://edaegypt.gov.eg/media/f3zmtxtc/regulatory-guide-for-cosmayic-notification.pdf"
+    title: "regulatory guide for cosmayic notification"
+    level: direct
+    checked: 2026-11-07
+    quote: "automatically issued within 10 working days for the normal track"
+  - url: "https://edaegypt.gov.eg/media/f3zmtxtc/regulatory-guide-for-cosmayic-notification.pdf"
+    title: "regulatory guide for cosmayic notification"
+    level: direct
+    checked: 2026-11-07
+    quote: "It shall indicate that the product is freely sold in a reference country."
+  - url: "https://edaegypt.gov.eg/media/f3zmtxtc/regulatory-guide-for-cosmayic-notification.pdf"
+    title: "regulatory guide for cosmayic notification"
+    level: direct
+    checked: 2026-11-07
+    quote: "authenticated by the Egyptian embassy or consulate in the country of origin"
+  - url: "https://edaegypt.gov.eg/media/f3zmtxtc/regulatory-guide-for-cosmayic-notification.pdf"
+    title: "regulatory guide for cosmayic notification"
+    level: direct
+    checked: 2026-11-07
+    quote: "except for allergy-causing ingredients in accordance with the EU regulations"
+  - url: "https://edaegypt.gov.eg/media/s1dmdt35/d-122-2022_.pdf"
+    title: "s1dmdt35"
+    level: direct
+    checked: 2026-11-07
+    quote: "The Product Information File shall be kept for ten years after the date"
+  - url: "https://www.edaegypt.gov.eg/media/briedaau/english-version-july-2026-claims-guide-for-cosmetics-notificatiovr6-2.pdf"
+    title: "english version july 2026 claims guide for cosmetics notificatiovr6 2"
+    level: direct
+    checked: 2026-11-07
+    quote: "reference countries are Canada, USA, United Kingdom, Japan, Switzerland, Australia & European Union Countries"
+  - url: "https://www.edaegypt.gov.eg/media/briedaau/english-version-july-2026-claims-guide-for-cosmetics-notificatiovr6-2.pdf"
+    title: "english version july 2026 claims guide for cosmetics notificatiovr6 2"
+    level: direct
+    checked: 2026-11-07
+    quote: "Anti Pimple*, Anti Acne"
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules:
+  - "EU 부속서 II 금지 성분 — 이집트가 EU 1223/2009 부속서를 그대로 채택 [kw:ingredient_banned(EU)]"
+  - "EU 부속서 III 제한 한도 초과 [kw:ingredient_restricted_over(EU)]"
+conditional_rules:
+  - "EU 제한성분 함량 미상 [kw:ingredient_restricted_conc_unknown(EU)]"
+  - "배합 함량 미보유 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "이집트 대리인 미지정·위임장 영사 인증 미준비 [kw:local_entity_missing(EG)] [kw:doc_missing(authorization_legalized)]"
+  - "참조국 판매 이력·참조국 CFS 없음 — EU·영국·미국 등 참조국 출시가 먼저 필요 [kw:doc_missing(reference_country_CFS)]"
+  - "PIF 안전성 보고서 없음 [kw:doc_missing(PIF)]"
+  - "비분해성 마이크로비즈 함유 여부 확인 [kw:manual_check(EG_microbeads)]"
+notes: "원문 확인(2026-11-07, EDA 노티 가이드 GL.CAPP.009 v1/2023, Decree 122/2022, 클레임 가이드 GL.CAPP.010 v6/2026): EU 부속서 II~VI 그대로 채택(그래서 성분 규칙을 blocking에 둠), EU식 향료 알레르겐 표기, 10영업일(패스트 3)·유효 10년, 제조소 1회 등록 3영업일, 참조국 CFS 필요(한국 비참조국), 위임장 영사 인증, PIF(안전성 보고서) 요청 시 5영업일·10년 보관, 동물시험 확인서, 미백·주름은 화장품 범주(표방 입증), 금지 표방(Anti Acne 등). 참조국 CFS는 재처방 문제가 아니라 조건부로 두었으나, 참조국 판매 실적이 없으면 실제로는 신청 자체가 막힘. 2차: 수수료(KOTRA), 실무 기간, 현지 법인 요건. 미확인: 공식 수수료표, GOEIC 요건, 수입품 아랍어 라벨 의무 범위."

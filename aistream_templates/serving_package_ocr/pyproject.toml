@@ -1,0 +1,38 @@
+[project]
+name = "serving-template"
+version = "0.4.0"
+description = "AISTREAM 서빙 Deployment입니다. 7팀 화장품 포장 사진 OCR(검출 ResNet18-FPN + 인식 CNN-Transformer-CTC) 추론 API."
+authors = []
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "ray[serve]>=2.21.0,<3.0.0",
+    "fastapi>=0.111.0,<0.112.0",
+    "python-multipart>=0.0.9",
+    "click>=8.1.7,<9.0.0",
+    "numpy>=2.0.0,<3.0.0",
+    "pillow>=10.0.0",
+    "scipy>=1.13.0",
+    # CPU 서빙: CUDA 판(수 GB) 대신 CPU 판 휠을 받는다(아래 tool.uv.sources)
+    "torch>=2.7.0",
+    "torchvision>=0.22.0",
+    "mlflow==3.13.0",
+    # Ray Serve 2.55가 protobuf 7에서 없어진 FieldDescriptor.label을 써서 배포가 실패한다(RF 서빙에서 확인)
+    "protobuf>=3.20.3,<7",
+]
+
+[tool.uv]
+package = false
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.1.1,<9.0.0",
+]

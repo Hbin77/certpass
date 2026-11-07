@@ -1,0 +1,76 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: LEAPING_BUNNY
+name_ko: 리핑버니(크루얼티프리) 인증
+name_en: Leaping Bunny Programme (Cruelty Free International / CCIC)
+jurisdiction: GLOBAL
+kind: marketing_label
+strategic_kr: false
+general_kr_no: null
+support_rate: "583종 목록에 없음 — 비공고 규격인증으로 신청 시 운영위원회 심의(비건 등 민간 인증도 수출에 매우 중요하면 지원 예정, 단순 마케팅·홍보용 제외)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "크루얼티프리 표방 — 자사 브랜드(OEM 제조사는 신청 불가) 단위로 전 제품 동물실험 미실시를 약속. 한국 기업은 Cruelty Free International(영국) 경로(미국·캐나다 본사는 CCIC, 무료) — 비건 성분 여부는 심사하지 않음"
+ingredient_rules: none
+claim_rules:
+  - claim: cruelty_free
+    effect: ok
+    note: "승인 후 Leaping Bunny 로고 사용 — 다른 인증 서류로 대체 불가"
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: application
+    desc: "신청서·비밀유지 계약(NDA) — 신청비 £300+VAT(18개월 유효)"
+    satisfied_by_hint: []
+    producer: company
+  - id: cut_off_declaration
+    desc: "회사 동물실험 정책 — 화장품 고정 기준일(FCOD) 2013-03-11 이후 동물실험 원료·제품 구매·위탁·관여 금지"
+    satisfied_by_hint: []
+    producer: company
+  - id: supplier_monitoring
+    desc: "공급사 모니터링 체계(SMS) — 완제품 제조사(㈜엔에프씨 등)와 전 원료 제조사의 동물실험 미실시 선언서, 12개월 이내 서명본 유지"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: independent_audit
+    desc: "독립 감사 — 신청 때 최초 감사, 승인 후 2~3년 안에, 이후 3년마다(원격 가능)"
+    satisfied_by_hint: []
+    producer: external_expert
+  - id: annual_recommitment
+    desc: "연례 재서약과 라이선스비 납부(매년 4월)"
+    satisfied_by_hint: []
+    producer: company
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: ["Leaping Bunny 로고·라이선스 번호 (추정)"]
+animal_testing: banned
+timeline:
+  lead_time: "신청 검토 최대 4주(CFI) + 공급사 선언서 수집 기간"
+  fee: "신청비 £300+VAT, 연 라이선스비 £149(연매출 £2만 이하)~£9,995(£2천만 초과)(예: £5만~15만 £449, £15만~30만 £649, £50만~200만 £1,495) — CFI 2020판 가이드라인, 현 사이트에는 요율표 미게시"
+  validity: "매년 4월 갱신(연례 재서약), 독립 감사는 최초 + 2~3년 안에 + 이후 3년마다"
+evidence:
+  - url: "https://www.leapingbunny.org/Web/content/standard.aspx?hkey=627d3716-9716-46a2-86c0-1e30fd1dfa82"
+    title: "Leaping Bunny 공식 기준(The Corporate Standard of Compassion for Animals) 안내 페이지"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.leapingbunny.org/Web/content/faq.aspx?hkey=03da4c1e-eb16-412a-a308-223519502ea0"
+    title: "FAQ | Leaping Bunny"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.leapingbunny.org/Web/content/faq.aspx?hkey=03da4c1e-eb16-412a-a308-223519502ea0"
+    title: "FAQ | Leaping Bunny"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_2026_3차_인증목록.pdf"
+    level: direct
+    checked: 2026-11-07
+blocking_rules:
+  - "기준일(2013-03-11) 이후 완제품·원료 동물실험 실시·위탁·관여 [kw:animal_test_data_present]"
+  - "중국 특수화장품 注册(독성시험 필수) 대상으로 중국 출시 — 법정 동물실험과 양립 불가 (중국 특수 포기 시 재판정) [kw:target_market(CN)] [kw:card_verdict(CN_NMPA_SPECIAL,조건부|통과 가능)]"
+conditional_rules:
+  - "중국 판매 — 국경 간 전자상거래(CBEC)는 사전·사후 동물실험 요구가 없어 허용, 중국 내 등록 판매는 China Qualification Program(사전·사후 감사, 요구 시 회수 서약) 조건 [kw:target_market(CN)]"
+  - "공급사 동물실험 미실시 선언(12개월 이내) 없음 [kw:doc_missing(supplier_monitoring)]"
+  - "독립 감사 미실시 [kw:doc_missing(independent_audit)]"
+  - "원료의 비화장품 목적 법정 사후 시험은 증거를 내면 허용 — 해당 원료 확인 [kw:manual_check(LB_non_cosmetic_testing)]"
+notes: "원문 확인(2026-11-07, CFI 화장품 가이드라인 2020판(ICEA 게시 사본)·CCIC 표준·FAQ): 한국 기업은 CFI 경로(CCIC는 미국·캐나다 본사만, 무료), FCOD 2013-03-11, 회사·대리인의 동물실험 수행·위탁·관여 금지, 공급사 모니터링(완제품·원료 제조사 선언 12개월 이내), 독립 감사(최초·2~3년·3년마다), 연례 갱신(4월), 동물=척추동물·두족류, 비건 성분 여부는 심사 안 함, 자사 브랜드만(OEM 제조사 불가), 신청비 £300·연 £149~9,995, 검토 4주. 중국: CBEC 허용, 중국 내 등록 판매는 China Qualification Program. 583종 목록 밖(원문 ◎: 비공고 규격인증으로 신청). 성분 기준이 아니라 동물실험 기준이라 엔진의 성분 속성 검사는 적용하지 않음. 미확인: CFI 현행 요율표, CFI 중국 공식 페이지(404)."

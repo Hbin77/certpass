@@ -1,0 +1,94 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: NATRUE
+name_ko: NATRUE 천연·유기농 화장품 라벨
+name_en: NATRUE Label (natural and organic cosmetics, Label Requirements v3.9)
+jurisdiction: GLOBAL
+kind: voluntary_certification
+strategic_kr: false
+general_kr_no: 137
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 137번 NATRUE Label)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "천연·유기농 표방 제품. 등급 2가지(Natural·Organic), 기준 Label Requirements v3.9(2021-01-01, 부속서 2026-06-18 갱신). NATRUE는 직접 인증하지 않고 승인 인증기관(NAC 8곳 — 한국 소재 없음)이 심사"
+ingredient_rules: none
+claim_rules:
+  - claim: natural_origin_ingredients
+    effect: ok
+    note: "인증 후 NATRUE 라벨 표시 — 제품군별 천연 최소·유래천연 최대 비율 충족 필요(오일·무수 세정/스킨케어 80/20, O/W 에멀전 10/25, 계면활성제 세정제 3/85 등)"
+  - claim: organic
+    effect: ok
+    note: "Organic 등급은 식물·동물 천연물질(과 해당 유래천연)의 95% 이상 유기농일 때"
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: application
+    desc: "NATRUE 승인 인증기관(NAC) 선택·신청, NATRUE 라벨 사용 계약(회원 가입 불필요)"
+    satisfied_by_hint: []
+    producer: company
+  - id: formula_pct
+    desc: "전성분·함량(천연·자연동일·유래천연 분류와 제품군별 비율 계산)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: raw_material_docs
+    desc: "원료 문서화 파일(RMDF) — 원료 기원·허용 공정 증명, non-GMO 선언, 향료는 ISO 9235 천연 향 증명"
+    satisfied_by_hint: []
+    producer: manufacturer
+  - id: category_check
+    desc: "제품군별 천연 최소·유래천연 최대 비율 충족 계산(표 1)"
+    satisfied_by_hint: []
+    producer: external_expert
+  - id: brand_ratio
+    desc: "브랜드(서브브랜드) 제품의 75% 이상이 인증 가능하다는 자료(§6)"
+    satisfied_by_hint: []
+    producer: company
+  - id: label_review
+    desc: "라벨 표시 검토"
+    satisfied_by_hint: ["draft_from:label_kr"]
+    producer: company
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: ["NATRUE 라벨·등급(Natural/Organic) 표시", "포장: 최소화·재사용·재활용, 할로겐 플라스틱 금지, 추진가스는 공기·N2·O2·CO2·Ar만", "마스크 시트 등 캐리어는 천연·유래천연 섬유"]
+animal_testing: banned
+timeline:
+  lead_time: "기간 미공개"
+  fee: "NAC 인증비(견적) + NATRUE 라벨 사용료 제품당 €250/2년(100개 초과 €200), 원료 €80, 포뮬러 €250"
+  validity: "인증서 2년, 자동 갱신 아님(만료 3~4개월 전 연락)"
+evidence:
+  - url: "https://natrue.org/uploads/2025/09/EN-NATRUE-Label_Requirements_v3.9-final-version-1.pdf"
+    title: "NATRUE 라벨 기준 3.9판"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://natrue.org/uploads/2025/09/EN-NATRUE-Label_Requirements_v3.9-final-version-1.pdf"
+    title: "NATRUE 라벨 기준 3.9판"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://natrue.org/uploads/2025/09/EN-NATRUE-Label_Requirements_v3.9-final-version-1.pdf"
+    title: "NATRUE 라벨 기준 3.9판"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://natrue.org/uploads/2025/10/Annex_A_NATRUE_Label_Fees_2025_Updated.pdf"
+    title: "Annex A NATRUE Label Fees 2025 Updated"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://natrue.org/how-can-you-certify-your-finished-cosmetic-product/"
+    title: "How can you certify your finished cosmetic product? | NATRUE"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://natrue.org/our-standard/natrue-approved-certifiers-nacs/"
+    title: "NATRUE Approved Certifiers (NACs) | NATRUE"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules:
+  - "에톡실화 원료(PEG 등 — 유래천연 허용 반응 목록에 없음), 합성 왁스·실리콘, 부속서 3에 없는 합성 원료(세틸에틸헥사노에이트·펜타에리스리틸…) [kw:ingredient_present(PEG-*|*eth-*|*Dimethicone*|*Methicone*|*Siloxane*|Synthetic Wax|Cetyl Ethylhexanoate|Pentaerythrityl Tetra-di-t-butyl Hydroxyhydrocinnamate)]"
+conditional_rules:
+  - "원료 기원·가공 자료(RMDF) 없음 [kw:doc_missing(raw_material_docs)]"
+  - "함량 미보유 — 제품군별 비율 계산 불가 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "1,2-헥산다이올·에틸헥실글리세린·카프릴릴글라이콜·글리세린 등은 부속서 3 등재 — 천연 원료·허용 공정 증명 시 허용, 보존제는 부속서 4a·4b만(페녹시에탄올·파라벤 불가) [kw:ingredient_present(Phenoxyethanol|*paraben|Ethylhexylglycerin|1,2-Hexanediol|Caprylyl Glycol)]"
+  - "합성 자연동일 향료 불가 — ISO 9235 천연 향만, 리모넨은 에센셜오일 구성분일 때만 [kw:ingredient_present(Parfum|Fragrance|Limonene)]"
+notes: "원문 확인(2026-11-07, NATRUE Label Requirements v3.9 PDF·Annex A 수수료 2025·인증 절차 페이지·NAC 목록): 성분 3유형(천연·자연동일·유래천연), 유래천연은 폐쇄 목록 반응만 허용(에톡실화 없음 → PEG 불가), 합성 향·GMO·이온화 조사·차아염소산 탈색·동물실험(제3국 포함)·미세플라스틱 금지, 팜 RSPO MB(가능 시), 제품군별 비율(오일·무수 80/20), Organic은 95% 유기농, 브랜드 75% 규칙, 인증서 2년(자동 갱신 아님), 라벨 사용료 €250/제품/2년. 클렌징밤(P1)은 오일·무수 제품군(천연 80% 이상)이라 합성 에스터 기반 현 처방은 재처방 필요. 엔진은 id(NATRUE)로 성분 natrue 속성 검사. 2차: BioGro NZ 연 NZ$2,279+α, Certisys·Ecogruppo의 한국 인정 범위(IOAS annex). 미확인: NAC 심사비, 소요 기간, NATRUE Technical Guide 세부."

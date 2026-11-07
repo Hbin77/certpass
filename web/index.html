@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CertPass — 화장품 수출 인증, 통과까지 남은 것</title>
+<meta name="description" content="전성분·함량·표방·보유 서류로 국가별 화장품 인증·등록의 통과 가능성을 미리 판정합니다.">
+<script>
+  /* 프록시 접두사(/i/<토큰>) 아래에서 상대경로가 맞도록, 디렉터리 주소는 '/'로 끝나게 맞춘다. */
+  (function (l) { var p = l.pathname; if (p.slice(-1) !== "/" && !/\.(?:html?|js|css)$/i.test(p)) l.replace(p + "/" + l.search + l.hash); })(location);
+</script>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="styles.css?v=3">
+<script src="app.js?v=3" defer></script>
+</head>
+<body>
+<a class="skip" href="#input">본문으로 건너뛰기</a>
+
+<!-- 아이콘: Lucide(외곽선, stroke 2) 경로를 스프라이트로 둔다. -->
+<svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-fail" viewBox="0 0 24 24"><path d="M2.586 16.726A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2h6.624a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586z"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol>
+  <symbol id="i-cond" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-pass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-na" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></symbol>
+  <symbol id="i-tube" viewBox="0 0 24 24"><path d="M14.5 2v17.5c0 1.4-1.1 2.5-2.5 2.5c-1.4 0-2.5-1.1-2.5-2.5V2"/><path d="M8.5 2h7"/><path d="M14.5 16h-5"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5"/></symbol>
+  <symbol id="i-landmark" viewBox="0 0 24 24"><path d="M3 22h18"/><path d="M6 18v-7"/><path d="M10 18v-7"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M12 2 20 7H4z"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+  <symbol id="i-loader" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></symbol>
+  <symbol id="i-mark" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12.5 2.8 2.8L16.5 9"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="top__in">
+    <a class="brand" href="#input" aria-label="CertPass 처음으로">
+      <svg class="ic brand__mark" aria-hidden="true" focusable="false"><use href="#i-mark"/></svg>
+      <span class="brand__name">CertPass</span>
+      <span class="brand__desc">화장품 수출 인증 사전 판정</span>
+    </a>
+    <nav class="tabsnav" aria-label="화면 구역">
+      <a href="#input" data-nav="input"><span>입력</span></a>
+      <a href="#summary" data-nav="summary"><span>요약</span></a>
+      <a href="#table" data-nav="table"><span>판정표</span></a>
+      <a href="#docs" data-nav="docs"><span>서류<span class="wide-only"> 초안</span></span></a>
+    </nav>
+  </div>
+</header>
+
+<main class="layout" id="main">
+  <!-- 1. 입력: 작업대 -->
+  <section class="bench" id="input" aria-labelledby="input-title" tabindex="-1">
+    <h1 class="bench__title">화장품 수출 인증 사전 판정</h1>
+    <p class="bench__lede">전성분·함량·표방·보유 서류를 넣으면 나라별 인증·등록마다 통과 가능성을 판정하고, 해야 할 일과 서류 초안을 드립니다.</p>
+
+    <h2 class="sec-title" id="input-title">제품 입력</h2>
+    <div class="tabs" role="tablist" aria-label="입력 방식">
+      <button class="tabs__tab" role="tab" id="tab-demo" aria-controls="panel-demo" aria-selected="true">데모 제품</button>
+      <button class="tabs__tab" role="tab" id="tab-manual" aria-controls="panel-manual" aria-selected="false" tabindex="-1">직접 입력</button>
+    </div>
+
+    <div class="tabpanel" role="tabpanel" id="panel-demo" aria-labelledby="tab-demo">
+      <p class="company" id="company-line">회사 정보를 불러오는 중입니다.</p>
+      <p class="hint">제품을 누르면 바로 판정합니다.</p>
+      <ul class="demo-list" id="demo-list" role="list" aria-busy="true">
+        <li class="demo-skel" aria-hidden="true"></li>
+        <li class="demo-skel" aria-hidden="true"></li>
+        <li class="demo-skel" aria-hidden="true"></li>
+        <li class="demo-skel" aria-hidden="true"></li>
+      </ul>
+    </div>
+
+    <div class="tabpanel" role="tabpanel" id="panel-manual" aria-labelledby="tab-manual" hidden>
+      <form class="form" id="manual-form" novalidate>
+        <div class="field">
+          <label class="field__label" for="m-fill">데모 제품 내용으로 채우기</label>
+          <select class="input" id="m-fill">
+            <option value="">채우지 않음</option>
+          </select>
+          <p class="hint">데모 제품을 불러와 성분을 고친 뒤 다시 판정해 볼 수 있습니다.</p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="m-name">제품명</label>
+          <input class="input" id="m-name" type="text" autocomplete="off" placeholder="예: 동백 수분 크림">
+        </div>
+
+        <div class="field" id="m-photo-field">
+          <span class="field__label" id="m-photo-label">포장 사진으로 전성분 채우기</span>
+          <p class="hint" id="m-photo-hint">제품 뒷면의 전성분 표기가 잘 보이게 찍은 사진을 고르면, 포장 OCR 모델이 글자를 읽어 아래 전성분 칸을 채웁니다. 채운 내용은 사진과 대조해 확인하세요.</p>
+          <input class="sr-only" id="m-photo" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1" aria-hidden="true">
+          <button class="btn btn--secondary btn--sm" type="button" id="m-photo-btn" aria-describedby="m-photo-label m-photo-hint">
+            <svg class="ic btn__icon" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg>
+            <svg class="ic btn__spin" aria-hidden="true" focusable="false"><use href="#i-loader"/></svg>
+            <span class="btn__text">사진 고르기</span>
+          </button>
+          <div class="ocr-out" id="m-photo-out" aria-live="polite" hidden></div>
+          <p class="hint" id="m-photo-src">OCR 모델 학습 데이터: 과학기술정보통신부·한국지능정보사회진흥원 AI Hub '의약품, 화장품 패키징 OCR 데이터'(<a href="https://aihub.or.kr" target="_blank" rel="noopener">aihub.or.kr</a>). 성분명 표준화: 식약처 화장품 원료성분정보(공공데이터포털).</p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="m-ing">전성분 <span class="req">필수</span></label>
+          <p class="hint" id="m-ing-hint">줄바꿈이나 쉼표로 나눕니다. 함량을 알면 <code>INCI | 함량%</code>로 적습니다. 예: <code>Niacinamide | 2</code></p>
+          <textarea class="input input--area" id="m-ing" rows="8" spellcheck="false" aria-describedby="m-ing-hint m-ing-parse m-ing-err" aria-required="true"></textarea>
+          <p class="parse" id="m-ing-parse" aria-live="polite">인식된 성분 0종</p>
+          <p class="field__err" id="m-ing-err" role="alert" hidden></p>
+        </div>
+
+        <fieldset class="field">
+          <legend class="field__label">제품 유형</legend>
+          <div class="opts opts--2">
+            <label class="opt"><input type="radio" name="m-app" value="leave_on" checked><span>바르는 제품</span></label>
+            <label class="opt"><input type="radio" name="m-app" value="rinse_off"><span>씻어내는 제품</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend class="field__label">표방</legend>
+          <div class="opts opts--2" id="m-claims"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend class="field__label">보유 서류</legend>
+          <div class="opts" id="m-docs"></div>
+        </fieldset>
+
+        <button class="btn btn--primary btn--block" type="submit" id="m-submit">
+          <svg class="ic btn__spin" aria-hidden="true" focusable="false"><use href="#i-loader"/></svg>
+          <span class="btn__text">판정하기</span>
+        </button>
+        <p class="field__err" id="m-submit-err" role="alert" hidden></p>
+      </form>
+    </div>
+
+    <fieldset class="filter" id="filter">
+      <legend class="sec-title sec-title--sm">판정 대상</legend>
+      <div class="chips" id="filter-chips"></div>
+      <p class="hint">판정한 뒤에 바꾸면 결과를 바로 다시 거릅니다.</p>
+    </fieldset>
+  </section>
+
+  <!-- 2~5. 판정서 -->
+  <div class="sheet" id="sheet" aria-busy="false">
+    <section class="report" id="summary" aria-labelledby="summary-title" tabindex="-1">
+      <h2 class="sec-title" id="summary-title">판정 요약</h2>
+      <div id="summary-body">
+        <p class="empty-lede">데모 제품을 고르거나 직접 입력하면, 인증·등록마다 아래 네 가지 중 하나로 예비 판정합니다.</p>
+      </div>
+    </section>
+
+    <section class="vtable" id="table" aria-labelledby="table-title" tabindex="-1">
+      <h2 class="sec-title" id="table-title">판정표</h2>
+      <div id="table-body">
+        <p class="muted">판정하면 관할(국가)별 표가 여기에 나옵니다.</p>
+      </div>
+    </section>
+
+    <section class="docs" id="docs" aria-labelledby="docs-title" tabindex="-1">
+      <h2 class="sec-title" id="docs-title">서류 초안</h2>
+      <p class="docs__note" id="docs-note">제품을 판정하면 내려받을 수 있습니다.</p>
+      <label class="opt docs__pct" id="doc-pct-wrap" hidden><input type="checkbox" id="doc-pct" checked>
+        <span>INCI 전성분표·CPNP 항목표에 함량(%) 넣기<span class="opt__sub">배합비는 영업 비밀입니다. 외부에 보낼 때는 끄고 내려받으세요.</span></span></label>
+      <ul class="doclist" id="doclist" role="list"></ul>
+    </section>
+
+    <section class="notice" aria-labelledby="notice-title">
+      <h2 class="notice__title" id="notice-title">
+        <svg class="ic" aria-hidden="true" focusable="false"><use href="#i-info"/></svg>
+        예비 판정 안내
+      </h2>
+      <p id="disclaimer">예비 판정입니다. 최종 판단은 각 기관과 자격 있는 안전성 평가자가 합니다.</p>
+      <p class="notice__basis" id="basis"></p>
+    </section>
+  </div>
+</main>
+
+<div class="sr-only" id="live" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>

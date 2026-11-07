@@ -1,0 +1,57 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: KR_MAINBIZ
+name_ko: 메인비즈(경영혁신형 중소기업) 인증
+name_en: Korea MAINBIZ (Management Innovation Business) Certification
+jurisdiction: KR
+kind: company_certification
+strategic_kr: false
+general_kr_no: null
+support_rate: null
+applies_to:
+  product_types: [cosmetic]
+  condition: "회사 단위(제품 무관)"
+ingredient_rules: none
+claim_rules: []
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: financial_statements
+    desc: "직전 사업연도 재무상태표(완전자본잠식·부채비율 결격 확인)"
+    satisfied_by_hint: []
+    producer: company
+  - id: self_assessment
+    desc: "온라인 자가진단 600점 이상"
+    satisfied_by_hint: []
+    producer: company
+  - id: onsite_eval
+    desc: "현장평가 700점 이상"
+    satisfied_by_hint: []
+    producer: authority
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: []
+animal_testing: not_required
+timeline:
+  lead_time: "자가진단·현장평가 1~2개월 (추정)"
+  fee: "평가 수수료 — 확인 필요 (추정)"
+  validity: "3년"
+evidence:
+  - url: "local:조사자료_20261107/국내제도_원문/agentFG/adm_mainbiz_R.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-8"
+    level: direct
+    checked: 2026-11-07
+  - url: "https://www.mainbiz.or.kr"
+    title: "메인비즈협회(한국경영혁신중소기업협회)"
+    level: unverified
+    checked: 2026-11-07
+blocking_rules:
+  - "직전 결산 완전자본잠식 또는 부채비율 1,000% 이상(고시 2026-45 §3②4·5호) [kw:company_fact(full_capital_impairment|debt_ratio_over_1000)]"
+conditional_rules:
+  - "기존 인증 만료 — 재취득 필요 [kw:company_cert_status(mainbiz,expired_2024)]"
+  - "직전 사업연도 재무상태표 미제출 — 결격 여부 판단 불가 [kw:doc_missing(financial_statements)]"
+notes: "원문 확인(고시 2026-45 원문·문서 §4-8 ◎): 직전 사업연도 말 재무상태표 기준 부채비율 1,000% 이상(§3②4호) 또는 완전자본잠식(§3②5호)이면 신청 불가. 2026-06-22 신설 결격(체불사업주 등)도 있음(§3②6호). 자가진단 600점·현장평가 700점, 유효 3년(문서 §4-6 ◎). 수수료·소요기간은 (추정). 엔진은 현재 company_certs.mainbiz 상태만 보므로, 재무 결격은 company_fact 태그 평가 또는 회사 데이터 필드(예: financial.full_capital_impairment) 추가가 필요."

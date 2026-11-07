@@ -1,0 +1,97 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: KH_DDF
+name_ko: 캄보디아 화장품 등록(DDF)
+name_en: Cambodia Department of Drugs and Food (DDF) Cosmetic Notification
+jurisdiction: KH
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 448
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 448번 DDF)"
+applies_to:
+  product_types: [cosmetic]
+  condition: "캄보디아 수입·판매 화장품 — 보건부 노티피케이션 번호 필수, 번호 없는 제품은 불법 화장품(Sub-Decree 122/2008 제3·4조). 절차는 Prakas 0187/2010(2차), 온라인 CamPORS [kw:target_market(KH)]"
+ingredient_rules: ASEAN
+claim_rules:
+  - claim: whitening
+    effect: drug_risk
+    note: "미백 제품 자체는 ACD상 화장품 범위, 멜라닌 생성 억제·색소 치료 표현은 불가(ACD 표방 지침) — 외관 표현으로 바꿔야 함. 수은 등 금지"
+  - claim: anti_wrinkle
+    effect: drug_risk
+    note: "ACD 표방 지침상 '노화로 인한 생리적 변화를 예방·감소·역전' 표현 불가 — 주름 외관 개선 표현으로 바꿔야 함"
+  - claim: medical
+    effect: not_allowed
+    note: "질병 치료·예방 표현 불가(ACD 표방 지침)"
+local_entity:
+  required: true
+  role: "캄보디아 시장 책임자(Sub-Decree 122 제3조)이자 수입 사업장 허가를 받은 현지 법인 (추정)"
+documents_required:
+  - id: application
+    desc: "DDF 노티피케이션 신청(CamPORS)과 샘플(2차)"
+    satisfied_by_hint: []
+    producer: company
+  - id: CFS_GMP
+    desc: "자유판매증명(CFS)·제조사 GMP 증명 — GMP 제조는 법정 요건(Sub-Decree 122 제8조), 서류 목록은 2차. 국내 발급: 대한화장품협회 제조판매증명서(KR_CFS_EXPORT). 공증 요건 미확인"
+    satisfied_by_hint: ["cfs_kcia*", "manufacturer.certs:ISO 22716", "manufacturer.certs:CGMP"]
+    producer: authority
+  - id: LoA
+    desc: "제조사·브랜드 소유자 위임장(LOA)(2차)"
+    satisfied_by_hint: []
+    producer: company
+  - id: COA
+    desc: "제품 성분 분석서·시험성적서(2차)"
+    satisfied_by_hint: ["finished_product_test_report", "test_report_*"]
+    producer: lab
+  - id: formula_pct
+    desc: "전성분·함량 (추정)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: PIF
+    desc: "PIF(2차) — 서명 안전성 평가 포함 (추정). 현재 안전성 평가서(CPSR) 미보유"
+    satisfied_by_hint: []
+    producer: external_expert
+  - id: label_samples
+    desc: "크메르어 라벨(부착물 가능) 시안·견본(2차)"
+    satisfied_by_hint: ["draft_from:label_kr"]
+    producer: company
+tests_required: [microbiology, heavy_metals]
+labeling:
+  language: "크메르어 필수(부착물 가능) + 영어·프랑스어 — 소비자보호 고시 2022-09-23(2차)"
+  allergens: null
+  other: ["향료 알레르겐 개별 표시 의무 없음 — 캄보디아가 준용하는 ACD 부속서 III에 해당 항목 없음(ACD 원문, 캄보디아의 ACD 준용은 2차)", "보건부 노티피케이션 번호 표기(상무부 Prakas 0064/2022)", "스티커 관련 DDF Circular 0792·2025-11-17 신규 Prakas — 제목만 확인, 내용 미확인"]
+animal_testing: not_required
+timeline:
+  lead_time: "45영업일(KOTRA 2022, 2차)"
+  fee: "제품당 US$20(KOTRA 2022, 2차)"
+  validity: "2년(KOTRA 2022, 2차)"
+evidence:
+  - url: "https://lib.ncdd.gov.kh/storage/app/public/library_backend/CAT_16767_1/2008-122-Cosmetic%20Product-en.pdf"
+    title: "2008 122 Cosmetic Product en"
+    level: direct
+    checked: 2026-11-07
+    quote: "An illegal cosmetic product refers to a product that has no notification number."
+  - url: "https://lib.ncdd.gov.kh/storage/app/public/library_backend/CAT_16767_1/2008-122-Cosmetic%20Product-en.pdf"
+    title: "2008 122 Cosmetic Product en"
+    level: direct
+    checked: 2026-11-07
+    quote: "shall be produced in enterprises that have complied with the principle of good production practice"
+  - url: "https://file.go.gov.sg/annexes-of-the-asean-cosmetic-directive.pdf"
+    title: "아세안 화장품 지침 ACD 부속서"
+    level: direct
+    checked: 2026-11-07
+    quote: "Version No.: 2026-1, 22nd June 2026"
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-4"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules:
+  - "ASEAN 금지성분 포함(EU 준용 대조) [kw:ingredient_banned(ASEAN)]"
+  - "ASEAN 제한성분 한도 초과 [kw:ingredient_restricted_over(ASEAN)]"
+conditional_rules:
+  - "ASEAN 값은 EU 행 대용(캄보디아의 ACD 준용은 2차) [kw:ingredient_list_unavailable(ASEAN_ACD)]"
+  - "제한성분 함량 미상 [kw:ingredient_restricted_conc_unknown(ASEAN)]"
+  - "캄보디아 수입 허가 법인 미지정 [kw:local_entity_missing(KH)]"
+  - "CFS·GMP 증명 미준비 [kw:doc_missing(CFS_GMP)]"
+  - "PIF 안전성 평가 없음 [kw:doc_missing(PIF)]"
+notes: "원문 확인(2026-11-07): Sub-Decree 122/2008(JICA 비공식 영문 번역) — 노티피케이션 번호 필수(번호 없으면 불법 화장품), GMP 제조 필수. 중기부 일반목록 448번(문서 §4-4 ◎). 2차: 절차 Prakas 0187/2010, 서류(신청서·샘플·성분분석서·PIF·CFS·LOA·GMP), US$20·45영업일·유효 2년(KOTRA 2022), 크메르어 라벨(DFDL·Tilleke). 원문은 ACD 문서(알레르겐 표시 의무 없음)라 allergens를 비움. 미확인: Prakas 0187 원문, 2025-11 신규 Prakas·Circular 0792 내용, 현행 수수료·유효기간, CFS 공증 요건."

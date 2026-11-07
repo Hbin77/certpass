@@ -1,0 +1,6 @@
+id: EU_REACH_D4D5D6
+name_ko: EU REACH 사이클로실록산(D4·D5·D6) 제한 [테스트용]
+jurisdiction: EU
+kind: mandatory_compliance
+applies_to: {product_types: [cosmetic]}
+ingredient_rules: none

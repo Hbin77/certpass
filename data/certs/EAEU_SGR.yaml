@@ -1,0 +1,100 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: EAEU_SGR
+name_ko: 유라시아 국가위생등록(SGR) — 미백·어린이용 등 특정 화장품
+name_en: EAEU State Registration Certificate (SGR) for specified cosmetic products (TR CU 009/2011 Annex 12)
+jurisdiction: EAEU
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: 254
+support_rate: "50~70%, 최대 1억(중기부 일반지원 583종 254번 SGR)"
+applies_to:
+  product_types: [whitening, children, tanning, tattoo, intimate_hygiene, skin_protection, hair_dye, perm, nanomaterial, depilatory, peeling, oral_care_fluoride, teeth_whitening]
+  condition: "EAEU 유통 화장품 중 부속서 12 국가등록 대상 13종 — 인공 선탠, 피부 미백(톤 밝힘), 문신용, 여성 청결, 작업용 피부 보호, 어린이용, 염모·탈색·하이라이트, 펌·스트레이트, 나노물질 사용, 제모, 필링, 불소 0.15% 초과 구강용, 과산화수소 0.1~6% 치아 미백. 수입품은 반입 전 등록(제6조 4항) [kw:target_market(EAEU)]"
+ingredient_rules: EU
+claim_rules:
+  - claim: whitening
+    effect: ok
+    note: "피부 미백 제품은 이 카드(국가등록)가 해당 경로(부속서 12 제2항)"
+  - claim: children
+    effect: ok
+    note: "어린이용은 이 카드가 해당 경로(부속서 12 제6항)"
+  - claim: anti_wrinkle
+    effect: needs_evidence
+    note: "라벨 효능(주름 등)은 입증 자료 필요 — 지원자 시험, 모델 시험, 기기 측정 또는 성분 과학 자료(제6조 4항)"
+  - claim: sunscreen
+    effect: needs_evidence
+    note: "SPF 표방은 입증 자료 필요(제6조 4항)"
+  - claim: medical
+    effect: not_allowed
+    note: "치료 표현 불가 (추정)"
+local_entity:
+  required: true
+  role: "EAEU 회원국에 등록된 신청인(제조사·위임 대표·수입자) — 법인·개인사업자 등록부 발췌본 제출(제6조 4항)"
+documents_required:
+  - id: application
+    desc: "회원국 위생당국에 국가등록 신청 — 수입품은 EAEU 반입 전"
+    satisfied_by_hint: ["company.local_entities:EAEU"]
+    producer: company
+  - id: formula_pct
+    desc: "부속서 2~5 성분 농도를 적은 전성분표(신청인 확인)"
+    satisfied_by_hint: ["formula_known:full_with_concentration", "formula_composition_with_percent"]
+    producer: manufacturer
+  - id: manufacturer_quality_notice
+    desc: "제조사 품질 확인서(제품 품질 증명서 또는 제조사 서신) — 제품이 제조 기준에 맞는다는 통지"
+    satisfied_by_hint: ["finished_product_test_report"]
+    producer: manufacturer
+  - id: technical_docs
+    desc: "관능·이화학 지표 문서, 라벨 견본, 효능·주의·사용법 설명서(나노물질은 명칭·입자 크기·물성)"
+    satisfied_by_hint: ["draft_from:finished_product_test_report", "draft_from:label_kr"]
+    producer: manufacturer
+  - id: test_reports_eaeu
+    desc: "인정 시험소 시험 성적서·위생 감정서(제5조 3~6항 안전 요건)"
+    satisfied_by_hint: []
+    producer: lab
+  - id: GMP_statement
+    desc: "제조사 생산 요건 적합 문서 — GMP 준수 선언 또는 품질경영·GMP 인증서"
+    satisfied_by_hint: ["manufacturer.certs:ISO 22716", "manufacturer.certs:CGMP"]
+    producer: manufacturer
+tests_required: [toxicology, physicochemical, microbiology, efficacy_human, local_lab_test]
+labeling:
+  language: "판매 회원국 국어(러시아는 러시아어) — 제조사 이름·주소와 제품명은 라틴 문자 가능, 전성분은 국어 또는 INCI"
+  allergens: "부속서 2 №67~92 향료 알레르겐 — 씻어내는 제품 0.01%·바르는 제품 0.001% 초과 시 성분표에 표시(제5조 9.3)"
+  other: ["EAC 마크(제7조)", "국가등록 증명서 번호 (추정)", "번역 서류는 공증 또는 자격 번역사 서명"]
+animal_testing: not_required
+timeline:
+  lead_time: "시험 포함 2~4개월 (추정)"
+  fee: "등록·시험 비용 — 금액 미확인"
+  validity: "국가등록 증명서 5년(1р·2р 스킴, 2024 개정판 제6조) — 2011 원판은 제품명·처방 변경 전까지 유효"
+evidence:
+  - url: "https://eec.eaeunion.org/comission/department/deptexreg/tr/bezopParfum.php"
+    title: "О безопасности парфюмерно-косметической продукции (ТР ТС 009/2011)"
+    level: direct
+    checked: 2026-11-07
+    quote: "Парфюмерно-косметическая продукция для отбеливания (осветления) кожи"
+  - url: "https://eec.eaeunion.org/comission/department/deptexreg/tr/bezopParfum.php"
+    title: "О безопасности парфюмерно-косметической продукции (ТР ТС 009/2011)"
+    level: direct
+    checked: 2026-11-07
+    quote: "проводится путем государственной регистрации с выдачей свидетельства о государственной регистрации продукции"
+  - url: "https://eec.eaeunion.org/comission/department/deptexreg/tr/bezopParfum.php"
+    title: "О безопасности парфюмерно-косметической продукции (ТР ТС 009/2011)"
+    level: direct
+    checked: 2026-11-07
+    quote: "ввозимой на территорию таможенной территории Таможенного союза – до ее ввоза"
+  - url: "https://www.alta.ru/tamdoc/11sr0799/"
+    title: "Решение КТС от 23.09.2011 № 799 \"О принятии технического регламента Таможенного союза \"О б"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/해외규격인증_일반583_화장품분류.csv"
+    level: secondary
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "TR CU 009 부속서는 통합표에 없음 — EU 기준으로 1차 선별만 [kw:ingredient_list_unavailable(TRCU009)]"
+  - "EU 금지성분 포함 — TR CU 009 대조 필요 [kw:ingredient_banned(EU)]"
+  - "EU 제한성분 한도 초과 [kw:ingredient_restricted_over(EU)]"
+  - "하이드로퀴논 — 미백 목적 사용 불가(염모 0.3%·인조손톱 0.02%만) [kw:ingredient_present(Hydroquinone)]"
+  - "배합 함량 미보유 또는 개념 단계 [kw:formula_known(ingredients_only_no_concentration|concept_only)]"
+  - "EAEU 신청인 미지정 [kw:local_entity_missing(EAEU)]"
+  - "인정 시험소 시험 없음 [kw:doc_missing(test_reports_eaeu)]"
+notes: "원문 확인(2026-11-07): TR CU 009/2011 EEC 원판 제6조 3·4항(국가등록 절차·서류)·부속서 12(대상 13종), alta.ru 2024 개정판 제6조(SGR 5년). 부속서 12 목록을 원문대로 product_types에 넣었고, 표방 태그가 대상 제품(선탠·필링 등)을 '해당 없음'으로 막지 않도록 condition의 claim 태그를 뺐다. 미백(아쿠아라이트닝크림·흑진주 마스크)은 적합성 선언(EAEU_TRCU009) 대신 이 경로. EU식 향료 알레르겐 표시 규정이 있어 allergens를 채움. 미확인: 등록 비용·기간, 회원국별 등록기관 실무."

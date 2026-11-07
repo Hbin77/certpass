@@ -1,0 +1,8 @@
+id: VEGAN_SOCIETY
+name_ko: Vegan Society 비건 상표 [테스트용]
+jurisdiction: GLOBAL
+kind: voluntary_certification
+applies_to: {product_types: [cosmetic]}
+ingredient_rules: none
+documents_required:
+  - {id: supplier_statements, desc: "원료사 비건·동물실험 미실시 확인서", satisfied_by_hint: [], producer: manufacturer}

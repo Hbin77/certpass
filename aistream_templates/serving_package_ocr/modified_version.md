@@ -1,0 +1,5 @@
+# 템플릿 코드 버전 및 변경 이력
+
+| 버전 | 변경 일시(KST) | 작업 사용자 | 기록 작성자 | 변경 파일 | 변경 내용·이유 | 검증 결과 |
+| --- | --- | --- | --- | --- | --- | --- |
+| v0.1.0 | 2026-11-07 18:05 | 박현빈(7팀) | Claude 작성 | main.py<br>pyproject.toml<br>template-inout.yaml<br>src/app.py<br>src/serving_runtime.py<br>src/predictor.py(신규)<br>src/ocr_core/(신규: pipeline·train_det·train_ocr·tarstore)<br>src/anchors.py·src/postprocessor.py·src/visualizer.py·src/dto.py(삭제) | 시드 SSD 이미지 서빙을 7팀 포장 사진 OCR 서빙으로 교체. 입력 model(MLFLOW_MODEL), 출력 serving(SERVING). 모델 폴더의 det.pt·rec.pt를 state_dict로 복원(학습 3.12 ↔ 서빙 3.11 pickle 차이 회피). POST /predict(multipart file) → 단어·줄·전체 글자·전성분, GET /health. torch·torchvision CPU 판, mlflow==3.13.0, protobuf<7(Ray Serve 2.55 호환). Dockerfile·deployment.yaml·src/model_inputs.py는 시드 그대로 | 통과: 개발 환경(td-2693804a…)에서 click만 설치한 venv로 main.py --help, Dockerfile과 같은 uv sync --no-dev(Python 3.11: torch 2.15 CPU·torchvision 0.29.2·Ray 2.55.1·mlflow 3.13.0·protobuf 6.33.6, 1.8GB), 무작위 가중치 시험 모델로 serve 시작·/health 200·/predict JSON·사진 아닌 파일 415. 상자 좌표 사진 밖으로 나가던 것 수정 / 미검증: 플랫폼 빌드·배포, 실제 학습 가중치 |

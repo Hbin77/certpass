@@ -1,0 +1,66 @@
+# 인증 요건 카드 — 판정 순서·태그 문법은 README.md 참고
+id: KR_FUNCTIONAL_REPORT
+name_ko: 기능성화장품 보고·심사(식약처)
+name_en: MFDS Functional Cosmetics Report / Review
+jurisdiction: KR
+kind: mandatory_registration
+strategic_kr: false
+general_kr_no: null
+support_rate: null
+applies_to:
+  product_types: [cosmetic]
+  claims_any: [whitening, anti_wrinkle, sunscreen, hair_dye, hair_bleach, hair_removal, hair_loss, acne, atopic_dryness, stretch_marks]
+  condition: "기능성 표방 제품(현재 제품군은 미백·주름) — 국내 유통 전 보고 또는 심사 필수. 보고 없이 기능성 표방 판매 시 판매업무정지 3~12개월"
+ingredient_rules: none
+claim_rules:
+  - claim: whitening
+    effect: ok
+    note: "보고·심사된 효능 문구(고정 문구)만 사용"
+  - claim: anti_wrinkle
+    effect: ok
+    note: "보고·심사된 효능 문구(고정 문구)만 사용"
+  - claim: medical
+    effect: not_allowed
+    note: "치료 표현 불가(법 §13①1호)"
+local_entity:
+  required: false
+  role: null
+documents_required:
+  - id: functional_report_or_review
+    desc: "기능성 보고서 또는 심사 결과. 보고 대상: ① 효능 성분이 고시 별표 4에 있고 함량 범위·제형(로션·액·크림·고형·침적마스크)·효능 문구가 고정 문구와 같음, 또는 ② 같은 회사 기심사 품목과 원료·함량·효능·기준시험법·용법·제형이 같음. 그 밖은 심사(기원·개발경위, 안전성 자료, 유효성, 기준·시험방법)"
+    satisfied_by_hint: ["functional_report_*"]
+    producer: authority
+  - id: label_functional
+    desc: "'기능성화장품' 글자·도안과 보고·심사된 효능·효과·용법이 반영된 국문 라벨"
+    satisfied_by_hint: ["label_kr"]
+    producer: company
+tests_required: []
+labeling:
+  language: null
+  allergens: null
+  other: ["'기능성화장품' 글자 또는 도안", "보고·심사된 효능·효과 고정 문구"]
+animal_testing: banned
+timeline:
+  lead_time: "보고는 제출 후 처리, 심사 처리기간은 미확인"
+  fee: "보고 0원, 심사 18.9~21만 원"
+  validity: "기한 없음. 보고 품목은 변경보고 제도 없음 → 취하 후 재보고"
+evidence:
+  - url: "local:조사자료_20261107/국내제도_원문/agentAB1/func_R.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/국내제도_원문/agentAB1/kfcc_R.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:조사자료_20261107/국내제도_원문/law/rule.txt"
+    level: direct
+    checked: 2026-11-07
+  - url: "local:트랙B_데이터모델_조사정리_20261107.md#4-8"
+    level: direct
+    checked: 2026-11-07
+blocking_rules: []
+conditional_rules:
+  - "기능성 표방인데 보고·심사 자료 없음 — 보고 없이 기능성 표방 판매 시 판매업무정지 3~12개월 [kw:doc_missing(functional_report_or_review)]"
+  - "보고 자료가 없고 효능 성분·함량·제형·문구가 고시 별표 4와 다름 — 심사 대상(18.9~21만 원) [kw:doc_missing(functional_report_or_review)] [kw:manual_check(KR_annex4_match)]"
+  - "미백+주름 이중 기능성 — (미백 성분, 주름 성분, 제형)이 고시 2025-89 별표 5 조합인지 확인(나이아신아마이드+아데노신 크림 조합은 있음) [kw:claim(whitening)] [kw:claim(anti_wrinkle)] [kw:doc_missing(functional_report_or_review)]"
+  - "기능성 계획 단계(처방 미확정) [kw:formula_known(concept_only)]"
+notes: "원문 확인(문서 §4-8 ◎): 보고 대상 판정(법 §4①, 규칙 §10①, 고시 2025-88 별표 4 — 자료 제출이 생략되는 기능성화장품), 이중 기능성은 고시 2025-89 별표 5 조합이어야 하며 나이아신아마이드+아데노신 크림 조합이 있어 크림 보고는 적법, 보고 0원·심사 18.9~21만 원, 보고 품목은 변경보고 없음(취하 후 재보고), 미보고 기능성 표방 판매 시 판매업무정지 3~12개월(규칙 별표 7). claims_any에는 작업 지시의 whitening·anti_wrinkle 외에 다른 기능성 8종(자외선 차단·염모·탈색·제모·탈모·여드름·아토피 건조·튼살)도 넣었음 — 현재 제품 판정에는 영향 없음, 기능성 유형 목록은 (추정). 해외 판정과의 관계: 중국 미백(특수 注册)·일본 미백·주름(의약부외품)은 한국 보고 자료로 대신할 수 없고 근거 초안으로만 사용 (추정). 처리기간은 미확인."

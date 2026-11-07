@@ -1,0 +1,27 @@
+[project]
+name = "serving-template"
+version = "0.4.0"
+description = "AISTREAM 서빙 Deployment입니다. 7팀 CertPass 인증 판정 랜덤포레스트(MLflow sklearn 모델) 추론 API."
+authors = []
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "ray[serve]>=2.21.0,<3.0.0",
+    "fastapi>=0.111.0,<0.112.0",
+    "click>=8.1.7,<9.0.0",
+    "pandas>=2.2.2,<3.0.0",
+    # 학습 이미지(python 3.12)와 같은 numpy 2 계열: 모델 파일(pickle)이 numpy 2로 저장된다
+    "numpy>=2.0.0,<3.0.0",
+    "mlflow==3.13.0",
+    # 학습 템플릿 ml/7팀_certpass_rf와 같은 범위(트리 모델 복원 호환)
+    "scikit-learn>=1.5,<1.8",
+    # Ray Serve 2.55가 protobuf 7에서 없어진 FieldDescriptor.label을 써서 배포가 실패한다(2026-11-07 개발 환경에서 확인)
+    "protobuf>=3.20.3,<7",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "pytest>=8.1.1,<9.0.0",
+]

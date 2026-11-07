@@ -1,0 +1,16 @@
+id: EU_CPNP
+name_ko: EU 화장품 신고(CPNP) [테스트용]
+jurisdiction: EU
+kind: mandatory_registration
+strategic_kr: true
+applies_to: {product_types: [cosmetic]}
+ingredient_rules: EU
+claim_rules:
+  - {claim: whitening, effect: ok, note: "화장품 범위 표현이면 가능"}
+local_entity: {required: true, role: "EU Responsible Person"}
+documents_required:
+  - {id: PIF, desc: "제품정보파일(PIF)", satisfied_by_hint: [], producer: company}
+  - {id: CPSR_signed, desc: "안전성 보고서(CPSR) 평가자 서명", satisfied_by_hint: [], producer: external_expert}
+  - {id: formula, desc: "정확 농도 처방", satisfied_by_hint: [formula_composition, formula_ingredient_statement], producer: manufacturer}
+tests_required: [stability, microbiology, challenge_test, heavy_metals]
+labeling: {language: "출시 회원국 언어", allergens: "바르는 0.001%/씻어내는 0.01% 초과 표시"}
