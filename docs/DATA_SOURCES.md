@@ -14,7 +14,7 @@
 | EU 화장품 성분 부속서 II~VI | `data/regs/성분규제_통합표*.csv` (EU 행) | European Commission CosIng, [CC BY 4.0](https://single-market-economy.ec.europa.eu/sectors/cosmetics/cosmetic-ingredient-database_en). 원문 행을 판정용 표로 가공 | 출처 표기 시 가능 |
 | 일본 화장품기준 (후생노동성 고시 제331호) 별표 | `data/regs/성분규제_통합표*.csv` (JP 행) | 일본 후생노동성 [化粧品基準](https://www.mhlw.go.jp/). 별표를 판정용 표로 가공 | 출처 표기 시 가능 |
 | 해외규격인증 지원 인증 목록 (일반 583종 중 화장품 분류) | `data/regs/해외규격인증_일반583_화장품분류.csv` | 중소벤처기업부·중소기업 수출지원센터, 해외규격인증 획득지원사업 2026 공고 | 가능 |
-| 자사 제품 4종 공개 데모 | `data/public/products/` | ㈜지너스인터내셔널. 성분 목록만 실제, 함량은 가상값(배합비 비공개) | 가능(조건부) |
+| 자사 제품 공개 데모 D1~D5 | `data/public/products/` | ㈜지너스인터내셔널. D1~D4는 실제 성분 목록에 가상 함량(배합비 비공개), D5는 D2를 복사해 성분명 오기를 넣은 가상 제품 | 가능(조건부) |
 
 ## 저장소에 넣지 않은 데이터 (대회 서버·팀 서버에만)
 

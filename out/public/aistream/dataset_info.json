@@ -1,10 +1,10 @@
 {
-  "source": "certcheck_train_v4.csv",
+  "source": "7팀_certpass_train_v13.csv.gz / 7팀_certpass_test_v13.csv.gz (AIStream 데이터셋 7팀_certpass_train·test, 등록 모델 버전 9 학습)",
   "rows": {
-    "train": 50297,
-    "test": 13303
+    "train": 254400,
+    "test": 116600
   },
-  "n_features": 96,
+  "n_features": 102,
   "target": "label",
   "label_map": {
     "PASS": "통과 가능",
@@ -12,5 +12,6 @@
     "FAIL": "불가",
     "NOT_APPLICABLE": "해당 없음"
   },
-  "split": "합성 제품 단위 sha1 % 5 == 0 → test"
+  "split": "합성 제품 단위로 학습·평가를 나눔(같은 제품이 양쪽에 들어가지 않음)",
+  "note": "앱(data/ml/feature_columns.json)은 여기에 f_n_ingredients 1열을 더 보내며, 서빙은 모르는 열을 무시한다"
 }

@@ -11,7 +11,7 @@
 | --- | --- | --- |
 | 목적 | 학습 템플릿 `ml/7팀_certpass_rf`가 등록한 랜덤포레스트 모델로, 제품×인증 한 행마다 4종 판정과 클래스별 확률을 돌려준다 | 사용자 결정(정식 학습·서빙은 AIStream) |
 | 모델 | MLflow sklearn flavor `RandomForestClassifier` 1개, `name="model"`로 기록, 특징 열 이름(`feature_names_in_`) 포함 | 학습 템플릿 `src/train_runtime.py` |
-| 입력 | 특징 96열(엔진 특징 `f_*`, 위험 특징 `r_*`, 인증 원-핫 `cert_*`, 규칙 판정 원-핫 `rule_*`), 숫자 | 학습 데이터 `feature_columns.json` |
+| 입력 | 특징 열 전부(현재 등록 모델 버전 9는 102열: 엔진 특징 `f_*`, 위험 특징 `r_*`, 인증 원-핫 `cert_*`, 규칙 판정 원-핫 `rule_*`), 숫자 | 학습 데이터 `feature_columns.json` |
 | 출력 | `label`(COND·FAIL·NOT_APPLICABLE·PASS) + `proba_<클래스>` | 호출 측 `certcheck/ml_client.py`의 `parse_predictions` |
 | 호출 측 | CertPass 앱(대회 서버)이 판정 화면마다 호출, `calibrate_aistream`이 평가셋 13,303행을 500행씩 호출 | `certcheck/calibrate_aistream.py` |
 | 유지할 계약 | Ray Serve + FastAPI 구조, `load_model_input("model")`, `SERVING_ROOT_PATH`, 포트 8000, `/health`, Dockerfile·deployment.yaml 변경 없음 | `AGENTS.md`, 공통 작업 계약 |
@@ -36,7 +36,7 @@
 
 | 필드 | 타입 | 필수 | 설명·제약 |
 | --- | --- | --- | --- |
-| `dataframe_split.columns` | 문자열 배열 | 둘 중 하나 | 특징 열 이름. 중복 불가. 모델 특징 96열을 모두 포함해야 함. 모르는 열은 무시하고 `ignored_columns`로 알려 줌 |
+| `dataframe_split.columns` | 문자열 배열 | 둘 중 하나 | 특징 열 이름. 중복 불가. 모델 특징 열(버전 9는 102열)을 모두 포함해야 함. 모르는 열은 무시하고 `ignored_columns`로 알려 줌 |
 | `dataframe_split.data` | 숫자 배열의 배열 | 〃 | 행마다 `columns`와 같은 개수·순서 |
 | `instances` | 객체 배열 | 〃 | `{열 이름: 값}` 행 목록 |
 
@@ -50,7 +50,7 @@
 {"dataframe_split": {"columns": ["f_n_ingredients", "r_max_sim_banned", "cert_EU_CPNP", "rule_COND"], "data": [[18, 0.42, 1, 1]]}}
 ```
 
-실제 요청은 96열 전부를 보내야 합니다. 열 목록은 `GET /info`의 `features`로 받을 수 있습니다.
+실제 요청은 모델 특징 열 전부(버전 9는 102열)를 보내야 합니다. 열 목록은 `GET /info`의 `features`로 받을 수 있습니다.
 
 ## 5. 성공 응답
 
