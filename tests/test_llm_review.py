@@ -23,3 +23,11 @@ def test_prompt_has_no_bracket_line_heads_and_rounds():
                                 {"ingredients": [{"inci": "Water", "pct": 70}, {"inci": "X"}]}, {"fail_proba": 0.1234}, [])
     assert "불가 확률 0.12" in p and "[kw:" not in p and "EUCPNP" in p
     assert not any(line.lstrip().startswith("[") for line in p.splitlines())
+
+
+def test_prompt_hides_formula_and_mixed_level_is_unsure():
+    v = {"cert_id": "EU_CPNP", "status": "조건부", "findings": [
+        {"code": "ING_RESTRICTED_PCT_UNKNOWN", "level": "cond", "message": "제한 성분 X: 한도 0.5% — 함량 미상 (전성분 순서상 0~8.3%)"}]}
+    p = llm_review.build_prompt(v, {"id": "EU_CPNP"}, {"ingredients": [{"inci": "Water", "pct": 70.12, "cas": "7732-18-5"}, {"inci": "X"}]})
+    assert "70.12" not in p and "7732-18-5" not in p and "Water" not in p and "전성분 순서상" not in p and "한도 0.5%" in p
+    assert llm_review.parse("판단: 불가 가능성 높음 또는 판단 불가")["level"] == "판단 불가"

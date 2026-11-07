@@ -29,7 +29,7 @@ from .risk import near_matches
 from .synth import make_products, noisy
 
 
-def make(out: Path, n: int, products: int, seed: int) -> None:
+def make(out: Path, n: int, n_normal: int, products: int, seed: int) -> None:
     reg, attrs = load_reg_index(), load_attributes()
     cards = [c for c in load_cards() if c.get("kind") != "company_certification"]
     by_id = {c["id"]: c for c in cards}
@@ -58,13 +58,13 @@ def make(out: Path, n: int, products: int, seed: int) -> None:
     rng.shuffle(hidden)
     rng.shuffle(normal)
     pool = len(hidden) + len(normal)
-    cases = hidden[:n] + normal[:n]
+    cases = hidden[:n] + normal[:n_normal]
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w", encoding="utf-8") as f:
         for c in cases:
             f.write(json.dumps(c, ensure_ascii=False) + "\n")
     meta = {"products": products, "seed": seed, "review_pool": pool, "hidden_in_pool": len(hidden),
-            "hidden_rate": round(len(hidden) / max(1, pool), 4), "sampled_hidden": min(n, len(hidden)), "sampled_normal": min(n, len(normal))}
+            "hidden_rate": round(len(hidden) / max(1, pool), 4), "sampled_hidden": min(n, len(hidden)), "sampled_normal": min(n_normal, len(normal))}
     out.with_suffix(".meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps(meta, ensure_ascii=False))
 
@@ -120,19 +120,20 @@ def main() -> None:
     sp = ap.add_subparsers(dest="cmd", required=True)
     m = sp.add_parser("make")
     m.add_argument("out", type=Path)
-    m.add_argument("--n", type=int, default=40)
+    m.add_argument("--n", type=int, default=80, help="숨은 불가 표본 수")
+    m.add_argument("--n-normal", type=int, default=200, help="정상 표본 수(정밀도 하한을 말하려면 200 이상)")
     m.add_argument("--products", type=int, default=400)
     m.add_argument("--seed", type=int, default=2026)
     r = sp.add_parser("run")
     r.add_argument("cases", type=Path)
     r.add_argument("out", type=Path)
-    r.add_argument("--gap", type=float, default=3.0)
+    r.add_argument("--gap", type=float, default=12.0, help="호출 간격(초), 판정 설명과 모델 한도를 나눠 씀")
     s = sp.add_parser("score")
     s.add_argument("cases", type=Path)
     s.add_argument("results", type=Path)
     a = ap.parse_args()
     if a.cmd == "make":
-        make(a.out, a.n, a.products, a.seed)
+        make(a.out, a.n, a.n_normal, a.products, a.seed)
     elif a.cmd == "run":
         run(a.cases, a.out, a.gap)
     else:

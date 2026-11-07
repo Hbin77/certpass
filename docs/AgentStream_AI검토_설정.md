@@ -38,10 +38,18 @@
 
 ## 4. 측정 (맥)
 ```
-.venv/bin/python -m certcheck.eval_llm_review make out/llm_review/cases.jsonl --n 40   # 이미 만들어 둠
+.venv/bin/python -m certcheck.eval_llm_review make out/llm_review/cases.jsonl --n 80 --n-normal 200   # 이미 만들어 둠(숨은 불가 80·정상 200)
 set -a; . ~/.certpass_agentstream.env; set +a
 .venv/bin/python -m certcheck.eval_llm_review run out/llm_review/cases.jsonl out/llm_review/results.jsonl
 .venv/bin/python -m certcheck.eval_llm_review score out/llm_review/cases.jsonl out/llm_review/results.jsonl
 ```
 - 판정 설명 warm과 같은 모델 한도를 쓰므로 warm이 끝난 뒤 돌린다.
 - 화면에 붙이는 기준: '불가 가능성 높음'의 재현율이 의미 있고(숨은 불가를 실제로 더 잡음), 실제 비율로 환산한 정밀도가 무작위(약 2.8%)보다 확실히 높을 때. 아니면 붙이지 않고 결과만 발표 근거로 쓴다.
+
+## 5. ax-fd 검토 반영 (23:10)
+- 배합비 보호: 요청문에 전성분 목록·함량·CAS를 보내지 않고, 확정 못 한 사유(성분명·한도·함량 유무)만 보낸다. 순서로 계산한 함량 범위, 실제 함량이 문구에 들어가는 사유(ING_RESTRICTED_SCOPE_CHECK)도 뺀다(AgentStream 대화 기록이 조직 워크스페이스에 남음)
+- 표본: 숨은 불가 80 + 정상 200(정상 40건으로는 정밀도 하한을 말할 수 없음). 실제 비율 1.9%(검토 대상 5,366건 중 102건)
+- 이름 유사 단서(near)와 '오기 가능성' 규칙 제거: 측정 사례에서 숨은 불가·정상에 같은 비율로 있어 판별력 없음(규칙의 '오기 확인' 사유는 그대로 전달)
+- '판단:' 줄에 단계가 둘 이상 섞이면 '판단 불가'
+- 화면에 붙인다면: 행을 펼칠 때만 호출 + 캐시, 'AI 모델(통계) 경보 없음'과 'AI 검토(LLM) 의견'의 표시 순서·문구를 정한 뒤
+- 한계: 숨은 불가 정답은 noisy() 합성이라 실제 입력 오류 분포와 다를 수 있음
