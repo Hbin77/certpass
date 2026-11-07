@@ -165,6 +165,11 @@ def match_all(raw_items: list[str]) -> list[dict]:
 MIN_SCAN = 3  # 줄 단위 대조는 정확히 맞은 성분이 이 개수 이상일 때만 쓴다(앞면 광고 문구 한두 단어로 목록을 만들지 않게)
 
 
+# 줄 단위 대조에서 버리는 사전 이름: 제품명('…크림')이나 잘린 복합 성분명('마그네슘 알루미늄실리케이트'의 앞 조각)에서
+# 홀로 잡히는 일반 낱말. '전성분' 구역 안에서는 그대로 쓴다
+SCAN_SKIP = {"크림", "글라이콜", "마그네슘", "알루미늄"}
+
+
 def scan_lines(lines: list[str]) -> list[dict]:
     """표 형식 문서(위탁사 전성분표 등)용: 모든 줄을 사전과 대조해 정확히 맞는 성분명만 모은다.
     한 줄에 성분명·CAS·기능이 섞여 있어도 사전 이름 조각만 골라낸다(맞지 않는 조각은 버림 — 오탐 방지)."""
@@ -172,7 +177,7 @@ def scan_lines(lines: list[str]) -> list[dict]:
     for line in lines:
         for piece in segment(line, prefer_long=True):
             hit = lookup(piece)
-            if hit and hit["kr_name"] not in seen:
+            if hit and hit["kr_name"] not in seen and hit["kr_name"] not in SCAN_SKIP:
                 seen.add(hit["kr_name"])
                 out.append({"raw": piece, "kr": hit["kr_name"], "inci": hit["inci"], "match": "exact", "score": 100})
     return out
