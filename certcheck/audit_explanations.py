@@ -36,7 +36,7 @@ def main(pids: list[str], url: str = URL) -> dict:
                 continue
             srcs = L.sources_for(v, card)
             ing = " ".join(f"{i.get('inci') or ''} {i.get('name_kr') or ''}" for i in pd.get("ingredients") or [])
-            corpus = "\n".join([L.build_prompt(v, card, pd, srcs, d.get("ai_alert")), card_doc(card), ing])
+            corpus = "\n".join([L._key_prompt(v, card, pd, srcs, d.get("ai_alert")), card_doc(card), ing])
             un = L.unsupported_terms(d["text"], corpus)
             terms.update(un)
             rows.append({"product": pid, "cert": v["cert_id"], "unsupported": un,

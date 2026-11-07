@@ -230,7 +230,8 @@ def ai_lines(ai: dict | None) -> tuple[str, str]:
     return rule, body
 
 
-def build_prompt(v: dict, card: dict, product: dict, sources: list[dict], ai: dict | None = None, kb_hint: bool = True) -> str:
+def _key_prompt(v: dict, card: dict, product: dict, sources: list[dict], ai: dict | None = None, kb_hint: bool = True) -> str:
+    """2026-11-08 00시까지 보내던 프롬프트. 지금은 캐시 키(저장된 설명을 그대로 쓰기 위해)와 사실 점검 대조 자료로만 쓴다."""
     fs = sorted([f for f in v.get("findings") or [] if f.get("level") in ("fail", "cond", "na")],
                 key=lambda f: {"fail": 0, "cond": 1, "na": 2}[f["level"]])[:MAX_FINDINGS]
     level = {"fail": "불가 사유", "cond": "보완 필요", "na": "해당 없음 사유"}
@@ -270,6 +271,40 @@ def build_prompt(v: dict, card: dict, product: dict, sources: list[dict], ai: di
 {src}
 """
 
+
+
+SEND_FINDINGS = 8  # 보내는 프롬프트의 사유 수(불가 → 조건부 순). 화면의 근거 목록·점검은 전체 사유로 한다
+
+
+def build_prompt(v: dict, card: dict, product: dict, sources: list[dict], ai: dict | None = None, kb_hint: bool = True) -> str:
+    """AgentStream에 보내는 프롬프트(짧은 판). 챗봇 시스템 프롬프트에 이미 있는 원칙(등급 고정·없는 내용 금지·'(추정)'·존댓말)은
+    되풀이하지 않고, 이 판정에만 필요한 것(형식, 근거 번호 범위, 지식베이스 꼬리표, 사유)만 싣는다 — 토큰 절약.
+    줄 머리에 대괄호를 쓰지 않는다(AgentStream이 JSON 표로 읽음)."""
+    fs = sorted([f for f in v.get("findings") or [] if f.get("level") in ("fail", "cond", "na")],
+                key=lambda f: {"fail": 0, "cond": 1, "na": 2}[f["level"]])[:SEND_FINDINGS]
+    level = {"fail": "불가", "cond": "보완", "na": "해당 없음"}
+    lines = [f"- {level[f['level']]}: {KW.sub('', f.get('message', ''))[:200]}"
+             + (f" / 근거: {f['evidence'][:120]}" if f.get("evidence") else "") for f in fs] or ["- 보완할 항목 없음"]
+    ai_rule, ai_body = ai_lines(ai)
+    tag = kb_tag(card.get("id"))
+    n = len(sources)
+    cite = (f"문장 끝에 근거 번호를 (근거 1)처럼 붙이되 1~{n}번만 씁니다." if n else "근거 목록이 없으니 근거 번호를 붙이지 마세요.")
+    hint = f"지식베이스에서 이 카드는 꼬리표 '{tag}'입니다. '{tag} {card.get('name_ko')}'로 찾고 다른 꼬리표 카드는 쓰지 마세요.\n" if kb_hint else ""
+    src = "\n".join(f"근거 {s['n']}: {s['title'][:120]}" for s in sources) or "없음"
+    claims = ", ".join(map(str, product.get("claims") or [])) or "없음"
+    return f"""아래 판정을 설명하세요. 판정 등급 "{v.get('status')}"은 확정값입니다. {cite}
+{hint}형식(6문장 이내):
+왜 이 등급인가: (2~3문장)
+먼저 할 일: (1~3개, 한 줄씩 "- "로 시작)
+{ai_rule}
+인증: {card.get('name_ko')} ({card.get('id')}, {card.get('jurisdiction')}) / 제품 유형 {product.get('product_type') or '-'} / 표방 {claims[:120]}
+판정 등급: {v.get('status')}
+판정 사유:
+{chr(10).join(lines)}
+{ai_body}
+근거 목록:
+{src}
+"""
 
 BASE_DEFAULT = "https://api-gateway.jntp-ax.or.kr/agentstream"
 TEXT_BLOCKS = {None, "text", "output_text"}  # thinking·reasoning·tool 블록은 답변에 붙이지 않는다
@@ -531,7 +566,7 @@ def _checks(text: str, v: dict, card: dict, product: dict, sources: list[dict], 
     판정 사유·근거 목록·인증 카드·조회 문서에 없는 용어·숫자를 '확인 필요'로 싣는다."""
     from .kb_export import card_doc
     ing = " ".join(f"{i.get('inci') or ''} {i.get('name_kr') or ''}" for i in product.get("ingredients") or [] if isinstance(i, dict))
-    corpus = "\n".join([build_prompt(v, card, product, sources, ai), card_doc(card), ing,
+    corpus = "\n".join([_key_prompt(v, card, product, sources, ai), card_doc(card), ing,
                         *(d.get("text", "") for d in docs or [])])
     return {"text": strip_bad_refs(text, len(sources)), "bad_refs": bad_refs(text, len(sources)),
             "unsupported": unsupported_terms(text, corpus)}
@@ -552,7 +587,7 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
     # 캐시 키 = 경보를 뺀 프롬프트 + 지식베이스 버전. AIStream 모델을 바꿔도 키는 그대로이고, 적중할 때 경보 여부만 다시 물어
     # '경보가 새로 생기거나 사라진 판정'만 다시 만든다(모델 교체 때 저장된 설명을 통째로 버리지 않게 — 토큰 절약).
     # 지식베이스를 다시 올리면 AGENTSTREAM_KB_VERSION을 올려 예전 지식베이스로 만든 설명을 쓰지 않게 한다.
-    base_prompt = build_prompt(v, card, product, sources, None)
+    base_prompt = _key_prompt(v, card, product, sources, None)  # 보내는 프롬프트를 줄여도 저장된 설명 키는 그대로
     key = hashlib.sha256(f"{base_prompt}\nkb{os.environ.get('AGENTSTREAM_KB_VERSION', '1')}".encode()).hexdigest()
     legacy = hashlib.sha256(  # 2026-11-08 00시 이전 키(모델 주소·기준·버전 포함) → 찾으면 새 키로 옮긴다
         (f"{base_prompt}\n{os.environ.get('AISTREAM_URL', '')}|{os.environ.get('AISTREAM_FAIL_THRESHOLD', '')}"
@@ -620,7 +655,7 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
         return {**base, "enabled": True, "ok": False, "ai_alert": ai, "error": f"{type(e).__name__}: {e}"[:200]}
     docs = raw.pop("docs", [])
     g = group_sources(docs, card.get("id")) if docs else {"rag_target": None, "rag_other": None}
-    ans = {**raw, **g, "ai_alert": ai, "unverified": unverified_facts(raw["text"], prompt + "\n".join(d["text"] for d in docs))}
+    ans = {**raw, **g, "ai_alert": ai, "unverified": unverified_facts(raw["text"], _key_prompt(v, card, product, sources, ai) + "\n".join(d["text"] for d in docs))}
     with _lock:
         _cache_put(key, ans, pin)
     return {**base, **ans, **_checks(ans["text"], v, card, product, sources, docs, ai), "enabled": True, "ok": True, "cached": False}

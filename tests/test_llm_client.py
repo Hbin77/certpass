@@ -388,7 +388,7 @@ def test_legacy_key_migrates(monkeypatch):
     card = next(c for c in resources()[0] if c["id"] == "EU_CPNP")
     v = next(x for x in run_demo("D3")["verdicts"] if x["cert_id"] == "EU_CPNP")
     srcs = llm_client.sources_for(v, card)
-    old = hashlib.sha256(f"{llm_client.build_prompt(v, card, {}, srcs, None)}\n||v6|kb1".encode()).hexdigest()
+    old = hashlib.sha256(f"{llm_client._key_prompt(v, card, {}, srcs, None)}\n||v6|kb1".encode()).hexdigest()
     monkeypatch.setenv("AISTREAM_MODEL_VERSION", "v6")
     with llm_client._lock:
         llm_client._cache_put(old, {"text": "왜 이 등급인가: 예전 키 설명", "ai_alert": None}, False)
@@ -468,7 +468,7 @@ def test_bad_cached_notice_is_dropped(monkeypatch):
     card = next(c for c in resources()[0] if c["id"] == "EU_CPNP")
     v = next(x for x in run_demo("D3")["verdicts"] if x["cert_id"] == "EU_CPNP")
     srcs = llm_client.sources_for(v, card)
-    key = hashlib.sha256(f"{llm_client.build_prompt(v, card, {}, srcs, None)}\nkb1".encode()).hexdigest()
+    key = hashlib.sha256(f"{llm_client._key_prompt(v, card, {}, srcs, None)}\nkb1".encode()).hexdigest()
     with llm_client._lock:
         llm_client._cache_put(key, {"text": "모델 공급자의 순간 요청 한도를 초과했습니다.", "ai_alert": None}, False)
     monkeypatch.setenv("AGENTSTREAM_API_KEY", "k")
