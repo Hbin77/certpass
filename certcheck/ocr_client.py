@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
+import urllib.error
 import urllib.request
 import uuid
 from functools import lru_cache
@@ -36,11 +38,27 @@ def _multipart(field: str, filename: str, content_type: str, data: bytes) -> tup
     return head + data + f"\r\n--{boundary}--\r\n".encode(), f"multipart/form-data; boundary={boundary}"
 
 
+RETRY_STATUS = (500, 502, 503, 504)
+RETRY_WAIT = (3.0, 6.0)  # 서빙 replica가 다시 뜨는 동안(수 초) 기다렸다 다시 보낸다
+
+
 def call_ocr(image: bytes, content_type: str) -> dict:
+    """OCR 서빙 호출. 서빙이 잠깐 내려가 500·502·503·504를 주면 최대 2번 다시 보낸다(사진 문제 4xx는 바로 실패)."""
     body, ctype = _multipart("file", "package.jpg", content_type, image)
-    req = urllib.request.Request(os.environ["CERTCHECK_OCR_URL"], data=body, headers={"Content-Type": ctype}, method="POST")
-    with urllib.request.urlopen(req, timeout=float(os.environ.get("CERTCHECK_OCR_TIMEOUT", "60"))) as r:
-        return json.loads(r.read())
+    timeout = float(os.environ.get("CERTCHECK_OCR_TIMEOUT", "60"))
+    for attempt in range(len(RETRY_WAIT) + 1):
+        req = urllib.request.Request(os.environ["CERTCHECK_OCR_URL"], data=body, headers={"Content-Type": ctype}, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            if e.code not in RETRY_STATUS or attempt == len(RETRY_WAIT):
+                raise
+        except (urllib.error.URLError, TimeoutError):
+            if attempt == len(RETRY_WAIT):
+                raise
+        time.sleep(RETRY_WAIT[attempt])
+    raise RuntimeError("unreachable")
 
 
 @lru_cache(maxsize=1)

@@ -107,7 +107,37 @@ def test_ocr_size_limit(fake_ocr):
     assert call("/api/evaluate", b"{" + b" " * (1024 * 1024 + 10) + b"}", "application/json")[0] == 413
 
 
+def test_ocr_retries_transient_500(monkeypatch):
+    calls = {"n": 0}
+
+    class H(BaseHTTPRequestHandler):
+        def do_POST(self):
+            self.rfile.read(int(self.headers["Content-Length"]))
+            calls["n"] += 1
+            if calls["n"] == 1:  # 첫 요청은 서빙이 다시 뜨는 중이라 실패
+                self.send_response(502)
+                self.end_headers()
+                return
+            data = json.dumps({"ingredients": ["정제수"], "lines": [], "text": "", "words": []}).encode()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+        def log_message(self, *a):
+            pass
+
+    srv = HTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    monkeypatch.setenv("CERTCHECK_OCR_URL", f"http://127.0.0.1:{srv.server_port}/predict")
+    monkeypatch.setattr(ocr_client, "RETRY_WAIT", (0.01, 0.01))
+    status, body = call("/api/ocr", JPEG, "image/jpeg")
+    srv.shutdown()
+    assert status == 200 and calls["n"] == 2 and json.loads(body)["counts"]["exact"] == 1
+
+
 def test_ocr_server_down_is_502(monkeypatch):
     monkeypatch.setenv("CERTCHECK_OCR_URL", "http://127.0.0.1:9/predict")
     monkeypatch.setenv("CERTCHECK_OCR_TIMEOUT", "2")
+    monkeypatch.setattr(ocr_client, "RETRY_WAIT", (0.01, 0.01))
     assert call("/api/ocr", JPEG, "image/jpeg")[0] == 502
