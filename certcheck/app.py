@@ -280,6 +280,8 @@ def ai_alert(verdict, card: dict, p: dict, reg) -> dict | None:
     if card.get("kind") == "company_certification":
         return None
     ml = ml_client.predict([verdict], {card["id"]: card}, p, reg)
+    if ml.get("enabled") and not ml.get("ok"):  # 꺼짐(None)과 실패를 구분: 실패면 설명 캐시가 '경보 없음'으로 잘못 바뀌지 않게
+        raise RuntimeError(f"AIStream 실패: {ml.get('error')}"[:120])
     r = (ml.get("results") or {}).get(verdict.cert_id) if ml.get("ok") else None
     if not r or not r.get("hidden_fail_alert"):
         return None

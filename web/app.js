@@ -932,8 +932,11 @@
     const unv = (d.unverified || []).length
       ? `<p class="aiexp__check">${icon('i-alert', 'ic--sm')}<span>설명 속 날짜·비율 중 판정 사유와 지식베이스에서 확인되지 않은 값: ${esc(d.unverified.join(', '))}. 원문 확인이 필요합니다.</span></p>` : '';
     const bad = (d.bad_refs || []).length
-      ? `<p class="aiexp__check">${icon('i-alert', 'ic--sm')}<span>설명이 인용한 근거 ${esc(d.bad_refs.join(', '))}번은 근거 목록에 없습니다. 해당 문장은 근거 목록에서 다시 확인하세요.</span></p>` : '';
-    return `${head}<div class="aiexp__text">${explainTextHTML(d.text)}</div>${unv}${bad}${rag}${srcHTML}
+      ? `<p class="aiexp__check">${icon('i-alert', 'ic--sm')}<span>AI가 근거 목록에 없는 번호(${esc(d.bad_refs.join(', '))})를 인용해 그 번호는 지웠습니다. 해당 문장은 근거 목록에서 다시 확인하세요.</span></p>` : '';
+    // 판정 사유·근거 목록·인증 카드에 같은 말이 없는 용어·숫자·인용(LLM이 바꿔 쓰거나 지어냈을 수 있는 부분)
+    const uns = (d.unsupported || []).length
+      ? `<p class="aiexp__check">${icon('i-alert', 'ic--sm')}<span>근거 자료에서 같은 표현을 찾지 못한 말: ${esc(d.unsupported.slice(0, 6).join(', '))}${d.unsupported.length > 6 ? ` 외 ${d.unsupported.length - 6}개` : ''}. AI가 바꿔 쓴 표현일 수 있어 원문 확인이 필요합니다.</span></p>` : '';
+    return `${head}<div class="aiexp__text">${explainTextHTML(d.text)}</div>${unv}${uns}${bad}${rag}${srcHTML}
       <p class="aiexp__notice">${icon('i-info', 'ic--xs')}${esc(d.notice || '참고용 설명이며 공식 인증·심사가 아닙니다.')}</p>`;
   }
   function renderExplain(certId) {

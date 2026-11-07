@@ -211,7 +211,7 @@ def test_unverified_facts():
 
 def test_rate_limited_retries_once(monkeypatch):
     calls = []
-    good = {"text": "답", "rag_sources": [], "tool_failed": False, "docs": []}
+    good = {"text": "왜 이 등급인가: 답", "rag_sources": [], "tool_failed": False, "docs": []}
 
     def fake(prompt, timeout, title=""):
         calls.append(1)
@@ -231,7 +231,7 @@ def test_rate_cap_blocks_without_calling(monkeypatch):
     monkeypatch.setenv("AGENTSTREAM_API_KEY", "k")
     monkeypatch.setenv("AGENTSTREAM_CHATBOT_ID", "b")
     monkeypatch.setenv("AGENTSTREAM_RATE_PER_MIN", "1")
-    monkeypatch.setattr(llm_client, "call", lambda *a, **k: {"text": "답", "rag_sources": [], "tool_failed": False, "docs": []})
+    monkeypatch.setattr(llm_client, "call", lambda *a, **k: {"text": "왜 이 등급인가: 답", "rag_sources": [], "tool_failed": False, "docs": []})
     assert explain_demo("D3", "EU_CPNP")["ok"]
     out = explain_demo("D3", "EU_PPWR")  # 다른 판정 = 새 호출 → 분당 1건 넘음
     assert out["ok"] is False and out["error"].startswith("RateLimit")
@@ -243,7 +243,7 @@ def test_file_cache_roundtrip(monkeypatch, tmp_path):
     monkeypatch.setattr(llm_client, "CACHE_FILE", str(f))
     monkeypatch.setenv("AGENTSTREAM_API_KEY", "k")
     monkeypatch.setenv("AGENTSTREAM_CHATBOT_ID", "b")
-    monkeypatch.setattr(llm_client, "call", lambda *a, **k: {"text": "답", "rag_sources": [], "tool_failed": False, "docs": []})
+    monkeypatch.setattr(llm_client, "call", lambda *a, **k: {"text": "왜 이 등급인가: 답", "rag_sources": [], "tool_failed": False, "docs": []})
     explain_demo("D3", "EU_CPNP")
     assert f.exists() and "secret" not in f.read_text()
     llm_client._cache.clear()
@@ -258,7 +258,7 @@ def _on(monkeypatch, fake):
     monkeypatch.setattr(llm_client, "call", fake)
 
 
-GOOD_RAW = {"text": "답", "rag_sources": [], "tool_failed": False, "docs": []}
+GOOD_RAW = {"text": "왜 이 등급인가: 답", "rag_sources": [], "tool_failed": False, "docs": []}
 
 
 def test_cache_hit_skips_ai_and_ignores_ai_result(monkeypatch):
@@ -360,18 +360,49 @@ def test_slow_stream_without_newline_times_out(monkeypatch):
         list(llm_client._lines(Drip(), _t.monotonic() + 1, 1))
 
 
-def test_cache_key_changes_with_ml_model(monkeypatch):
-    """AIStream 모델 주소·경보 기준이 바뀌면 예전 설명을 쓰지 않는다(ax-45 지적)."""
-    _on(monkeypatch, lambda *a, **k: dict(GOOD_RAW))
-    monkeypatch.setenv("AISTREAM_FAIL_THRESHOLD", "0.175")
-    assert explain_demo("D3", "EU_CPNP")["cached"] is False
-    assert explain_demo("D3", "EU_CPNP")["cached"] is True
+def test_cache_survives_model_change_but_alert_change_regenerates(monkeypatch):
+    """AIStream 모델·기준을 바꿔도 저장된 설명은 그대로 쓰고, 경보가 새로 생기거나 사라진 판정만 다시 만든다."""
+    calls = []
+    _on(monkeypatch, lambda *a, **k: (calls.append(1), dict(GOOD_RAW))[1])
+    from certcheck.app import resources, run_demo
+    card = next(c for c in resources()[0] if c["id"] == "EU_CPNP")
+    v = next(x for x in run_demo("D3")["verdicts"] if x["cert_id"] == "EU_CPNP")
+    alert = {"fail_proba": 0.5, "threshold": 0.25, "near": []}
+    assert llm_client.explain(v, card, {}, lambda: None)["cached"] is False
+    monkeypatch.setenv("AISTREAM_MODEL_VERSION", "v8")
     monkeypatch.setenv("AISTREAM_FAIL_THRESHOLD", "0.3")
-    assert explain_demo("D3", "EU_CPNP")["cached"] is False
-    monkeypatch.setenv("AGENTSTREAM_KB_VERSION", "2")  # 지식베이스를 다시 올리면 새로 만든다
-    assert explain_demo("D3", "EU_CPNP")["cached"] is False
-    monkeypatch.setenv("AISTREAM_MODEL_VERSION", "v6")  # 같은 주소에 새 모델 버전
-    assert explain_demo("D3", "EU_CPNP")["cached"] is False
+    assert llm_client.explain(v, card, {}, lambda: None)["cached"] is True and len(calls) == 1
+    def boom():
+        raise RuntimeError("AIStream 실패")
+    assert llm_client.explain(v, card, {}, boom)["cached"] is True  # ML 실패면 저장본 그대로
+    out = llm_client.explain(v, card, {}, lambda: alert)  # 경보가 새로 생김 → 다시 만듦
+    assert out["cached"] is False and out["ai_alert"] == alert and len(calls) == 2
+    monkeypatch.setenv("AGENTSTREAM_KB_VERSION", "9")  # 지식베이스를 다시 올리면 새로
+    assert llm_client.explain(v, card, {}, lambda: alert)["cached"] is False
+
+
+def test_legacy_key_migrates(monkeypatch):
+    _on(monkeypatch, lambda *a, **k: (_ for _ in ()).throw(AssertionError("옮겨야 하는데 다시 만듦")))
+    import hashlib
+    from certcheck.app import resources, run_demo
+    card = next(c for c in resources()[0] if c["id"] == "EU_CPNP")
+    v = next(x for x in run_demo("D3")["verdicts"] if x["cert_id"] == "EU_CPNP")
+    srcs = llm_client.sources_for(v, card)
+    old = hashlib.sha256(f"{llm_client.build_prompt(v, card, {}, srcs, None)}\n||v6|kb1".encode()).hexdigest()
+    monkeypatch.setenv("AISTREAM_MODEL_VERSION", "v6")
+    with llm_client._lock:
+        llm_client._cache_put(old, {"text": "왜 이 등급인가: 예전 키 설명", "ai_alert": None}, False)
+    assert llm_client.explain(v, card, {}, lambda: None)["text"] == "왜 이 등급인가: 예전 키 설명"
+
+
+def test_unsupported_terms_and_strip_refs():
+    corpus = "EU RP 위임장, CPSR 서명, ISO 22716 GMP 선언, 2027-06-06 D5 금지"
+    ans = "RP 위임장과 CPSR이 필요합니다. ISO 22716 준수. 제조소 점검 일정과 FDA 등록이 필요합니다 (근거 1, 근거 6)."
+    u = llm_client.unsupported_terms(ans, corpus)
+    assert "FDA" in u and "제조소 점검" in u and "CPSR" not in u and "22716" not in u
+    assert llm_client.strip_bad_refs(ans, 3).endswith("(근거 1).")
+    assert llm_client.strip_bad_refs("A (근거 1). B (근거 2)", 0) == "A. B"
+
 
 
 def test_tag_from_body_with_underscores():
@@ -419,3 +450,28 @@ def test_cache_only_never_calls(monkeypatch):
     _on(monkeypatch, lambda *a, **k: (_ for _ in ()).throw(AssertionError("cache_only인데 모델 호출")))
     out = explain_demo("D3", "EU_CPNP", cache_only=True)
     assert out["ok"] is False and out["error"].startswith("NotCached")
+
+
+def test_platform_notice_is_not_an_answer(monkeypatch):
+    notice = {"text": "설명 검증을 완료하지 못한 부분은 근거 보기에서 원문을 확인해 주세요. 모델 공급자의 순간 요청 한도를 초과했습니다.",
+              "rag_sources": [], "tool_failed": False, "docs": []}
+    monkeypatch.setenv("AGENTSTREAM_RETRY_WAIT", "0")
+    _on(monkeypatch, lambda *a, **k: dict(notice))
+    out = explain_demo("D3", "EU_CPNP")
+    assert out["ok"] is False and not llm_client._cache  # 저장하지 않음
+    assert llm_client.valid_answer("왜 이 등급인가: 금지 성분 때문입니다.")
+
+
+def test_bad_cached_notice_is_dropped(monkeypatch):
+    from certcheck.app import resources, run_demo
+    import hashlib
+    card = next(c for c in resources()[0] if c["id"] == "EU_CPNP")
+    v = next(x for x in run_demo("D3")["verdicts"] if x["cert_id"] == "EU_CPNP")
+    srcs = llm_client.sources_for(v, card)
+    key = hashlib.sha256(f"{llm_client.build_prompt(v, card, {}, srcs, None)}\nkb1".encode()).hexdigest()
+    with llm_client._lock:
+        llm_client._cache_put(key, {"text": "모델 공급자의 순간 요청 한도를 초과했습니다.", "ai_alert": None}, False)
+    monkeypatch.setenv("AGENTSTREAM_API_KEY", "k")
+    monkeypatch.setenv("AGENTSTREAM_CHATBOT_ID", "b")
+    out = llm_client.explain(v, card, {}, None, cache_only=True)
+    assert out["cached"] is False and key not in llm_client._cache

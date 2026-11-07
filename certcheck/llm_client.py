@@ -139,6 +139,65 @@ def _facts(text: str) -> set[str]:
 
 
 REF = re.compile(r"근거\s*(\d{1,2})")
+PAREN_REF = re.compile(r"\s*\(([^()]*근거\s*\d[^()]*)\)")
+LATIN = re.compile(r"(?<![A-Za-z0-9])[A-Za-z][A-Za-z0-9]*(?:[-_./][A-Za-z0-9]+)*")
+NUM = re.compile(r"(?<![\d.])\d+(?:[.,]\d+)?")
+QUOTED = re.compile(r"['‘\"“]([^'’\"”]{2,40})['’\"”]")
+# 서류·절차 이름처럼 지어내기 쉬운 한국어 명사(…서·증명·점검·신고 등). 카드·판정 사유에 같은 말이 없으면 '확인 필요'
+KO_TERM = re.compile(r"[가-힣]{2,12}\s?(?:증명서|인증서|보고서|계약서|신청서|위임장|증명|점검|신고|등록|허가|시험|계약|심사)")
+COMMON_LATIN = {"AI", "RAG", "LLM", "D", "CertPass"}
+# 카드는 원어·약어로, 설명은 우리말로 적는 같은 서류(번역 차이로 '확인 필요'가 뜨지 않게)
+ALIAS = {"자유판매증명서": ("cfs", "자유판매", "freesale"), "위임장": ("授权书", "授权", "mandate", "위임", "authorization"),
+         "계약서": ("계약", "contract", "agreement"), "신청서": ("신청", "application"), "보고서": ("보고", "report"),
+         "증명서": ("증명", "certificate"), "인증서": ("인증", "certificate")}
+
+
+def _norm(t: str) -> str:
+    return re.sub(r"\s+", "", t).lower()
+
+
+def unsupported_terms(answer: str, corpus: str) -> list[str]:
+    """설명에 나온 영문 용어·약어, 숫자, 따옴표 속 말, 서류·절차 이름 가운데 판정 사유·근거 목록·인증 카드 어디에도 없는 것.
+    LLM이 지어낸 요건·서류를 사람이 볼 수 있게 표시하기 위한 것이라, 활용형 차이로 걸리는 말도 있을 수 있다(그래서 '확인 필요')."""
+    c = _norm(corpus)
+    out = []
+    for tok in LATIN.findall(answer or ""):
+        for w in tok.split("/"):  # 'listed/exempted' ↔ 카드 'listed·exempted'
+            if w not in COMMON_LATIN and len(w) >= 2 and _norm(w) not in c:
+                out.append(w)
+    for n in NUM.findall(answer or ""):
+        if len(n.replace(",", "").replace(".", "")) >= 2 and n.replace(",", "") not in corpus.replace(",", ""):
+            out.append(n)
+    for q in QUOTED.findall(answer or ""):
+        if _norm(q) not in c:
+            out.append(q)
+    for t in KO_TERM.findall(answer or ""):
+        if _norm(t) in c or any(_norm(t[i:]) in c for i in range(1, len(t) - 2)):
+            continue
+        tail = next((k for k in ALIAS if _norm(t).endswith(k)), None)
+        if tail and any(a in c for a in ALIAS[tail]):
+            continue
+        out.append(t)
+    return sorted(dict.fromkeys(out))
+
+
+# 모델 한도에 턴 중간에 걸리면 AgentStream이 자체 안내문을 답 자리에 넣고 turn.completed로 끝내기도 한다(2026-11-07 D5 BR_ANVISA 실측)
+PLATFORM_NOTICE = ("모델 공급자의 순간 요청 한도", "설명 검증을 완료하지 못한", "확인되지 않은 항목까지 완료한 것으로 볼 수 없습니다",
+                   "원문·수치·출처를 확인하지 못해 제외", "이미 확보한 계산·차트")
+
+
+def valid_answer(text: str) -> bool:
+    """우리가 요청한 형식('왜 이 등급인가')이 있고 플랫폼 안내문이 섞이지 않은 답만 설명으로 쓴다(나머지는 실패로 보고 저장하지 않음)."""
+    t = text or ""
+    return "왜 이 등급인가" in t and not any(m in t for m in PLATFORM_NOTICE)
+
+
+def strip_bad_refs(answer: str, n_sources: int) -> str:
+    """'(근거 1, 근거 6)'에서 근거 목록에 없는 번호만 지운다. 남는 번호가 없으면 괄호째 지운다(답의 나머지는 그대로)."""
+    def fix(m):
+        keep = [x for x in REF.findall(m.group(1)) if 1 <= int(x) <= n_sources]
+        return f" (근거 {', 근거 '.join(keep)})" if keep else ""
+    return PAREN_REF.sub(fix, answer or "")
 
 
 def bad_refs(answer: str, n_sources: int) -> list[int]:
@@ -461,6 +520,18 @@ def _rate_refund(client: str | None) -> None:
                 _calls[k].pop()
 
 
+def _checks(text: str, v: dict, card: dict, product: dict, sources: list[dict], docs: list[dict] | None = None,
+            ai: dict | None = None) -> dict:
+    """화면에 내보내기 전 점검(토큰 0): 근거 목록에 없는 '(근거 n)'은 지우고 번호를 알리며,
+    판정 사유·근거 목록·인증 카드·조회 문서에 없는 용어·숫자를 '확인 필요'로 싣는다."""
+    from .kb_export import card_doc
+    ing = " ".join(f"{i.get('inci') or ''} {i.get('name_kr') or ''}" for i in product.get("ingredients") or [] if isinstance(i, dict))
+    corpus = "\n".join([build_prompt(v, card, product, sources, ai), card_doc(card), ing,
+                        *(d.get("text", "") for d in docs or [])])
+    return {"text": strip_bad_refs(text, len(sources)), "bad_refs": bad_refs(text, len(sources)),
+            "unsupported": unsupported_terms(text, corpus)}
+
+
 def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None = None, pin: bool = False,
             cache_only: bool = False) -> dict:
     """판정 하나(Verdict.to_dict 모양)의 설명.
@@ -473,20 +544,39 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
         return {**base, "enabled": False, "reason": "AgentStream 설명 모델 미연결", "ai_alert": None}
     if v.get("status") == "해당 없음":  # 적용 대상이 아니라는 사유뿐이라 AI 설명을 붙이지 않는다(토큰 절약)
         return {**base, "enabled": False, "reason": "해당 없음 판정은 AI 설명을 생략합니다", "ai_alert": None}
-    # 경보 내용(확률)은 키에서 빼되, 경보를 정하는 AIStream 모델 주소·기준값은 넣는다 — 모델·기준을 바꾸면 설명도 새로 만든다
-    # 지식베이스를 다시 올리면 AGENTSTREAM_KB_VERSION을 올려 예전 지식베이스로 만든 설명을 쓰지 않게 한다
-    # 같은 서빙 주소에 새 모델 버전만 붙는 경우(AIStream 워크플로 재실행)를 위해 AISTREAM_MODEL_VERSION도 넣는다
-    ml_ver = (f"{os.environ.get('AISTREAM_URL', '')}|{os.environ.get('AISTREAM_FAIL_THRESHOLD', '')}"
-              f"|{os.environ.get('AISTREAM_MODEL_VERSION', '')}"
-              f"|kb{os.environ.get('AGENTSTREAM_KB_VERSION', '1')}")
-    key = hashlib.sha256(f"{build_prompt(v, card, product, sources, None)}\n{ml_ver}".encode()).hexdigest()
+    # 캐시 키 = 경보를 뺀 프롬프트 + 지식베이스 버전. AIStream 모델을 바꿔도 키는 그대로이고, 적중할 때 경보 여부만 다시 물어
+    # '경보가 새로 생기거나 사라진 판정'만 다시 만든다(모델 교체 때 저장된 설명을 통째로 버리지 않게 — 토큰 절약).
+    # 지식베이스를 다시 올리면 AGENTSTREAM_KB_VERSION을 올려 예전 지식베이스로 만든 설명을 쓰지 않게 한다.
+    base_prompt = build_prompt(v, card, product, sources, None)
+    key = hashlib.sha256(f"{base_prompt}\nkb{os.environ.get('AGENTSTREAM_KB_VERSION', '1')}".encode()).hexdigest()
+    legacy = hashlib.sha256(  # 2026-11-08 00시 이전 키(모델 주소·기준·버전 포함) → 찾으면 새 키로 옮긴다
+        (f"{base_prompt}\n{os.environ.get('AISTREAM_URL', '')}|{os.environ.get('AISTREAM_FAIL_THRESHOLD', '')}"
+         f"|{os.environ.get('AISTREAM_MODEL_VERSION', '')}|kb{os.environ.get('AGENTSTREAM_KB_VERSION', '1')}").encode()).hexdigest()
+    ai_now, ai_known = ai, not callable(ai)
     with _lock:
         _load_cache()
-        if key in _cache:
-            _cache.move_to_end(key)
-            hit = {k: val for k, val in _cache[key].items() if k != "pin"}
-            return {**base, **hit, "bad_refs": bad_refs(hit.get("text", ""), len(sources)),
-                    "enabled": True, "ok": True, "cached": True}
+        for k in (key, legacy):  # 예전에 잘못 저장된 플랫폼 안내문은 버린다(필요하면 다시 만든다)
+            if k in _cache and not valid_answer(_cache[k].get("text", "")):
+                pinned = _cache.pop(k).get("pin")
+                if pinned:
+                    _save_cache()
+        if key not in _cache and legacy in _cache:
+            _cache[key] = _cache.pop(legacy)
+            if _cache[key].get("pin"):
+                _save_cache()
+        hit = dict(_cache[key]) if key in _cache else None
+    if hit is not None and not cache_only and callable(ai):
+        try:  # 적중해도 경보 여부는 지금 모델 기준으로 확인(빠른 RF 한 번). 실패하면 저장된 설명을 그대로 쓴다
+            ai_now, ai_known = ai(), True
+        except Exception:
+            ai_known = False
+    if hit is not None and (cache_only or not ai_known or bool(ai_now) == bool(hit.get("ai_alert"))):
+        with _lock:
+            if key in _cache:
+                _cache.move_to_end(key)
+        hit = {k: val for k, val in hit.items() if k != "pin"}
+        return {**base, **hit, **_checks(hit.get("text", ""), v, card, product, sources, None, hit.get("ai_alert")),
+                "enabled": True, "ok": True, "cached": True}
     if cache_only:  # 저장된 설명만 확인(토큰을 쓰지 않음). 없으면 모델을 부르지 않고 알린다
         return {**base, "enabled": True, "ok": False, "cached": False, "ai_alert": None, "error": "NotCached: 저장된 설명 없음"}
     if not _rate_take(client):
@@ -496,7 +586,13 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
         _rate_refund(client)
         return {**base, "enabled": True, "ok": False, "ai_alert": None,
                 "error": "RateLimit: 오늘 새로 만들 수 있는 AI 설명 수를 다 썼습니다(미리 만든 설명은 그대로 나옵니다)"}
-    ai = ai() if callable(ai) else ai
+    if ai_known:
+        ai = ai_now
+    else:
+        try:
+            ai = ai() if callable(ai) else ai
+        except Exception:  # AIStream 실패 — 경보 없이 설명만
+            ai = None
     prompt = build_prompt(v, card, product, sources, ai)
     title = f"{card.get('id')} {v.get('status')} 설명"
     timeout = float(os.environ.get("AGENTSTREAM_TIMEOUT", "60"))
@@ -508,6 +604,10 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
             raw = call(prompt, timeout, title)
         if not raw["text"]:
             raise ValueError("빈 응답")
+        if not valid_answer(raw["text"]):  # 플랫폼 안내문·형식 밖 답은 설명으로 내보내지도 저장하지도 않는다
+            if "순간 요청 한도" in raw["text"]:
+                raise RateLimited("turn LLM_RATE_LIMITED(답 자리에 플랫폼 안내문)")
+            raise ValueError("답이 요청한 형식이 아님")
     except Busy as e:
         _rate_refund(client)
         return {**base, "enabled": True, "ok": False, "ai_alert": ai, "error": f"RateLimit: {e}"}
@@ -518,7 +618,7 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
     ans = {**raw, **g, "ai_alert": ai, "unverified": unverified_facts(raw["text"], prompt + "\n".join(d["text"] for d in docs))}
     with _lock:
         _cache_put(key, ans, pin)
-    return {**base, **ans, "bad_refs": bad_refs(ans["text"], len(sources)), "enabled": True, "ok": True, "cached": False}
+    return {**base, **ans, **_checks(ans["text"], v, card, product, sources, docs, ai), "enabled": True, "ok": True, "cached": False}
 
 
 if __name__ == "__main__":  # 실제 호출 확인: .venv/bin/python -m certcheck.llm_client [제품=D3] [인증=EU_ECOLABEL_RINSEOFF]
