@@ -107,6 +107,9 @@ def make_products(base: list[dict], reg: RegIndex, n: int, seed: int = 7) -> lis
         p["claims"] = rng.sample(CLAIM_POOL, rng.randint(0, 3))
         p["functional_kr"] = [c for c in p["claims"] if c in ("whitening", "anti_wrinkle")]
         p["documents"] = rng.sample(DOC_POOL, rng.randint(0, len(DOC_POOL)))
+        # 실제 전성분 표시처럼 1% 초과 성분은 함량 많은 순으로 먼저, 1% 이하는 그 뒤(넣은 순서 유지)
+        high = sorted((i for i in ings if (i.get("pct") or 0) > 1), key=lambda i: -i["pct"])
+        ings[:] = high + [i for i in ings if not (i.get("pct") or 0) > 1]
         p["formula_known"] = rng.choice(["full_with_concentration", "full_with_concentration", "ingredients_only_no_concentration"])
         if p["formula_known"] != "full_with_concentration":
             for ing in ings:

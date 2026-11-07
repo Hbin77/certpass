@@ -11,12 +11,15 @@ from __future__ import annotations
 
 import fnmatch
 import re
+from functools import lru_cache
 from dataclasses import asdict, dataclass, field
 from datetime import date
 
 from . import STATUS_COND, STATUS_FAIL, STATUS_NA, STATUS_ORDER, STATUS_PASS
 from .data import RegIndex
 from .normalize import norm_inci, split_cas
+
+from rapidfuzz import fuzz, process
 
 # 카드의 성분 규칙 관할 → 통합표에서 실제로 쓸 관할. EU 준용 국가는 EU로 대리 판정하고 '대리' 표시를 남긴다.
 MFDS_JURIS = {"KR", "ASEAN", "BR", "AR", "CA", "US"}  # 식약처 API 목록으로 판정하는 관할
@@ -220,6 +223,58 @@ def check_applicability(v: Verdict, card: dict, p: dict) -> bool:
     return True
 
 
+def pct_bounds(ings: list[dict]) -> list[tuple[float, float] | None]:
+    """전성분 표시 순서로 함량을 모르는 성분의 (최소, 최대) %를 구한다.
+    표시 규칙(국내·EU): 1%를 넘는 성분은 함량 많은 순으로 먼저 적고, 1% 이하는 그 뒤에 순서 없이 적는다.
+    - 최대: 이 성분이 1%를 넘으면 위의 모든 성분보다 적으므로 min(위 성분의 알려진 함량, 100/(순번)), 아니면 1% → 둘 중 큰 값
+    - 최소: 아래에 1%를 넘는 함량이 알려진 성분이 있으면 이 성분도 1% 초과 구역이라 그 값 이상
+    함량이 알려진 성분, 또는 알려진 값끼리 순서가 맞지 않는(데이터 불일치) 제품은 None."""
+    known = [(i, x["pct"]) for i, x in enumerate(ings) if isinstance(x.get("pct"), (int, float))]
+    big = [q for _, q in known if q > 1]
+    if any(a < b for a, b in zip(big, big[1:])):  # 1% 초과 구역의 순서가 이미 어긋나면 순서로 추론하지 않는다
+        return [None] * len(ings)
+    out: list[tuple[float, float] | None] = []
+    for i, x in enumerate(ings):
+        if isinstance(x.get("pct"), (int, float)):
+            out.append(None)
+            continue
+        above = [q for j, q in known if j < i]
+        below = [q for j, q in known if j > i and q > 1]
+        hi = max(1.0, min(min(above, default=100.0), 100.0 / (i + 1)))
+        lo = max(below, default=0.0)
+        out.append((round(lo, 4), round(hi, 4)) if lo <= hi else None)
+    return out
+
+
+@lru_cache(maxsize=64)
+def _banned_names(reg_id: int, juris: str) -> tuple[str, ...]:
+    reg = _REG_BY_ID[reg_id]
+    return tuple(sorted({k for (j, k), rows in reg.by_key.items()
+                         if j == juris and len(k) > 5 and any(r.list_type == "banned" for r in rows)}))
+
+
+_REG_BY_ID: dict[int, RegIndex] = {}
+
+
+@lru_cache(maxsize=20000)
+def _suspect(reg_id: int, juris: str, key: str) -> tuple[str, float] | None:
+    names = _banned_names(reg_id, juris)
+    if not names or len(key) < 6:
+        return None
+    hit, score, _ = process.extractOne(key, names, scorer=fuzz.ratio)
+    return (hit, round(score / 100, 2)) if 90 <= score < 100 else None  # 100이면 같은 이름(금지 판정 쪽)
+
+
+def banned_suspect(reg: RegIndex, juris: str, inci: str) -> tuple[str, float] | None:
+    """정확히 일치하지 않지만 금지 성분 이름과 90% 이상 같은 표기(오탈자 의심). 식약처 원료성분사전에 있는 정상 원료명은 제외."""
+    from .names import inci_to_kr  # names는 data·normalize만 import → 순환 없음
+    key = norm_inci(inci)
+    if not key or key in inci_to_kr():
+        return None
+    _REG_BY_ID[id(reg)] = reg
+    return _suspect(id(reg), juris, key)
+
+
 def check_ingredients(v: Verdict, card: dict, p: dict, reg: RegIndex, attrs: dict | None = None) -> None:
     rules = (card.get("ingredient_rules") or "none").upper()
     if rules in ("NONE", ""):
@@ -258,7 +313,8 @@ def check_ingredients(v: Verdict, card: dict, p: dict, reg: RegIndex, attrs: dic
                   "NMPA 已使用化妆品原料目录(2021年版 및 이후 공고)", "전성분을 IECIC 표준 중문명으로 대조, 미등재 성분은 신원료 신고")
     has_inventory = any(k.startswith(f"{juris}:inventory") for k in reg.counts)
     first = len(v.findings)
-    for ing in p.get("ingredients", []):
+    bounds = pct_bounds(p.get("ingredients", []))
+    for idx, ing in enumerate(p.get("ingredients", [])):
         inci, cas = ing.get("inci") or "", split_cas(ing.get("cas"))
         if "TBD" in inci or ing.get("role") == "key_concept":
             v.add("cond", "ING_UNDEFINED", f"처방 미확정 성분: {ing.get('kr')} — 처방 확정 후 재판정", action="처방서(INCI·함량) 확보")
@@ -299,7 +355,10 @@ def check_ingredients(v: Verdict, card: dict, p: dict, reg: RegIndex, attrs: dic
                           "정유·테르펜 원료 공급사 과산화물가 성적서 확보")
                 else:
                     limited.append((r, ref))
-        _check_limits(v, inci, pct, limited, p)
+        _check_limits(v, inci, pct, limited, p, bounds[idx])
+        if not hits and (sus := banned_suspect(reg, juris, inci)):
+            v.add("cond", "ING_BANNED_SUSPECT", f"{inci}: 금지 성분 '{sus[0]}'와 표기가 {sus[1]:.0%} 같음 — 오기인지 확인",
+                  f"{juris} 금지 목록 이름 대조(정확히 일치하지 않음)", "정확한 INCI명 확인, 금지 성분이면 제거 재처방")
         if has_inventory and "inventory" not in types and ingredient_key(ing) not in ("parfum",):
             a = (attrs or {}).get(ingredient_key(ing)) or {}
             iec = (a.get("iecic_cn") or "").strip()
@@ -327,8 +386,10 @@ NATURAL_WORDS = (" oil", "extract", "absolute", "essence", "resin", "balsam", "c
 REFINING_EXCEPTION = ("refining history", "精炼", "精煉")
 
 
-def _check_limits(v: Verdict, inci: str, pct: float | None, limited: list, p: dict) -> None:
-    """제한·허용(포지티브) 목록 행의 한도 비교. 용도가 맞는 행만 쓰고, 맞는 행이 없으면 용도 확인으로 본다."""
+def _check_limits(v: Verdict, inci: str, pct: float | None, limited: list, p: dict,
+                  bound: tuple[float, float] | None = None) -> None:
+    """제한·허용(포지티브) 목록 행의 한도 비교. 용도가 맞는 행만 쓰고, 맞는 행이 없으면 용도 확인으로 본다.
+    함량을 모를 때는 전성분 순서로 구한 범위(bound)로 한도 초과 확정(불가)·한도 이하 확정을 먼저 본다."""
     if not limited:
         return
     fits = [(r, ref) for r, ref in limited if not _scope_excludes((r.product_scope or "").lower(), p)]
@@ -342,9 +403,23 @@ def _check_limits(v: Verdict, inci: str, pct: float | None, limited: list, p: di
         kind = "제한 성분" if r.list_type == "restricted" else f"허용 목록({r.list_type})"
         limits = sorted(set(parse_pcts(r.max_conc)))
         scope_note = f" / 적용범위: {r.product_scope}" if r.product_scope else ""
+        if pct is None and bound and limits:
+            lo, hi = bound
+            if lo > limits[-1]:
+                v.add("fail", "ING_OVER_LIMIT_BY_ORDER", f"{kind} {inci}: 함량 미상이지만 전성분 순서상 최소 {lo:g}% > 한도 {r.max_conc}{scope_note}",
+                      ref, "함량 확인 후 한도 이하로 재처방")
+                continue
+            if hi <= limits[0]:
+                if r.conditions:
+                    v.add("cond", "ING_RESTRICTED_CONDITIONS", f"{kind} {inci} 전성분 순서상 최대 {hi:g}% (한도 {r.max_conc}{scope_note}) — 조건/경고문: {r.conditions[:160]}",
+                          ref, "라벨 경고문·사용 조건 반영")
+                else:
+                    v.add("info", "ING_RESTRICTED_OK_BY_ORDER", f"{kind} {inci}: 함량 미상이지만 전성분 순서상 최대 {hi:g}% ≤ 한도 {r.max_conc}{scope_note}", ref)
+                continue
         if pct is None:
             if limits or r.list_type == "restricted":
-                v.add("cond", "ING_RESTRICTED_PCT_UNKNOWN", f"{kind} {inci}: 한도 {r.max_conc or '조건부'}{scope_note} — 함량 미상", ref,
+                rng = f" (전성분 순서상 {bound[0]:g}~{bound[1]:g}%)" if bound else ""
+                v.add("cond", "ING_RESTRICTED_PCT_UNKNOWN", f"{kind} {inci}: 한도 {r.max_conc or '조건부'}{scope_note} — 함량 미상{rng}", ref,
                       "처방 함량 확인 후 한도·조건 대조")
             else:
                 v.add("info", "ING_POSITIVE_LIST", f"{kind} 등재: {inci} 한도 {r.max_conc or '없음'}", ref)
@@ -700,6 +775,8 @@ def features(v: Verdict, p: dict) -> dict:
         "formula_with_pct": int(p.get("formula_known") == "full_with_concentration"),
         "formula_concept": int(p.get("formula_known") == "concept_only"),
         "n_banned": sum(1 for c in codes if c == "ING_BANNED"), "n_over_limit": cnt("ING_OVER_LIMIT"),
+        "n_banned_suspect": cnt("ING_BANNED_SUSPECT"), "n_over_by_order": cnt("ING_OVER_LIMIT_BY_ORDER"),
+        "n_ok_by_order": cnt("ING_RESTRICTED_OK_BY_ORDER"),
         "n_restricted_unknown": cnt("ING_RESTRICTED_PCT_UNKNOWN"), "n_restricted_cond": cnt("ING_RESTRICTED_CONDITIONS"),
         "n_not_in_inventory": cnt("ING_NOT_IN_INVENTORY"), "ing_no_data": cnt("ING_NO_DATA"), "ing_proxy": cnt("ING_PROXY"),
         "allergen_unknown": cnt("ALLERGEN_UNKNOWN"),
