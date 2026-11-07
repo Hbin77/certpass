@@ -13,7 +13,8 @@
 
 ```
 포장 사진 ──▶ [딥러닝 OCR] 글자 위치 찾기(ResNet18-FPN) + 글자 읽기(CNN-Transformer-CTC) ──▶ 전성분 글자
-                                    └ AIStream 서빙(serving/7팀_package_ocr, 배포 진행 중)
+                                    └ AIStream 서빙(serving/7팀_package_ocr, 모델 버전 2·템플릿 v0.5.0: 사전 제한 해독)
+전성분표 PDF ──▶ 글자 정보가 있는 쪽은 그대로, 이미지 쪽은 위 OCR(누운 쪽 돌리기·기울기 바로 세우기)
 전성분 글자 ──▶ 성분명 표준화(식약처 원료성분 사전, 쉼표 누락·줄바꿈 보정) ──▶ 표준 INCI
 표준 INCI + 제품 정보 ──▶ [규칙 엔진] 인증 카드 56종 × 성분 규제표(10개 관할) ──▶ 4종 판정·근거·할 일
                                     └ 전성분 순서로 함량 범위 추정, 금지 성분 오기·한글 OCR 오독 '확인 필요'
@@ -26,8 +27,8 @@
 | 경로 | 내용 |
 |---|---|
 | `certcheck/` | 판정 엔진과 API. `classify.py`(판정 규칙), `data.py`(데이터 적재), `normalize.py`·`names.py`(성분명 정규화), `app.py`(FastAPI), `schemas.py`(입력 검증·상한), `docs_gen.py`·`routes_docs.py`(서류 초안) |
-| `certcheck/` (ML·연동) | `synth.py`(합성 학습 데이터), `export_aistream.py`(AIStream 업로드용 변환), `ml_client.py`(RF 서빙 호출), `calibrate_aistream.py`(경보 기준 실측), `ocr_client.py`(OCR 서빙 호출·성분명 맞추기), `llm_client.py`(AgentStream), `mfds_api.py`(식약처 API 수집) |
-| `ocr/` | 포장 OCR 딥러닝: `crop_633.py`·`resize_633.py`(학습 데이터 만들기), `train_ocr.py`(인식), `train_det.py`(검출), `pipeline.py`(사진 → 전성분), `e2e_eval.py`·`baseline_easyocr.py`(평가), `package_mlflow.py`(AIStream 등록용 묶기), `guard.sh`(메모리 감시) |
+| `certcheck/` (ML·연동) | `synth.py`(합성 학습 데이터), `export_aistream.py`(AIStream 업로드용 변환), `ml_client.py`(RF 서빙 호출), `calibrate_aistream.py`(경보 기준 실측), `ocr_client.py`(OCR 서빙 호출·성분명 맞추기·기울기·흐림 판정), `ocr_pdf.py`(PDF), `ocr_jobs.py`(OCR 접수·조회), `llm_client.py`(AgentStream), `mfds_api.py`(식약처 API 수집) |
+| `ocr/` | 포장 OCR 딥러닝: `crop_633.py`·`resize_633.py`(학습 데이터 만들기), `train_ocr.py`(인식), `train_det.py`(검출), `pipeline.py`(사진 → 전성분), `lexicon.py`(사전 제한 해독), `e2e_eval.py`·`baseline_easyocr.py`·`lex_eval.py`(평가), `package_mlflow.py`(AIStream 등록용 묶기), `guard.sh`(메모리 감시) |
 | `aistream_templates/` | AIStream 템플릿 사본: `ml_certpass_rf`(RF 학습), `serving_certpass_rf`(RF 서빙), `serving_package_ocr`(OCR 서빙) |
 | `data/certs/` | 인증 요건 카드 56종(YAML, 규약은 `data/certs/README.md`) |
 | `data/regs/` | 성분 규제표: EU·일본 원문 가공(`성분규제_통합표*.csv`), 식약처 API 8개 관할(`성분규제_식약처API.csv`) |
@@ -36,7 +37,7 @@
 | `web/` | 화면(정적 HTML·JS·CSS, API와 같은 서버). 디자인 토큰은 `design-system/MASTER.md` |
 | `deploy/` | 대회 서버 배포(`push_axgpu.sh`, `run_server.sh`, 서버 전용 설정 `server.env.example`), 백업(`backup_axgpu_to_jinus.sh`), AIStream SSH 설정 |
 | `docs/` | 진행 기록(`AIStream_진행기록.md`, `AgentStream_진행기록.md`), OCR 평가 결과(`ocr_results/`), **데이터 출처와 이용 조건(`DATA_SOURCES.md`)** |
-| `tests/` | pytest 61개(판정 규칙·API 입력 상한·ML/OCR/LLM 연동) |
+| `tests/` | pytest(판정 규칙·API 입력 상한·ML/OCR/PDF/LLM 연동) |
 
 ## 실행
 
@@ -63,11 +64,23 @@ ssh axgpu "cd /data/certcheck && bash deploy/run_server.sh"
 ## 모델과 평가 (모두 학습에 쓰지 않은 데이터로 측정)
 
 **포장 사진 OCR (딥러닝, B200에서 학습 → AIStream 서빙)** — 상세는 `docs/ocr_results/README.md`
-| 단계 | 7팀 모델 | 비교: EasyOCR(공개 범용) |
-|---|---|---|
-| 글자 위치 찾기, 평가 사진 1,054장 | F1 0.946 | — |
-| 단어 읽기, 같은 5,000단어 | 단어 93.5% · 성분명 95.6% | 단어 59.0% · 성분명 27.6% |
-| 사진 → 전성분, 학습에 없던 제품 150장 | 정밀도 98.2% · 재현율 90.3% (F1 0.94) | F1 0.35 |
+| 평가(학습에 쓰지 않은 데이터) | 7팀 모델 |
+|---|---|
+| 글자 위치 찾기, 평가 사진 1,054장 | F1 0.946 |
+| 단어 읽기, 평가셋 전체 166,486단어 | 단어 97.3% · 성분명 98.1% (망가뜨리기 증강 재학습 전 92.7% · 92.9%) |
+| 실서빙, 학습에 없던 제품 사진 12장 | 실패 0 · 정밀도 96.4% · 재현율 95.7% · 중간 3.3초 |
+
+같은 사진·같은 후처리로 범용 OCR과 비교한 사진 → 전성분 F1(학습에 없던 제품 150장 / 자사 성분표 5종):
+
+| 사진 상태 | EasyOCR | PaddleOCR(PP-OCRv5 한국어) | 7팀 |
+|---|---|---|---|
+| 원본 | 0.446 / 0.811 | 0.898 / **0.945** | **0.969** / 0.928 |
+| 폰 흉내 1400px(흐림·JPEG 40) | 0.193 / 0.043 | 0.689 / 0.860 | **0.954 / 0.887** |
+| 폰 흉내 1000px | 0.059 / 0.000 | 0.354 / 0.241 | **0.882 / 0.743** |
+
+- 깨끗한 인쇄 서류는 PaddleOCR과 비슷하고(5종이라 차이를 말할 수 없음), 포장 사진·흐린 사진에서 크게 앞선다. AI Hub 사진은 학습과 같은 분포(제품만 다름)라 7팀에 유리하다
+- 화면: 누운 사진은 90°·270° 돌려 다시, 2° 이상 기울면 바로 세워 다시, 글자가 작거나 흐리면 다시 찍기 안내, 일부 성분만 있는 문서(리플렛 등) 안내.
+  여러 명이 동시에 올려도 접수 → 결과 조회라 공개 주소 60초 제한에 걸리지 않는다(6건 동시 모두 성공)
 
 **숨은 불가 경보 (랜덤포레스트, AIStream 학습·서빙 등록 모델 버전 9 + 규칙 엔진)** — 상세는 `docs/AIStream_진행기록.md`
 
