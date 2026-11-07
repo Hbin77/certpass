@@ -525,3 +525,10 @@ def test_cache_tool_strip_bad_refs(tmp_path, monkeypatch):
     assert cache_tool.run("strip", ["D5/NATRUE"]) == 1
     assert json.loads(f.read_text(encoding="utf-8"))[keys[0]]["text"] == "왜 이 등급인가: A (근거 1)."
     assert cache_tool.run("drop", ["D5/NATRUE"]) == 1 and json.loads(f.read_text(encoding="utf-8")) == {}
+
+
+def test_prompt_carries_engine_actions():
+    v = {"status": "조건부", "findings": [{"level": "cond", "code": "DOC", "message": "서류 필요: 수입자 승인서(LoA) (작성: 자사)",
+                                          "action": "자사가 발급해 수입자에게 전달"}]}
+    p = llm_client.build_prompt(v, {"id": "TH_FDA", "name_ko": "태국"}, {"product_type": "face_cream"}, [])
+    assert "/ 할 일: 자사가 발급해 수입자에게 전달" in p and "작성 주체를 바꾸지 마세요" in p

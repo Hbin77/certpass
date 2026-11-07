@@ -317,8 +317,10 @@ def build_prompt(v: dict, card: dict, product: dict, sources: list[dict], ai: di
     fs = sorted([f for f in v.get("findings") or [] if f.get("level") in ("fail", "cond", "na")],
                 key=lambda f: {"fail": 0, "cond": 1, "na": 2}[f["level"]])[:SEND_FINDINGS]
     level = {"fail": "불가", "cond": "보완", "na": "해당 없음"}
+    # 할 일(엔진 문구)을 빼면 AI가 '먼저 할 일'을 스스로 지어 작성 주체·조건을 바꿨다(2026-11-08 저장본 100건 뜻 점검 왜곡 대부분) → 다시 싣는다
     lines = [f"- {level[f['level']]}: {KW.sub('', f.get('message', ''))[:200]}"
-             + (f" / 근거: {f['evidence'][:120]}" if f.get("evidence") else "") for f in fs] or ["- 보완할 항목 없음"]
+             + (f" / 근거: {f['evidence'][:120]}" if f.get("evidence") else "")
+             + (f" / 할 일: {f['action'][:120]}" if f.get("action") else "") for f in fs] or ["- 보완할 항목 없음"]
     lines += spec_notes(fs)
     ai_rule, ai_body = ai_lines(ai)
     tag = kb_tag(card.get("id"))
@@ -335,7 +337,7 @@ def build_prompt(v: dict, card: dict, product: dict, sources: list[dict], ai: di
 사유의 시점·조건·대상·작성 주체를 바꾸지 마세요.
 {done}형식(6문장 이내):
 왜 이 등급인가: (2~3문장)
-먼저 할 일: (1~3개, 한 줄씩 "- "로 시작)
+먼저 할 일: (1~3개, 한 줄씩 "- "로 시작. 사유의 '할 일'을 그대로 옮기고 작성 주체를 바꾸지 마세요)
 {ai_rule}
 인증: {card.get('name_ko')} ({card.get('id')}, {card.get('jurisdiction')}) / 제품 유형 {product.get('product_type') or '-'} / 표방 {claims[:120]}
 판정 등급: {v.get('status')}
