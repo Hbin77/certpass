@@ -444,7 +444,9 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
         return {**base, "enabled": False, "reason": "AgentStream 설명 모델 미연결", "ai_alert": None}
     # 경보 내용(확률)은 키에서 빼되, 경보를 정하는 AIStream 모델 주소·기준값은 넣는다 — 모델·기준을 바꾸면 설명도 새로 만든다
     # 지식베이스를 다시 올리면 AGENTSTREAM_KB_VERSION을 올려 예전 지식베이스로 만든 설명을 쓰지 않게 한다
+    # 같은 서빙 주소에 새 모델 버전만 붙는 경우(AIStream 워크플로 재실행)를 위해 AISTREAM_MODEL_VERSION도 넣는다
     ml_ver = (f"{os.environ.get('AISTREAM_URL', '')}|{os.environ.get('AISTREAM_FAIL_THRESHOLD', '')}"
+              f"|{os.environ.get('AISTREAM_MODEL_VERSION', '')}"
               f"|kb{os.environ.get('AGENTSTREAM_KB_VERSION', '1')}")
     key = hashlib.sha256(f"{build_prompt(v, card, product, sources, None)}\n{ml_ver}".encode()).hexdigest()
     with _lock:

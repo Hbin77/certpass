@@ -369,6 +369,8 @@ def test_cache_key_changes_with_ml_model(monkeypatch):
     assert explain_demo("D3", "EU_CPNP")["cached"] is False
     monkeypatch.setenv("AGENTSTREAM_KB_VERSION", "2")  # 지식베이스를 다시 올리면 새로 만든다
     assert explain_demo("D3", "EU_CPNP")["cached"] is False
+    monkeypatch.setenv("AISTREAM_MODEL_VERSION", "v6")  # 같은 주소에 새 모델 버전
+    assert explain_demo("D3", "EU_CPNP")["cached"] is False
 
 
 def test_tag_from_body_with_underscores():
