@@ -1269,6 +1269,9 @@
   const OCR_LONG_SIDE = 2400; // 서버 본문 상한(8 MiB) 아래로 줄이면서 작은 성분 글자는 남기는 크기
   const OCR_ANGLES = [0, 90, 270]; // 성분이 거의 안 나오면 옆으로 누운 사진으로 보고 돌려서 다시 읽는다
   const OCR_ENOUGH = 3; // 사전과 정확히 맞은 성분이 이 개수 이상이면 더 돌려 보지 않는다
+  const OCR_SKEW_MIN = 1; // 글자 줄이 이 각도(도) 이상 기울면 반대로 돌려 한 번 더 읽는다(2~4°만 기울어도 줄 묶기가 틀어진다)
+  const OCR_SKEW_MAX = 20;
+  const OCR_FEW_LINES = 10; // 표의 줄 대조로 이보다 적게 찾으면 전성분 표가 아닐 수 있다고 알린다(리플렛·기획서의 광고 성분)
   function shrinkPhoto(file, deg = 0) {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
@@ -1278,12 +1281,14 @@
         const w = Math.round(img.naturalWidth * s);
         const h = Math.round(img.naturalHeight * s);
         const c = document.createElement('canvas');
-        const side = deg % 180 !== 0;
-        c.width = side ? h : w;
-        c.height = side ? w : h;
+        const rad = (deg * Math.PI) / 180;
+        c.width = Math.round(Math.abs(w * Math.cos(rad)) + Math.abs(h * Math.sin(rad)));
+        c.height = Math.round(Math.abs(w * Math.sin(rad)) + Math.abs(h * Math.cos(rad)));
         const g = c.getContext('2d');
+        g.fillStyle = 'white'; // 사진 내용: 돌리고 남는 모서리(JPEG는 투명이 검정이 된다)
+        g.fillRect(0, 0, c.width, c.height);
         g.translate(c.width / 2, c.height / 2);
-        g.rotate((deg * Math.PI) / 180);
+        g.rotate(rad);
         g.drawImage(img, -w / 2, -h / 2, w, h);
         URL.revokeObjectURL(url);
         c.toBlob((b) => (b ? resolve(b) : reject(new Error('사진을 줄이지 못했습니다.'))), 'image/jpeg', 0.9);
@@ -1292,6 +1297,7 @@
       img.src = url;
     });
   }
+  const tiltOf = (deg) => (deg || 0) - Math.round((deg || 0) / 90) * 90; // 90° 단위 회전을 뺀 기울기 보정 각
   function ocrResultHTML(r) {
     const c = r.counts || {};
     const items = r.ingredients || [];
@@ -1305,9 +1311,13 @@
       ? `<li><span class="ocr-out__tag ocr-out__tag--fuzzy">이름 맞춤</span> 읽은 글자 <q>${esc(i.raw)}</q> → 표준명 <strong>${esc(i.kr)}</strong> (유사도 ${esc(i.score)})</li>`
       : `<li><span class="ocr-out__tag ocr-out__tag--unknown">확인 필요</span> <q>${esc(i.raw)}</q> — 사전에 없는 이름입니다. 사진과 대조해 고쳐 주세요.</li>`)).join('');
     const how = [r.method === 'lines' ? '"전성분" 표기 대신 표의 줄마다 성분명을 사전과 대조해 찾았습니다.' : '',
-      r.angle ? `사진이 옆으로 누워 있어 ${r.angle}° 돌려 읽었습니다.` : ''].filter(Boolean).join(' ');
-    return `<p class="parse">${icon('i-check', 'ic--sm')}<span>전성분 ${items.length}종을 읽어 아래 칸에 채웠습니다. 식약처 사전과 그대로 일치 ${c.exact || 0}종, 비슷한 이름으로 맞춤 ${c.fuzzy || 0}종, 확인 필요 ${c.unknown || 0}종.${how ? ` ${esc(how)}` : ''}</span></p>
-      ${rows ? `<ul class="ocr-out__list">${rows}</ul>` : ''}`;
+      Math.round((r.angle || 0) / 90) % 4 ? '사진이 옆으로 누워 있어 돌려 읽었습니다.' : '',
+      Math.abs(tiltOf(r.angle)) >= 0.5 ? `사진이 ${Math.abs(tiltOf(r.angle)).toFixed(1)}° 기울어 있어 바로 세워 읽었습니다.` : ''].filter(Boolean).join(' ');
+    const few = r.method === 'lines' && items.length < OCR_FEW_LINES
+      ? `<p class="parse parse--warn">${icon('i-cond', 'ic--sm')}<span>"전성분" 표기가 없는 문서에서 성분 이름 ${items.length}개만 찾았습니다. 리플렛·기획서처럼 일부 성분만 소개한 문서일 수 있으니 전성분 표와 대조해 주세요.</span></p>`
+      : '';
+    return `<p class="parse">${icon('i-check', 'ic--sm')}<span>${few ? '성분 이름' : '전성분'} ${items.length}종을 읽어 아래 칸에 채웠습니다. 식약처 사전과 그대로 일치 ${c.exact || 0}종, 비슷한 이름으로 맞춤 ${c.fuzzy || 0}종, 확인 필요 ${c.unknown || 0}종.${how ? ` ${esc(how)}` : ''}</span></p>
+      ${few}${rows ? `<ul class="ocr-out__list">${rows}</ul>` : ''}`;
   }
   async function readPhoto(file) {
     const btn = $('#m-photo-btn');
@@ -1326,6 +1336,19 @@
         const got = { ...(await res.json()), angle: deg };
         if (!r || (got.counts?.exact || 0) > (r.counts?.exact || 0)) r = got;
         if ((r.counts?.exact || 0) >= OCR_ENOUGH) break;
+      }
+      // 기울기 보정: 서버가 글자 상자로 잰 기울기만큼 반대로 돌려 다시 읽는다. 상자가 축 정렬이라 조금 덜 재므로
+      // 남은 기울기가 0.5° 이상이면 한 번 더(최대 2번). 정확 일치가 줄면 앞 결과를 쓴다
+      for (const min of [OCR_SKEW_MIN, OCR_SKEW_MIN / 2]) {
+        const skew = r.skew;
+        if (typeof skew !== 'number' || Math.abs(skew) < min || Math.abs(skew) > OCR_SKEW_MAX) break;
+        out.innerHTML = `<p class="parse">${icon('i-clock', 'ic--sm')}<span>사진이 ${Math.abs(skew).toFixed(1)}° 기울어 있어 바로 세워 다시 읽는 중입니다.</span></p>`;
+        const deg = r.angle - skew; // 글자 줄이 오른쪽으로 올라가면(음수) 시계 방향으로 돌린다
+        const res = await fetch('api/ocr', { method: 'POST', headers: { 'Content-Type': 'image/jpeg', Accept: 'application/json' }, body: await shrinkPhoto(file, deg) });
+        if (!res.ok) break;
+        const got = { ...(await res.json()), angle: deg };
+        if ((got.counts?.exact || 0) < (r.counts?.exact || 0)) break;
+        r = got;
       }
       out.innerHTML = ocrResultHTML(r);
       if ((r.ingredients || []).length) {

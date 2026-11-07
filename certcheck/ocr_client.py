@@ -9,8 +9,10 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
+import statistics
 import time
 import urllib.error
 import urllib.request
@@ -197,6 +199,34 @@ def choose(section_items: list[dict], lines: list[str]) -> tuple[list[dict], str
     return section_items, "section"
 
 
+def estimate_skew(words: list[dict], min_pairs: int = 10) -> float | None:
+    """글자 상자로 사진 기울기(도)를 잰다. 같은 줄에서 바로 오른쪽에 있는 비슷한 높이의 단어 쌍마다
+    중심을 잇는 선의 각도를 재고 중앙값을 쓴다. 화면 좌표(아래가 +)라 오른쪽으로 갈수록 올라가면 음수.
+    서빙의 상자는 축 정렬이라 실제보다 조금 작게 나온다(4° → 약 3.8°). 쌍이 적으면 None."""
+    boxes = [w["box"] for w in words[:600] if len(w.get("box") or []) == 4
+             and w["box"][2] > w["box"][0] and w["box"][3] > w["box"][1]]
+    angles = []
+    for a in boxes:
+        ha, cya, cxa = a[3] - a[1], (a[1] + a[3]) / 2, (a[0] + a[2]) / 2
+        best = None
+        for b in boxes:
+            if b is a:
+                continue
+            hb = b[3] - b[1]
+            h = min(ha, hb)
+            gap = b[0] - a[2]
+            if max(ha, hb) > 2 * h or not -0.3 * h <= gap <= 2.5 * h or abs((b[1] + b[3]) / 2 - cya) > 0.7 * h:
+                continue
+            if best is None or gap < best[0]:
+                best = (gap, b)
+        if best:
+            b = best[1]
+            dx = (b[0] + b[2]) / 2 - cxa
+            if dx > 0:
+                angles.append(math.degrees(math.atan2((b[1] + b[3]) / 2 - cya, dx)))
+    return round(statistics.median(angles), 2) if len(angles) >= min_pairs else None
+
+
 def read_package(image: bytes, content_type: str) -> dict:
     """사진 → OCR 서빙 → 전성분 목록과 표준명 맞추기 결과."""
     res = call_ocr(image, content_type)
@@ -209,6 +239,7 @@ def read_package(image: bytes, content_type: str) -> dict:
         "text": res.get("text", ""),
         "lines": [{"text": ln.get("text", ""), "conf": ln.get("conf")} for ln in lines][:400],
         "words": len(res.get("words") or []),
+        "skew": estimate_skew(res.get("words") or []),  # 화면이 1° 이상이면 반대로 돌려 한 번 더 읽는다
         "model": res.get("model"),
         "counts": {k: sum(i["match"] == k for i in items) for k in ("exact", "fuzzy", "unknown")},
     }

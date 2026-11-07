@@ -169,3 +169,21 @@ def test_choose_prefers_section_unless_lines_find_far_more():
     wrong = ocr_client.match_all(["STATEMENT"])  # 제목을 전성분 구역으로 잘못 잡은 경우
     items, method = ocr_client.choose(wrong, ["1 정제수 7732-18-5", "2 글리세린 56-81-5", "3 Butylene Glycol 107-88-0"])
     assert method == "lines" and [i["kr"] for i in items] == ["정제수", "글리세린", "부틸렌글라이콜"]
+
+
+def _tilted_words(deg: float, rows: int = 6, cols: int = 5) -> list[dict]:
+    """글자 줄이 deg도 기운 표처럼 단어 상자(축 정렬)를 만든다. 화면 좌표라 음수면 오른쪽으로 갈수록 올라간다."""
+    import math
+    out = []
+    for r in range(rows):
+        for c in range(cols):
+            x, y = 100 + c * 130, 100 + r * 60 + c * 130 * math.tan(math.radians(deg))
+            out.append({"box": [round(x), round(y), round(x + 110), round(y + 30)], "text": "w"})
+    return out
+
+
+def test_estimate_skew_from_word_boxes():
+    assert abs(ocr_client.estimate_skew(_tilted_words(0))) < 0.3
+    assert abs(ocr_client.estimate_skew(_tilted_words(-4)) + 4) < 0.5
+    assert abs(ocr_client.estimate_skew(_tilted_words(3)) - 3) < 0.5
+    assert ocr_client.estimate_skew(_tilted_words(0, rows=1, cols=3)) is None  # 단어 쌍이 적으면 재지 않는다
