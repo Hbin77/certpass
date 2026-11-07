@@ -1311,12 +1311,17 @@
     });
   }
   const tiltOf = (deg) => (deg || 0) - Math.round((deg || 0) / 90) * 90; // 90° 단위 회전을 뺀 기울기 보정 각
+  function blurryHTML(r) {
+    return r.quality && r.quality.blurry
+      ? `<p class="parse parse--warn">${icon('i-cond', 'ic--sm')}<span>사진 속 글자가 작거나 흐려서 잘못 읽었을 수 있습니다. 전성분 부분만 화면 가득 차게, 초점을 맞춰 다시 찍어 주세요.</span></p>`
+      : '';
+  }
   function ocrResultHTML(r) {
     const c = r.counts || {};
     const items = r.ingredients || [];
     if (!items.length) {
       const lines = (r.lines || []).slice(0, 12).map((l) => `<li>${esc(l.text)}</li>`).join('');
-      return `<p class="parse parse--warn">${icon('i-cond', 'ic--sm')}<span>사진에서 글자 ${esc(r.words)}개를 읽었지만 "전성분" 표기를 찾지 못했습니다. 전성분 부분이 화면 가운데 오게 다시 찍어 주세요.</span></p>
+      return `${blurryHTML(r)}<p class="parse parse--warn">${icon('i-cond', 'ic--sm')}<span>사진에서 글자 ${esc(r.words)}개를 읽었지만 "전성분" 표기를 찾지 못했습니다. 전성분 부분이 화면 가운데 오게 다시 찍어 주세요.</span></p>
         ${lines ? `<details class="ocr-out__raw"><summary>읽은 글자 보기</summary><ul>${lines}</ul></details>` : ''}`;
     }
     const check = items.filter((i) => i.match !== 'exact');
@@ -1330,7 +1335,7 @@
       ? `<p class="parse parse--warn">${icon('i-cond', 'ic--sm')}<span>"전성분" 표기가 없는 문서에서 성분 이름 ${items.length}개만 찾았습니다. 리플렛·기획서처럼 일부 성분만 소개한 문서일 수 있으니 전성분 표와 대조해 주세요.</span></p>`
       : '';
     return `<p class="parse">${icon('i-check', 'ic--sm')}<span>${few ? '성분 이름' : '전성분'} ${items.length}종을 읽어 아래 칸에 채웠습니다. 식약처 사전과 그대로 일치 ${c.exact || 0}종, 비슷한 이름으로 맞춤 ${c.fuzzy || 0}종, 확인 필요 ${c.unknown || 0}종.${how ? ` ${esc(how)}` : ''}</span></p>
-      ${few}${rows ? `<ul class="ocr-out__list">${rows}</ul>` : ''}`;
+      ${blurryHTML(r)}${few}${rows ? `<ul class="ocr-out__list">${rows}</ul>` : ''}`;
   }
   async function readPhoto(file) {
     const btn = $('#m-photo-btn');

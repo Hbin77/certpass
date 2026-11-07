@@ -227,6 +227,20 @@ def estimate_skew(words: list[dict], min_pairs: int = 10) -> float | None:
     return round(statistics.median(angles), 2) if len(angles) >= min_pairs else None
 
 
+LOW_CONF = 0.8  # 단어 글자 읽기 확신도가 이보다 낮으면 '흐릿한 단어'
+BLURRY_SHARE = 0.4  # 흐릿한 단어가 이 비율 이상이면 사진이 작거나 흐리다고 알린다
+
+
+def photo_quality(words: list[dict]) -> dict:
+    """글자가 작거나 흐리게 찍힌 사진 판별. 실측(자사 서류·AI Hub 사진을 해상도·JPEG 화질별로): 잘 읽힌 사진은
+    확신 0.8 미만 단어가 17% 이하, 결과가 무너진 사진은 60% 이상(긴 변 1000px·JPEG 40, 700px 등)."""
+    confs = [float(w.get("conf") or 0) for w in words if w.get("text")]
+    heights = sorted(w["box"][3] - w["box"][1] for w in words if len(w.get("box") or []) == 4)
+    share = round(sum(c < LOW_CONF for c in confs) / len(confs), 2) if confs else None
+    return {"low_conf_share": share, "text_px": heights[len(heights) // 2] if heights else None,
+            "blurry": bool(len(confs) >= 30 and share is not None and share >= BLURRY_SHARE)}
+
+
 def read_package(image: bytes, content_type: str) -> dict:
     """사진 → OCR 서빙 → 전성분 목록과 표준명 맞추기 결과."""
     res = call_ocr(image, content_type)
@@ -239,7 +253,8 @@ def read_package(image: bytes, content_type: str) -> dict:
         "text": res.get("text", ""),
         "lines": [{"text": ln.get("text", ""), "conf": ln.get("conf")} for ln in lines][:400],
         "words": len(res.get("words") or []),
-        "skew": estimate_skew(res.get("words") or []),  # 화면이 1° 이상이면 반대로 돌려 한 번 더 읽는다
+        "skew": estimate_skew(res.get("words") or []),
+        "quality": photo_quality(res.get("words") or []),  # 화면이 1° 이상이면 반대로 돌려 한 번 더 읽는다
         "model": res.get("model"),
         "counts": {k: sum(i["match"] == k for i in items) for k in ("exact", "fuzzy", "unknown")},
     }

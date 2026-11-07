@@ -23,7 +23,7 @@ from tarstore import TarStore
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from PIL import Image
+from PIL import Image, ImageFilter
 from torch.utils.data import DataLoader, Dataset
 
 # 컨테이너의 /dev/shm이 작아(64MB) 작업자→본 프로세스 배치 전달을 파일 방식으로 한다
@@ -34,11 +34,30 @@ H = 32
 
 
 # ---------------- 데이터 ----------------
+def degrade(img: Image.Image, rng: random.Random) -> Image.Image:
+    """폰으로 멀리·비스듬히 찍은 작은 글자를 흉내 낸다(32px 단어 조각 기준).
+    미세 회전·전단(원근) → 작게 줄이기(높이 10~24px로 찍힌 글자) → 흐림 → 그 크기에서 JPEG 20~60 → 다시 32px."""
+    w, h = img.size
+    if rng.random() < 0.5:
+        img = img.rotate(rng.uniform(-3, 3), resample=Image.BILINEAR, fillcolor=255)
+    if rng.random() < 0.3:
+        sh = rng.uniform(-0.25, 0.25)
+        img = img.transform((w, h), Image.AFFINE, (1, sh, -sh * h / 2, 0, 1, 0), resample=Image.BILINEAR, fillcolor=255)
+    s = rng.uniform(0.3, 0.75)
+    img = img.resize((max(4, int(w * s)), max(6, int(h * s))), Image.BILINEAR)
+    if rng.random() < 0.6:
+        img = img.filter(ImageFilter.GaussianBlur(rng.uniform(0.3, 1.0)))
+    if rng.random() < 0.8:
+        b = io.BytesIO()
+        img.save(b, "JPEG", quality=rng.randint(20, 60))
+        img = Image.open(b).convert("L")
+    return img.resize((w, h), Image.BILINEAR)
 
 
 class Words(Dataset):
-    def __init__(self, rows, blobs, charset, train: bool):
-        self.rows, self.blobs, self.train = rows, blobs, train
+    def __init__(self, rows, blobs, charset, train: bool, degrade_p: float = 0.0, fixed: bool = False):
+        """degrade_p: 망가뜨릴 비율. fixed: 평가용으로 단어마다 같은 망가뜨림(번호로 씨앗 고정)."""
+        self.rows, self.blobs, self.train, self.degrade_p, self.fixed = rows, blobs, train, degrade_p, fixed
         self.idx = {c: i + 1 for i, c in enumerate(charset)}  # 0은 CTC 빈칸
 
     def __len__(self):
@@ -47,6 +66,9 @@ class Words(Dataset):
     def __getitem__(self, i):
         path, text = self.rows[i][0], self.rows[i][1]
         img = Image.open(io.BytesIO(self.blobs[path])).convert("L")
+        rng = random.Random(i) if self.fixed else random
+        if self.degrade_p and rng.random() < self.degrade_p:
+            img = degrade(img, rng)
         if self.train:  # 가벼운 증강: 가로 늘이기·줄이기, 밝기·대비 흔들기
             w = max(8, int(img.width * random.uniform(0.8, 1.2)))
             img = img.resize((min(w, 400), H), Image.BILINEAR)
@@ -181,28 +203,36 @@ def main() -> None:
     ap.add_argument("--eval_limit", type=int, default=30000, help="회차마다 평가할 단어 수(마지막 전체 평가는 따로)")
     ap.add_argument("--bench", type=int, default=0, help="N스텝만 돌려 데이터 대기·계산 시간을 재고 끝낸다")
     ap.add_argument("--ingredients", default="", help="성분명 목록(한 줄에 하나, 한글·INCI). 성분 단어 정확도 계산용")
+    ap.add_argument("--init", default="", help="이어서 학습할 가중치(best.pt). 글자표·모델 크기를 그대로 쓴다")
+    ap.add_argument("--degrade", type=float, default=0.0, help="학습 단어 중 망가뜨릴 비율(0~1)")
+    ap.add_argument("--max_cer_rise", type=float, default=0.002,
+                    help="--init일 때 저장 기준: 깨끗한 평가 CER이 처음보다 이만큼 넘게 오르지 않은 회차 중 망가뜨린 평가 CER 최저")
     a = ap.parse_args()
     torch.manual_seed(0)
     random.seed(0)
     root, out = Path(a.data), Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
-    rows = [l.split("\t") for l in (root / "labels.tsv").read_text(encoding="utf-8").splitlines()[1:] if l]
+    rows = [ln.split("\t") for ln in (root / "labels.tsv").read_text(encoding="utf-8").splitlines()[1:] if ln]
     train = [r for r in rows if r[2] == "train" and len(r[1]) <= 40]
     test = [r for r in rows if r[2] == "test" and len(r[1]) <= 40]
     if a.limit:
         train = train[: a.limit]
         test = test[: max(2000, a.limit // 10)]
     charset = sorted({c for r in train for c in r[1]})
+    init = torch.load(a.init, map_location="cpu", weights_only=False) if a.init else None
+    if init:
+        charset = init["charset"]  # 출력층 크기를 맞추려고 처음 모델의 글자표를 쓴다
+        a.d, a.layers, a.heads = init["config"]["d"], init["config"]["layers"], init["config"]["heads"]
     blobs = TarStore(root, "shard_*.tar")
     print(f"[load] 학습 {len(train)} · 평가 {len(test)} 단어, 글자표 {len(charset)}종, {time.time() - t0:.0f}s", flush=True)
     ing = set()
     if a.ingredients and Path(a.ingredients).exists():
-        ing = {l.strip() for l in Path(a.ingredients).read_text(encoding="utf-8").splitlines() if l.strip()}
+        ing = {ln.strip() for ln in Path(a.ingredients).read_text(encoding="utf-8").splitlines() if ln.strip()}
     device = "cuda"
     # 비슷한 가로 길이끼리 묶어 채움(padding)을 줄인다
     train.sort(key=lambda r: len(r[1]))
-    tr_ds, te_ds = Words(train, blobs, charset, True), Words(test, blobs, charset, False)
+    tr_ds, te_ds = Words(train, blobs, charset, True, a.degrade), Words(test, blobs, charset, False)
 
     def batches():
         idx = list(range(len(train)))
@@ -215,7 +245,12 @@ def main() -> None:
     te_sm = DataLoader(Words(te_sample, blobs, charset, False), batch_size=512, num_workers=a.workers, collate_fn=collate,
                        pin_memory=True, prefetch_factor=1)
     te_ld = DataLoader(te_ds, batch_size=512, num_workers=a.workers, collate_fn=collate, pin_memory=True, prefetch_factor=1)
+    # 망가뜨린 평가셋: 같은 평가 표본을 단어마다 고정된 방식으로 전부 망가뜨린다(회차 간 비교 가능)
+    te_dg = DataLoader(Words(te_sample, blobs, charset, False, 1.0, fixed=True), batch_size=512, num_workers=a.workers,
+                       collate_fn=collate, pin_memory=True, prefetch_factor=1)
     model = OCRNet(len(charset) + 1, a.d, a.layers, a.heads).to(device)
+    if init:
+        model.load_state_dict(init["model"])
     n_param = sum(p.numel() for p in model.parameters())
     print(f"[model] 파라미터 {n_param / 1e6:.1f}M", flush=True)
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, weight_decay=0.05)
@@ -223,6 +258,13 @@ def main() -> None:
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=a.lr, total_steps=steps, pct_start=0.05)
     ctc = nn.CTCLoss(blank=0, zero_infinity=True)
     best, history, step = None, [], 0
+    base = None
+    if init:  # 처음 모델의 깨끗한·망가뜨린 평가(비교 기준)
+        m, _ = evaluate(model, te_sm, charset, device, ing)
+        d, _ = evaluate(model, te_dg, charset, device, ing)
+        base = {**m, "epoch": 0, "degraded": d}
+        history.append(base)
+        print(f"[eval] {json.dumps(base, ensure_ascii=False)}", flush=True)
     for ep in range(1, a.epochs + 1):
         tr_ld = DataLoader(tr_ds, batch_sampler=batches(), num_workers=a.workers, collate_fn=collate, pin_memory=True, prefetch_factor=1)
         te = time.time()
@@ -257,9 +299,15 @@ def main() -> None:
             tick = time.time()
         m, samples = evaluate(model, te_sm, charset, device, ing, keep_samples=300)
         m.update(epoch=ep, loss=round(run, 4), epoch_sec=round(time.time() - te))
+        if base:
+            m["degraded"], _ = evaluate(model, te_dg, charset, device, ing)
         history.append(m)
         print(f"[eval] {json.dumps(m, ensure_ascii=False)}", flush=True)
-        if best is None or m["cer"] < best["cer"]:
+        if base:
+            keep = m["cer"] <= base["cer"] + a.max_cer_rise and (best is None or m["degraded"]["cer"] < best["degraded"]["cer"])
+        else:
+            keep = best is None or m["cer"] < best["cer"]
+        if keep:
             best = m
             torch.save({"model": model.state_dict(), "charset": charset, "config": {"H": H, "d": a.d, "layers": a.layers, "heads": a.heads}},
                        out / "best.pt")
@@ -269,6 +317,9 @@ def main() -> None:
                                                      ensure_ascii=False, indent=1), encoding="utf-8")
     # 최고 가중치로 평가셋 전체를 다시 잰다(보고용 최종 수치)
     model.load_state_dict(torch.load(out / "best.pt", map_location=device, weights_only=False)["model"])
+    if best is None:
+        print("[done] 기준을 넘은 회차 없음 — best.pt를 만들지 않았다(처음 모델 유지)", flush=True)
+        return
     final, samples = evaluate(model, te_ld, charset, device, ing, keep_samples=500)
     (out / "samples.tsv").write_text("정답\t예측\n" + "\n".join(f"{t}\t{p}" for t, p in samples), encoding="utf-8")
     js = json.loads((out / "metrics.json").read_text(encoding="utf-8"))

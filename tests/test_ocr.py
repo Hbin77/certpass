@@ -187,3 +187,12 @@ def test_estimate_skew_from_word_boxes():
     assert abs(ocr_client.estimate_skew(_tilted_words(-4)) + 4) < 0.5
     assert abs(ocr_client.estimate_skew(_tilted_words(3)) - 3) < 0.5
     assert ocr_client.estimate_skew(_tilted_words(0, rows=1, cols=3)) is None  # 단어 쌍이 적으면 재지 않는다
+
+
+def test_photo_quality_flags_blurry_photos():
+    sharp = [{"text": "w", "conf": 0.97, "box": [0, 0, 50, 16]}] * 40
+    blurry = [{"text": "w", "conf": 0.5, "box": [0, 0, 30, 8]}] * 25 + sharp[:15]
+    assert ocr_client.photo_quality(sharp)["blurry"] is False
+    q = ocr_client.photo_quality(blurry)
+    assert q["blurry"] is True and q["low_conf_share"] == 0.62 and q["text_px"] == 8
+    assert ocr_client.photo_quality(blurry[:10])["blurry"] is False  # 단어가 적으면 판단하지 않는다
