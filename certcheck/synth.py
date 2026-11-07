@@ -75,6 +75,31 @@ def safe_pool(reg: RegIndex) -> list[tuple[str, list[str], str]]:
     return out
 
 
+RANDOM_TYPES = [("cleanser_foam", "rinse_off"), ("cleanser_balm", "rinse_off"), ("face_cream", "leave_on"), ("toner", "leave_on"),
+                ("serum", "leave_on"), ("sunscreen", "leave_on"), ("shampoo", "rinse_off"), ("body_lotion", "leave_on")]
+
+
+def random_bases(reg: RegIndex, n: int, seed: int, tag: str = "R") -> list[dict]:
+    """데모 제품과 무관한 무작위 바탕 제품. 데모 3종만 바탕으로 쓰면 모델이 그 제품을 외워 처음 보는 제품에서
+    헛경보가 크게 늘어(2026-11-08 측정: 정밀도 20%·헛경보 1.7%) 바탕을 다양하게 섞는다. 성분은 safe_pool, 함량은 표시 순서대로."""
+    rng = random.Random(seed)
+    safe = safe_pool(reg)
+    out = []
+    for i in range(n):
+        t, app = rng.choice(RANDOM_TYPES)
+        k = rng.randint(10, 32)
+        names = rng.sample(safe, k)
+        water = round(rng.uniform(40, 82), 2)
+        w = sorted([rng.random() ** 2 for _ in range(k)], reverse=True)
+        tot = sum(w)
+        ings = [{"kr": "", "inci": "Water", "cas": "7732-18-5", "pct": water}] + \
+               [{"kr": "", "inci": nm.title(), "cas": ";".join(c), "pct": round((100 - water) * x / tot, 3)} for (nm, c, _), x in zip(names, w)]
+        out.append({"id": f"{tag}{i:03d}", "name_kr": f"{tag}{i:03d}", "status": "on_market", "product_type": t, "application": app,
+                    "claims": [], "functional_kr": [], "documents": [], "formula_known": "full_with_concentration", "ingredients": ings,
+                    "manufacturer": {"name": "x", "country": "KR", "certs": []}})
+    return out
+
+
 def make_products(base: list[dict], reg: RegIndex, n: int, seed: int = 7) -> list[dict]:
     rng = random.Random(seed)
     jur = sorted(j for j in reg.jurisdictions if j != "GLOBAL")
@@ -193,9 +218,16 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--date", type=lambda x: date.fromisoformat(x), default=date.today())
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--only", default="D1,D2,D3", help="바탕으로 쓸 데모 제품 id(시연용 D4·D5는 기본 제외)")
+    ap.add_argument("--random-bases", type=int, default=0, help="무작위 새 바탕 수(데모와 같은 비중으로 섞음)")
+    ap.add_argument("--random-seed", type=int, default=7001)
     a = ap.parse_args()
     doc = json.loads(a.base.read_text(encoding="utf-8"))
-    base = [p for p in doc["products"] if p.get("ingredients")]
+    keep = set(a.only.split(","))
+    base = [p for p in doc["products"] if p.get("ingredients") and p["id"] in keep]
+    if a.random_bases:
+        rb = random_bases(load_reg_index(), a.random_bases, a.random_seed)
+        base = base * max(1, len(rb) // max(1, len(base))) + rb  # 데모 50% · 새 바탕 50%
     out = build_dataset(load_cards(a.certs), base, doc.get("company", {}), load_reg_index(), load_attributes(), a.n, a.out,
                         a.date, a.seed)
     print(out)
