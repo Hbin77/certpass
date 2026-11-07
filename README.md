@@ -7,7 +7,7 @@
 
 - 불가: 재처방해야만 통과 · 조건부: 재처방 없이 서류·현지 책임자·문구·시험·원료 증빙으로 통과 · 통과 가능: 지금 상태로 통과 · 해당 없음: 적용 대상 아님
 - 모든 판정은 예비 판정이다. 최종 판단은 인증기관과 자격 있는 안전성 평가자가 한다.
-- 시연: https://devopen-gpu.jntp-ax.or.kr/i/FBi4CwFvT4Pe38Xd/ (대회 서버)
+- 시연: https://devopen-gpu.jntp-ax.or.kr/i/FBi4CwFvT4Pe38Xd/ (대회 서버, 대회 기간에만 운영)
 
 ## 동작 구조
 
@@ -26,8 +26,9 @@
 
 | 경로 | 내용 |
 |---|---|
-| `certcheck/` | 판정 엔진과 API. `classify.py`(판정 규칙), `data.py`(데이터 적재), `normalize.py`·`names.py`(성분명 정규화), `app.py`(FastAPI), `schemas.py`(입력 검증·상한), `docs_gen.py`·`routes_docs.py`(서류 초안) |
-| `certcheck/` (ML·연동) | `synth.py`(합성 학습 데이터), `export_aistream.py`(AIStream 업로드용 변환), `ml_client.py`(RF 서빙 호출), `calibrate_aistream.py`(경보 기준 실측), `ocr_client.py`(OCR 서빙 호출·성분명 맞추기·기울기·흐림 판정), `ocr_pdf.py`(PDF), `ocr_jobs.py`(OCR 접수·조회), `llm_client.py`(AgentStream), `mfds_api.py`(식약처 API 수집) |
+| `certcheck/` | 판정 엔진과 API. `classify.py`(판정 규칙), `data.py`(데이터 적재), `normalize.py`·`names.py`(성분명 정규화), `app.py`(FastAPI), `schemas.py`(입력 검증·상한), `docs_gen.py`·`routes_docs.py`(서류 초안), `cli.py`·`report.py`(명령줄 일괄 판정·CSV/JSON/Markdown 보고서) |
+| `certcheck/` (ML) | `risk.py`(위험 특징), `synth.py`(합성 학습 데이터), `aihub_prep.py`(AI Hub 633 글자로 한글 성분명 OCR 변형 만들기), `export_aistream.py`(AIStream 업로드용 변환), `aistream_train.py`(AIStream 학습 코드), `train_local.py`(맥에서 가능성 확인), `ml_client.py`(RF 서빙 호출), `calibrate_aistream.py`(경보 기준 실측), `image_encode.py`(이미지 분류 템플릿용 대체 입력, `AISTREAM_FORMAT=image`일 때만, 현재 안 씀) |
+| `certcheck/` (OCR·LLM 연동) | `ocr_client.py`(OCR 서빙 호출·성분명 맞추기·기울기·흐림 판정), `ocr_pdf.py`(PDF), `ocr_jobs.py`(OCR 접수·조회), `llm_client.py`(AgentStream 판정 설명), `kb_export.py`(지식베이스 문서 만들기), `eval_agentstream_rag.py`·`measure_demo_explain.py`(검색 정확도 측정), `audit_explanations.py`·`cache_tool.py`(저장된 설명 점검·정리, 토큰 0), `llm_review.py`·`eval_llm_review.py`(AI 검토 에이전트, 보류), `mfds_api.py`(식약처 API 수집) |
 | `ocr/` | 포장 OCR 딥러닝: `crop_633.py`·`resize_633.py`(학습 데이터 만들기), `train_ocr.py`(인식), `train_det.py`(검출), `pipeline.py`(사진 → 전성분), `lexicon.py`(사전 제한 해독), `e2e_eval.py`·`baseline_easyocr.py`·`lex_eval.py`(평가), `package_mlflow.py`(AIStream 등록용 묶기), `guard.sh`(메모리 감시) |
 | `aistream_templates/` | AIStream 템플릿 사본: `ml_certpass_rf`(RF 학습), `serving_certpass_rf`(RF 서빙), `serving_package_ocr`(OCR 서빙) |
 | `data/certs/` | 인증 요건 카드 56종(YAML, 규약은 `data/certs/README.md`) |
@@ -35,8 +36,8 @@
 | `data/kr/` | 식약처 원료성분 사전·국가별 규제 요약, 관세청 수출 실적 |
 | `data/ingredients/` · `data/public/` · `data/ml/` | 성분 속성표 · 공개 데모 제품(함량은 가상값) · 모델 입력 열 순서 |
 | `web/` | 화면(정적 HTML·JS·CSS, API와 같은 서버). 디자인 토큰은 `design-system/MASTER.md` |
-| `deploy/` | 대회 서버 배포(`push_axgpu.sh`, `run_server.sh`, 서버 전용 설정 `server.env.example`), 백업(`backup_axgpu_to_jinus.sh`), AIStream SSH 설정 |
-| `docs/` | 진행 기록(`AIStream_진행기록.md`, `AgentStream_진행기록.md`), OCR 평가 결과(`ocr_results/`), **데이터 출처와 이용 조건(`DATA_SOURCES.md`)** |
+| `deploy/` | 대회 서버 배포(`push_axgpu.sh`·`axgpu_put_file.sh`, `run_server.sh`, 서버 전용 설정 `server.env.example`·`agentstream.env.example`), 시연 준비(`warm_explain.sh` 데모 설명 미리 만들기, `demo_check.py` 시연 직전 점검·서빙 깨우기), 백업(`backup_axgpu_to_jinus.sh`), AIStream SSH 설정·전송(`aistream_ssh.conf`, `aistream_put.sh`) |
+| `docs/` | 진행 기록(`AIStream_진행기록.md`, `AgentStream_진행기록.md`), AI 검토 에이전트 설정(`AgentStream_AI검토_설정.md`, 보류), OCR 평가 결과(`ocr_results/`), **데이터 출처와 이용 조건(`DATA_SOURCES.md`)** |
 | `tests/` | pytest(판정 규칙·API 입력 상한·ML/OCR/PDF/LLM 연동) |
 
 ## 실행
