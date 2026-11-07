@@ -183,9 +183,10 @@ def load_kr_dict(path: Path | None = None) -> dict[str, dict]:
         for row in csv.DictReader(f):
             if not row.get("inci"):
                 continue
-            hit = {"inci": re.split(r",(?!\s)", row["inci"])[0].strip(), "cas": row.get("cas") or None, "kr_name": row["kr_name"]}
+            # 영문명 여러 개는 쉼표로 이어져 있다('Riboflavin,Lactoflavin'). 숫자 사이 쉼표('1,2-Hexanediol')는 이름의 일부라 자르지 않는다
+            hit = {"inci": re.split(r"(?<!\d),(?![\s\d])", row["inci"])[0].strip(), "cas": row.get("cas") or None, "kr_name": row["kr_name"]}
             out.setdefault(kr_key(row["kr_name"]), hit)
-            for syn in re.split(r"[,;]", row.get("synonyms") or ""):
+            for syn in re.split(r";|(?<!\d),(?!\d)", row.get("synonyms") or ""):
                 if syn.strip():
                     out.setdefault(kr_key(syn), hit)
     return out

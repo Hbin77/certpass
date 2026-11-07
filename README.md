@@ -48,6 +48,11 @@ uv venv .venv && uv pip install --python .venv/bin/python -r requirements-dev.tx
 서버 설정(환경변수, 대회 서버는 `deploy/server.env`): `AISTREAM_URL`·`AISTREAM_FORMAT`·`AISTREAM_FAIL_THRESHOLD`(RF 경보),
 `CERTCHECK_OCR_URL`(포장 사진 OCR), `AGENTSTREAM_*`(LLM). 없으면 해당 기능만 꺼지고 규칙 판정은 그대로 된다.
 
+AgentStream 판정 설명(LLM qwen3.5-122b + RAG): `deploy/agentstream.env.example`을 프로젝트 루트 `.env.agentstream`(권한 600)으로 복사해
+`AGENTSTREAM_API_KEY`·`AGENTSTREAM_CHATBOT_ID`를 채운다(`run_server.sh`가 읽음). 지식베이스 문서는 `.venv/bin/python -m certcheck.kb_export`로
+`out/agentstream_kb_묶음/`에 만들어 올린다. 실제 호출 확인: `set -a; . ./.env.agentstream; set +a; .venv/bin/python -m certcheck.llm_client D3 EU_ECOLABEL_RINSEOFF`
+(상태 점검 → 세션 → 메시지 스트림, 단계·상태·경과 시간만 출력). 화면은 판정 행을 펼칠 때 `POST api/explain`으로 따로 불러오며, 등급은 바꾸지 않는다.
+
 대회 서버는 프록시가 경로 접두사(`/i/<토큰>`)를 그대로 넘기므로 `CERTCHECK_BASE=/i/<토큰>`과 `certcheck.app:asgi`(접두사 마운트)로 띄운다.
 ```bash
 deploy/push_axgpu.sh                                         # 중계 서버가 큰 전송을 끊어 12KB 조각으로 전송

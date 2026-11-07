@@ -1,7 +1,9 @@
 """AgentStream 지식베이스(RAG 문서)용으로 인증 요건 카드를 문서로 바꾼다.
 
 실행: .venv/bin/python -m certcheck.kb_export [출력폴더=out/agentstream_kb]
-- 카드 1장 → 문서 1개(카드ID.md). 조각(청크)으로 잘려도 어느 인증 이야기인지 알도록 절마다 [카드ID 이름]을 붙인다.
+- 카드 1장 → 문서 1개(카드ID.md). AgentStream은 파일마다 '처리 시작 → 파싱 결과 승인'을 눌러야 해서,
+  올릴 때는 묶음 폴더(출력폴더_묶음/)의 파일(지역·종류별 카드 묶음 9개 + 공통 판정기준)을 쓴다.
+  285KB 한 파일은 AgentStream 문서 분석 단계에서 DATAPROCESSOREXCEPTION으로 실패해 파일당 약 40KB 이하로 나눴다. 조각(청크)으로 잘려도 어느 인증 이야기인지 알도록 절마다 [카드ID 이름]을 붙인다.
 - 공개 링크(http·https)만 싣는다. 로컬 원문 경로(local:)·원문 인용(quote)·엔진 태그([kw:…])는 뺀다
   (인증기관 기준 원문은 게재하지 않고 링크로만 안내하는 화면 규칙과 같다).
 - data/private(자사 실데이터)는 읽지 않는다.
@@ -96,6 +98,19 @@ GUIDE = """# CertPass 판정 기준 안내(공통)
 """
 
 
+GROUPS = [  # (파일 이름, 카드 id 앞부분·id). 어디에도 안 맞는 카드는 마지막 '기타'로 간다
+    ("유럽_영국_유라시아", ("EU_", "UK_", "EAEU_")),
+    ("동아시아_중국_일본_대만", ("CN_", "JP_", "TW_")),
+    ("아세안1_말레이시아_인도네시아_태국_필리핀", ("MY_", "ID_", "TH_", "PH_")),
+    ("아세안2_베트남_싱가포르_캄보디아_미얀마_인도", ("VN_", "SG_", "KH_", "MM_", "IN_")),
+    ("미주_미국_캐나다_중남미", ("US_", "CA_", "BR_", "AR_", "CO_", "PE_", "MX_")),
+    ("중동_아프리카_오세아니아", ("SA_", "UAE_", "EG_", "MA_", "IR_", "AU_", "NZ_")),
+    ("민간인증1_비건_동물실험_할랄_코셔", ("VEGAN_", "V_LABEL", "LEAPING_BUNNY", "HALAL", "KOSHER")),
+    ("민간인증2_천연_유기농_피부", ("NATRUE", "NATURAL_", "USDA_", "RSPO", "ECARF", "DERMATEST")),
+    ("한국_국내인증_기업인증", ("KR_",)),
+]
+
+
 def export(folder: Path) -> int:
     folder.mkdir(parents=True, exist_ok=True)
     for old in folder.glob("*.md"):
@@ -104,6 +119,19 @@ def export(folder: Path) -> int:
     for c in cards:
         (folder / f"{c['id']}.md").write_text(card_doc(c), encoding="utf-8")
     (folder / "_CertPass_판정기준_안내.md").write_text(GUIDE, encoding="utf-8")
+    bundle = folder.with_name(folder.name + "_묶음")
+    bundle.mkdir(parents=True, exist_ok=True)
+    for old in bundle.glob("*.md"):
+        old.unlink()
+    left = list(cards)
+    for n, (name, keys) in enumerate(GROUPS + [("기타", ("",))], 1):
+        part = [c for c in left if c["id"].startswith(keys)]
+        left = [c for c in left if c not in part]
+        if part:
+            head = (f"# CertPass 인증 요건 카드 — {name.replace('_', ' ')} ({len(part)}종)\n\n"
+                    "공개 사실을 자체 문장으로 정리한 참고 자료이며 인증기관의 공식 심사가 아니다.\n\n")
+            (bundle / f"CertPass_카드{n:02d}_{name}.md").write_text(head + "\n\n".join(card_doc(c) for c in part), encoding="utf-8")
+    (bundle / "CertPass_판정기준_안내.md").write_text(GUIDE, encoding="utf-8")
     return len(cards) + 1
 
 

@@ -73,7 +73,7 @@ def _kr_names() -> tuple[list[str], dict[str, dict]]:
 
 def match_name(raw: str) -> dict:
     """OCR이 읽은 성분명 하나를 표준명에 맞춘다."""
-    hit = kr_dict().get(kr_key(raw))
+    hit = lookup(raw)
     if hit:
         return {"raw": raw, "kr": hit["kr_name"], "inci": hit["inci"], "match": "exact", "score": 100}
     names, by_name = _kr_names()
@@ -84,24 +84,54 @@ def match_name(raw: str) -> dict:
     return {"raw": raw, "kr": None, "inci": None, "match": "unknown", "score": 0}
 
 
-def segment(chunk: str, max_span: int = 6) -> list[str]:
+INCI_KEY = re.compile(r"[^a-z0-9]")
+
+
+def inci_key(name: str) -> str:
+    """영문 INCI 대조 키: 소문자·영숫자만(띄어쓰기·괄호·쉼표·하이픈 무시)."""
+    return INCI_KEY.sub("", (name or "").lower())
+
+
+@lru_cache(maxsize=1)
+def _inci_index() -> dict[str, dict]:
+    """영문 INCI → 사전 항목(식약처 원료성분 사전의 영문명). 짧은 키(4글자 미만)는 오탐이 많아 뺀다."""
+    out: dict[str, dict] = {}
+    for hit in kr_dict().values():
+        k = inci_key(hit.get("inci"))
+        if len(k) >= 4:
+            out.setdefault(k, hit)
+    return out
+
+
+def lookup(text: str) -> dict | None:
+    """한글 표준명·이명 또는 영문 INCI로 사전 항목을 찾는다(정확 일치)."""
+    return kr_dict().get(kr_key(text)) or _inci_index().get(inci_key(text))
+
+
+def segment(chunk: str, max_span: int = 6, prefer_long: bool = False) -> list[str]:
     """쉼표가 빠져 붙은 덩어리('세테아릴알코올 잔탄검')를 띄어쓰기 단위로 나눠 사전 이름이 가장 많이 맞는 조합으로 쪼갠다.
     줄바꿈으로 잘린 이름('다이프로필렌글 라이콜')은 이어 붙여 찾고, 사전에 없는 조각은 이웃끼리 다시 붙여 하나로 남긴다.
-    (ocr/e2e_eval.py의 segment와 같은 규칙 — 평가 수치와 서비스 동작을 맞춘다)"""
-    keys = kr_dict()
-    toks = [t for t in (JUNK.sub("", x) for x in chunk.split()) if t][:60]
+    (ocr/e2e_eval.py의 segment와 같은 규칙 — 평가 수치와 서비스 동작을 맞춘다)
+    prefer_long: 맞은 이름 개수 대신 사전 이름으로 덮은 낱말 수를 최대로 하고, 같으면 조각 수가 적은 쪽을 고른다.
+    표 형식 문서에서 '마그네슘 알루미늄실리케이트'가 '마그네슘'+'알루미늄실리케이트'로 쪼개지지 않게 한다(scan_lines용)."""
+    toks = [t for t in (JUNK.sub("", x) for x in chunk.split()) if t][:400]
     n = len(toks)
-    best = [(0, -1, False)] + [(-1, -1, False)] * n  # (맞은 개수, 이전 위치, 이번 조각이 사전 이름인가)
+    zero, none = ((0, 0) if prefer_long else 0), ((-1, 0) if prefer_long else -1)
+    best = [(zero, -1, False)] + [(none, -1, False)] * n  # (점수, 이전 위치, 이번 조각이 사전 이름인가)
     for i in range(1, n + 1):
         for j in range(max(0, i - max_span), i):
-            hit = kr_key("".join(toks[j:i])) in keys
-            score = best[j][0] + (1 if hit else 0)
+            hit = lookup(" ".join(toks[j:i])) is not None or kr_key("".join(toks[j:i])) in kr_dict()
+            if prefer_long:
+                score = (best[j][0][0] + (i - j if hit else 0), best[j][0][1] - (1 if hit else 0))
+            else:
+                score = best[j][0] + (1 if hit else 0)
             if (hit or i - j == 1) and (score > best[i][0] or (score == best[i][0] and best[i][1] < 0)):
                 best[i] = (score, j, hit)
     pieces, i = [], n
     while i > 0:
         _, j, hit = best[i]
-        pieces.append(("".join(toks[j:i]) if hit else " ".join(toks[j:i]), hit))
+        joined = " ".join(toks[j:i])
+        pieces.append(((joined if _inci_index().get(inci_key(joined)) else "".join(toks[j:i])) if hit else joined, hit))
         i = j
     out, buf = [], []
     for text, hit in reversed(pieces):
@@ -132,16 +162,47 @@ def match_all(raw_items: list[str]) -> list[dict]:
     return out
 
 
+MIN_SCAN = 3  # 줄 단위 대조는 정확히 맞은 성분이 이 개수 이상일 때만 쓴다(앞면 광고 문구 한두 단어로 목록을 만들지 않게)
+
+
+def scan_lines(lines: list[str]) -> list[dict]:
+    """표 형식 문서(위탁사 전성분표 등)용: 모든 줄을 사전과 대조해 정확히 맞는 성분명만 모은다.
+    한 줄에 성분명·CAS·기능이 섞여 있어도 사전 이름 조각만 골라낸다(맞지 않는 조각은 버림 — 오탐 방지)."""
+    out, seen = [], set()
+    for line in lines:
+        for piece in segment(line, prefer_long=True):
+            hit = lookup(piece)
+            if hit and hit["kr_name"] not in seen:
+                seen.add(hit["kr_name"])
+                out.append({"raw": piece, "kr": hit["kr_name"], "inci": hit["inci"], "match": "exact", "score": 100})
+    return out
+
+
+def choose(section_items: list[dict], lines: list[str]) -> tuple[list[dict], str]:
+    """전성분 구역 추출과 줄 단위 사전 대조 중 하나를 고른다.
+    줄 단위 대조는 문서 전체(광고 문구 포함)를 보므로 구역을 제대로 찾았으면 구역 쪽이 낫다.
+    줄 단위 대조로 정확히 맞은 성분이 구역의 2배 이상이면 구역을 잘못 찾았다고(제목·표 머리) 보고 바꾼다.
+    구역 결과에 '사전에 없는 조각'이 정확 일치보다 많으면(표의 CAS 번호·기능·원료 상품명이 섞인 경우) 줄 단위 대조가
+    그 수의 80% 이상을 찾을 때 바꾼다(확인할 잡조각 수십 개보다 깨끗한 목록이 낫다)."""
+    exact = sum(i["match"] == "exact" for i in section_items)
+    unknown = sum(i["match"] == "unknown" for i in section_items)
+    scanned = scan_lines(lines)
+    if len(scanned) >= MIN_SCAN and (len(scanned) >= 2 * exact or (unknown > exact and 5 * len(scanned) >= 4 * exact)):
+        return scanned, "lines"
+    return section_items, "section"
+
+
 def read_package(image: bytes, content_type: str) -> dict:
     """사진 → OCR 서빙 → 전성분 목록과 표준명 맞추기 결과."""
     res = call_ocr(image, content_type)
-    items = match_all(res.get("ingredients") or [])
     lines = res.get("lines") or []
+    items, method = choose(match_all(res.get("ingredients") or []), [ln.get("text", "") for ln in lines])
     return {
         "ingredients": items,
-        "found_section": bool(res.get("ingredients")),
+        "found_section": bool(items),
+        "method": method,  # section: '전성분' 표기 구역, lines: 문서 전체 줄을 사전과 대조(표 형식 문서)
         "text": res.get("text", ""),
-        "lines": [{"text": l.get("text", ""), "conf": l.get("conf")} for l in lines][:400],
+        "lines": [{"text": ln.get("text", ""), "conf": ln.get("conf")} for ln in lines][:400],
         "words": len(res.get("words") or []),
         "model": res.get("model"),
         "counts": {k: sum(i["match"] == k for i in items) for k in ("exact", "fuzzy", "unknown")},

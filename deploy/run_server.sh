@@ -7,6 +7,9 @@ export CERTCHECK_BASE=${CERTCHECK_BASE:-/i/FBi4CwFvT4Pe38Xd}
 # 서빙 주소·기준값은 저장소에 올리지 않는 deploy/server.env에서 읽는다(인증 없는 서빙 주소라 공개 저장소에 두지 않음).
 # 형식은 deploy/server.env.example 참고. 파일이 없으면 AIStream 모델 없이 규칙 판정만 한다.
 [ -f deploy/server.env ] && . deploy/server.env
+# AgentStream(LLM 판정 설명) Key·챗봇 ID는 .env.agentstream(권한 600, push_axgpu.sh가 .env*는 보내지 않아 덮어쓰지 않음)에서 읽는다.
+# 형식은 deploy/agentstream.env.example 참고. 파일이 없으면 설명 칸만 숨겨지고 판정은 그대로 된다.
+[ -f .env.agentstream ] && set -a && . ./.env.agentstream && set +a
 pkill -f "uvicorn certcheck.app:" 2>/dev/null
 sleep 1
 mkdir -p out

@@ -4,23 +4,28 @@
 - 근거 목록(번호·제목·링크)은 엔진 판정과 인증 카드에서 서버가 직접 만든다. LLM 답이 비어도 근거 목록은 그대로 보인다.
 - 설정이 없으면 enabled=False, 호출이 실패해도 판정 화면은 그대로다(예외는 잡아 짧은 오류 문자열로 돌려준다).
 
-환경변수 (서버 설정으로만 받음, 사용자 입력으로 주소를 바꾸지 않음. Key는 저장소·로그에 남기지 않는다)
-- AGENTSTREAM_URL: 챗봇 호출 전체 주소. 없으면 설명 기능 끔
-- AGENTSTREAM_KEY: API Key
-- AGENTSTREAM_AUTH_HEADER: Key를 실을 헤더(기본 Authorization). Authorization이면 값 앞에 "Bearer "를 붙인다
-- AGENTSTREAM_QUERY_FIELD: 질문을 담는 본문 필드 이름(기본 query)
-- AGENTSTREAM_EXTRA: 본문에 함께 보낼 고정 필드(JSON 객체, 예: {"stream": false})
-- AGENTSTREAM_TIMEOUT: 초(기본 60)
+환경변수 (서버 설정으로만 받음, 사용자 입력으로 주소·챗봇을 바꾸지 않음. Key는 저장소·로그·브라우저에 남기지 않는다)
+- AGENTSTREAM_API_KEY: 계정관리 'API 연동'에서 발급한 Key(X-API-Key 헤더). 없으면 설명 기능 끔
+- AGENTSTREAM_CHATBOT_ID: 공개한 챗봇 UUID. 없으면 설명 기능 끔
+- AGENTSTREAM_BASE_URL: 기본 https://api-gateway.jntp-ax.or.kr/agentstream (뒤에 /open/v1을 붙여 부른다)
+- AGENTSTREAM_TIMEOUT: 설명 하나의 전체 제한 시간(초, 기본 60)
+호출 순서(AgentStream 'Codex용 연동 가이드' 2026-11-07 확인): POST /open/v1/chatbots/{id}/sessions {"query"} → 201 session_id
+→ POST /open/v1/chat-sessions/{session_id}/messages {"message"} → application/x-ndjson 스트림
+(assistant.delta·assistant.replace의 content, turn.completed가 정상 종료, turn.failed는 실패, references의 type=rag가 문서 출처).
+설명마다 새 세션을 만든다(방문자끼리 세션을 공유하지 않음).
 """
 from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import re
+import time
+import urllib.error
 import urllib.request
 from collections import OrderedDict
-from threading import Lock
+from threading import BoundedSemaphore, Lock
 
 NOTICE = "AI가 판정 근거를 풀어 쓴 참고용 설명입니다. 공식 인증·심사가 아니며, 판정 등급은 규칙 엔진 결과를 따릅니다."
 MAX_FINDINGS = 12  # 프롬프트에 싣는 보완 사유 수(불가 → 조건부 순)
@@ -29,12 +34,17 @@ CACHE_SIZE = 256
 
 _cache: OrderedDict[str, dict] = OrderedDict()
 _lock = Lock()
+# AgentStream 외부 채팅은 동시 처리 한도가 있어(초과 시 503) 서버에서 동시에 부르는 수를 묶는다
+_slots = BoundedSemaphore(int(os.environ.get("AGENTSTREAM_MAX_CONCURRENT", "2")))
+log = logging.getLogger("certcheck.llm")  # 단계·상태·Content-Type·경과 시간만 남긴다(Key·질문 원문은 남기지 않음)
+HTTP_HINT = {401: "API Key 누락·무효", 403: "챗봇 비공개·다른 워크스페이스·CHAT_INVOKE 권한 없음", 404: "API 주소·챗봇·세션 ID 확인",
+             422: "요청 본문 형식 확인", 429: "호출 한도 초과 — 잠시 뒤 다시", 503: "동시 처리 한도 또는 모델 일시 장애 — 잠시 뒤 다시"}
 THINK = re.compile(r"<think>.*?</think>", re.S)
 KW = re.compile(r"\s*\[kw:[^\]]*\]")
 
 
 def enabled() -> bool:
-    return bool(os.environ.get("AGENTSTREAM_URL", "").strip())
+    return bool(os.environ.get("AGENTSTREAM_API_KEY", "").strip() and os.environ.get("AGENTSTREAM_CHATBOT_ID", "").strip())
 
 
 def sources_for(v: dict, card: dict) -> list[dict]:
@@ -61,19 +71,22 @@ def build_prompt(v: dict, card: dict, product: dict, sources: list[dict]) -> str
     fs = sorted([f for f in v.get("findings") or [] if f.get("level") in ("fail", "cond", "na")],
                 key=lambda f: {"fail": 0, "cond": 1, "na": 2}[f["level"]])[:MAX_FINDINGS]
     level = {"fail": "불가 사유", "cond": "보완 필요", "na": "해당 없음 사유"}
-    lines = [f"- [{level[f['level']]}] {KW.sub('', f.get('message', ''))[:240]}"
+    # 줄 머리의 [1]·[불가] 같은 대괄호는 AgentStream이 JSON 표로 읽어 turn.failed(INPUT '분석할 표가 여러 개')가 난다
+    # (2026-11-07 실측) → 대괄호 없이 '근거 1:'·'(근거 1)'로 쓴다
+    lines = [f"- {level[f['level']]}: {KW.sub('', f.get('message', ''))[:240]}"
              + (f" / 근거: {f['evidence'][:160]}" if f.get("evidence") else "")
              + (f" / 할 일: {f['action'][:120]}" if f.get("action") else "") for f in fs]
     if not lines:
-        lines = ["- 보완할 항목 없음(현재 처방·서류로 요건 충족)"]
+        lines = ["- 보완할 항목 없음: 현재 처방·서류로 요건 충족"]
     claims = ", ".join(map(str, product.get("claims") or [])) or "없음"
-    src = "\n".join(f"[{s['n']}] {s['title']}" + (f" ({s['url']})" if s.get("url") else "") for s in sources) or "(없음)"
+    src = "\n".join(f"근거 {s['n']}: {s['title']}" + (f" — {s['url']}" if s.get("url") and s["url"] != s["title"] else "")
+                    for s in sources) or "없음"
     return f"""당신은 화장품 수출 인증 사전 점검 도우미입니다. 아래 규칙 엔진 판정을 중소기업 실무자가 이해하도록 설명하세요.
 
 규칙:
 1. 판정 등급 "{v.get('status')}"은 확정값입니다. 등급을 바꾸거나 다른 등급을 암시하지 마세요.
 2. 아래 판정 사유와 지식베이스의 '{card.get('id')}' 인증 요건 카드에 있는 내용만 쓰고, 없는 요건·수치·날짜를 만들지 마세요.
-3. 문장 끝에 근거 번호를 [1]처럼 붙이세요. 번호는 아래 '근거 목록'의 번호만 씁니다.
+3. 문장 끝에 근거 번호를 (근거 1)처럼 붙이세요. 번호는 아래 '근거 목록'의 번호만 씁니다.
 4. '(추정)' 표시가 있는 내용은 "원문 확인 필요"라고 밝히세요.
 5. 한국어, 존댓말, 6문장 이내. 형식:
 왜 이 등급인가: (2~3문장)
@@ -90,81 +103,138 @@ def build_prompt(v: dict, card: dict, product: dict, sources: list[dict]) -> str
 """
 
 
-def _headers() -> dict:
-    h = {"Content-Type": "application/json", "Accept": "application/json"}
-    key = os.environ.get("AGENTSTREAM_KEY", "").strip()
-    if key:
-        name = os.environ.get("AGENTSTREAM_AUTH_HEADER", "Authorization").strip() or "Authorization"
-        h[name] = f"Bearer {key}" if name.lower() == "authorization" and not key.lower().startswith("bearer ") else key
-    return h
+BASE_DEFAULT = "https://api-gateway.jntp-ax.or.kr/agentstream"
+TEXT_BLOCKS = {None, "text", "output_text"}  # thinking·reasoning·tool 블록은 답변에 붙이지 않는다
 
 
-def _body(prompt: str) -> bytes:
-    extra = json.loads(os.environ.get("AGENTSTREAM_EXTRA", "") or "{}")
-    if not isinstance(extra, dict):
-        raise ValueError("AGENTSTREAM_EXTRA는 JSON 객체여야 합니다")
-    return json.dumps({**extra, os.environ.get("AGENTSTREAM_QUERY_FIELD", "query") or "query": prompt},
-                      ensure_ascii=False).encode()
+def _base() -> str:
+    return (os.environ.get("AGENTSTREAM_BASE_URL", "").strip() or BASE_DEFAULT).rstrip("/") + "/open/v1"
 
 
-def _dig(d, keys: tuple[str, ...]):
-    """중첩 응답에서 처음 나오는 문자열 답을 찾는다(data.answer, result.content, choices[0].message.content 등)."""
-    if isinstance(d, str):
-        return d
-    if isinstance(d, list):
-        return next((x for x in (_dig(i, keys) for i in d) if x), None)
-    if not isinstance(d, dict):
-        return None
-    for k in keys:
-        if isinstance(d.get(k), str) and d[k].strip():
-            return d[k]
-    for k in ("data", "result", "output", "response", "message", "choices", "delta"):
-        if isinstance(d.get(k), (dict, list)):
-            found = _dig(d[k], keys)
-            if found:
-                return found
-    return None
+def _post(url: str, payload: dict, timeout: float):
+    req = urllib.request.Request(url, data=json.dumps(payload, ensure_ascii=False).encode(), method="POST",
+                                 headers={"Content-Type": "application/json", "Accept": "application/json, application/x-ndjson",
+                                          "X-API-Key": os.environ.get("AGENTSTREAM_API_KEY", "").strip()})
+    return urllib.request.urlopen(req, timeout=timeout)
 
 
-def parse_answer(body: bytes | str) -> dict:
-    """챗봇 응답 → {text, rag_sources}. JSON이 아니면 SSE(data: …) 줄을 이어 붙이고, 그것도 아니면 본문 글자 그대로."""
-    raw = body.decode("utf-8", "replace") if isinstance(body, bytes) else body
-    keys = ("answer", "content", "text", "output_text", "response", "message", "reply", "result")
-    try:
-        d = json.loads(raw)
-    except ValueError:
-        parts = []
-        for line in raw.splitlines():
-            if line.startswith("data:") and line[5:].strip() not in ("", "[DONE]"):
-                chunk = line[5:].strip()
-                try:
-                    parts.append(_dig(json.loads(chunk), keys) or "")
-                except ValueError:
-                    parts.append(chunk)
-        d, text = None, "".join(parts) if parts else raw
-    else:
-        text = _dig(d, keys) or ""
-    rag = []
-    if isinstance(d, dict):
-        pool = [d] + [d[k] for k in ("data", "result") if isinstance(d.get(k), dict)]
-        for x in pool:
-            for k in ("sources", "references", "citations", "documents", "source_documents", "contexts"):
-                if isinstance(x.get(k), list):
-                    for s in x[k][:MAX_SOURCES]:
-                        if isinstance(s, dict):
-                            name = s.get("title") or s.get("file_name") or s.get("filename") or s.get("source") or s.get("name")
-                            if name:
-                                rag.append(str(name)[:120])
-                        elif isinstance(s, str):
-                            rag.append(s[:120])
+def _content(c) -> str:
+    if isinstance(c, str):
+        return c
+    if isinstance(c, list):
+        return "".join(x if isinstance(x, str) else str(x.get("text") or "") for x in c
+                       if isinstance(x, str) or (isinstance(x, dict) and x.get("type") in TEXT_BLOCKS))
+    return ""
+
+
+def parse_stream(lines) -> dict:
+    """NDJSON 줄들 → {text, rag_sources}. turn.failed·종료 이벤트 없는 끝은 ValueError."""
+    text, rag, seen, done, tool_failed = "", [], set(), False, False
+    for raw in lines:
+        line = (raw.decode("utf-8", "replace") if isinstance(raw, bytes) else raw).strip()
+        if line.startswith("data:"):
+            line = line[5:].strip()
+        if not line or line == "[DONE]":
+            continue
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(e, dict):
+            continue
+        eid = e.get("event_id")
+        if isinstance(eid, str) and eid:
+            if eid in seen:
+                continue
+            seen.add(eid)
+        ev = e.get("event")
+        if ev == "turn.failed":
+            raise ValueError(f"turn.failed {e.get('category') or ''} {_content(e.get('content'))[:120]}".strip())
+        if ev == "turn.completed":
+            done = True
+        if ev == "tool.failed":  # 문서 조회(RAG)가 실패해도 답은 올 수 있다 → 답은 쓰고 '근거 조회 실패'로 표시
+            tool_failed = True
+        if ev in ("assistant.delta", "assistant.replace") and e.get("type") not in ("tool", "progress"):
+            piece = _content(e.get("content")) or (e.get("text") if isinstance(e.get("text"), str) else "")
+            text = piece if ev == "assistant.replace" else text + piece
+        art = e.get("artifact") if isinstance(e.get("artifact"), dict) else {}
+        for d in art.get("documents") or []:  # tool.completed의 RAG 결과(2026-11-07 실측: reference=파일명, evidence.section_title=절 제목)
+            if isinstance(d, dict) and d.get("reference"):
+                sec = (d.get("evidence") or {}).get("section_title") if isinstance(d.get("evidence"), dict) else None
+                rag.append((f"{d['reference']} · {sec}" if sec else str(d["reference"]))[:160])
+        for r in e.get("references") or []:
+            if isinstance(r, dict) and r.get("type") == "rag" and r.get("source"):
+                rag.append(str(r["source"])[:120])
+        ctx = e.get("rag_context") or e.get("context")
+        for r in ctx if isinstance(ctx, list) else [ctx] if isinstance(ctx, dict) else []:
+            src = isinstance(r, dict) and (r.get("source") or (r.get("metadata") or {}).get("source"))
+            if src:
+                rag.append(str(src)[:120])
+    if not done:
+        raise ValueError("turn.completed 없이 응답이 끝남")
     text = THINK.sub("", text).strip()
-    return {"text": text[:3000], "rag_sources": list(dict.fromkeys(rag))}
+    return {"text": text[:3000], "rag_sources": list(dict.fromkeys(rag))[:MAX_SOURCES], "tool_failed": tool_failed}
 
 
-def call(prompt: str, timeout: float) -> dict:
-    req = urllib.request.Request(os.environ["AGENTSTREAM_URL"].strip(), data=_body(prompt), headers=_headers(), method="POST")
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return parse_answer(r.read())
+def _step(name: str, url: str, payload: dict, timeout: float):
+    """POST 한 번. 단계·상태·Content-Type·경과 시간을 기록하고, HTTP 오류는 원인 안내가 붙은 짧은 문구로 바꾼다.
+    로그인 리다이렉트 같은 HTML 응답은 정상으로 받지 않는다. 실패한 POST는 자동으로 다시 보내지 않는다."""
+    t = time.monotonic()
+    try:
+        r = _post(url, payload, timeout)
+    except urllib.error.HTTPError as e:
+        log.warning("agentstream %s HTTP %s %s %.1fs", name, e.code, e.headers.get("Content-Type", ""), time.monotonic() - t)
+        raise RuntimeError(f"{name} HTTP {e.code} ({HTTP_HINT.get(e.code, '응답 오류')})") from None
+    ctype = r.headers.get("Content-Type", "")
+    log.info("agentstream %s HTTP %s %s %.1fs", name, r.status, ctype, time.monotonic() - t)
+    if "html" in ctype.lower():
+        r.close()
+        raise RuntimeError(f"{name} HTML 응답(로그인 페이지·관문 오류로 보임)")
+    return r
+
+
+def call(prompt: str, timeout: float, title: str = "CertPass 판정 설명") -> dict:
+    deadline = time.monotonic() + timeout
+    if not _slots.acquire(timeout=timeout):
+        raise TimeoutError("설명 요청이 밀려 있음")
+    try:
+        bot = os.environ["AGENTSTREAM_CHATBOT_ID"].strip()
+        with _step("sessions", f"{_base()}/chatbots/{bot}/sessions", {"query": title[:100]}, timeout) as r:
+            sid = json.loads(r.read()).get("session_id")
+        if not sid or not re.fullmatch(r"[A-Za-z0-9_-]{1,100}", str(sid)):
+            raise ValueError("session_id 없음")
+
+        def lines(resp):
+            for line in resp:
+                if time.monotonic() > deadline:
+                    raise TimeoutError(f"{timeout:.0f}초 초과")
+                yield line
+
+        t = time.monotonic()
+        with _step("messages", f"{_base()}/chat-sessions/{sid}/messages", {"message": prompt},
+                   max(1.0, deadline - time.monotonic())) as r:
+            out = parse_stream(lines(r))
+        log.info("agentstream stream done %.1fs chars=%d rag=%d tool_failed=%s", time.monotonic() - t,
+                 len(out["text"]), len(out["rag_sources"]), out["tool_failed"])
+        return out
+    finally:
+        _slots.release()
+
+
+def health(timeout: float = 10) -> dict:
+    """GET /chatbots/{id}/health → status·message·checked_at. HTTP 200만으로 정상이라 보지 않고 status를 본다."""
+    bot = os.environ.get("AGENTSTREAM_CHATBOT_ID", "").strip()
+    req = urllib.request.Request(f"{_base()}/chatbots/{bot}/health", method="GET",
+                                 headers={"Accept": "application/json", "X-API-Key": os.environ.get("AGENTSTREAM_API_KEY", "").strip()})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            d = json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        return {"ok": False, "http": e.code, "hint": HTTP_HINT.get(e.code, "응답 오류")}
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"[:200]}
+    return {"ok": d.get("status") == "healthy", "status": d.get("status"), "message": d.get("message"),
+            "checked_at": d.get("checked_at"), "embedding_models": d.get("embedding_models")}
 
 
 def explain(v: dict, card: dict, product: dict) -> dict:
@@ -180,7 +250,7 @@ def explain(v: dict, card: dict, product: dict) -> dict:
             _cache.move_to_end(key)
             return {**base, **_cache[key], "enabled": True, "ok": True, "cached": True}
     try:
-        ans = call(prompt, float(os.environ.get("AGENTSTREAM_TIMEOUT", "60")))
+        ans = call(prompt, float(os.environ.get("AGENTSTREAM_TIMEOUT", "60")), f"{card.get('id')} {v.get('status')} 설명")
         if not ans["text"]:
             raise ValueError("빈 응답")
     except Exception as e:  # 키·주소·모델 장애가 판정 화면을 막지 않게 한다. 오류 문구에 Key가 섞이지 않게 형식·길이만
@@ -190,3 +260,18 @@ def explain(v: dict, card: dict, product: dict) -> dict:
         while len(_cache) > CACHE_SIZE:
             _cache.popitem(last=False)
     return {**base, **ans, "enabled": True, "ok": True, "cached": False}
+
+
+if __name__ == "__main__":  # 실제 호출 확인: .venv/bin/python -m certcheck.llm_client [제품=D3] [인증=EU_ECOLABEL_RINSEOFF]
+    import sys
+
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    if not enabled():
+        sys.exit("AGENTSTREAM_API_KEY·AGENTSTREAM_CHATBOT_ID 환경변수가 없습니다")
+    print("health:", json.dumps(health(), ensure_ascii=False))
+    from .app import explain_demo
+
+    t0 = time.monotonic()
+    out = explain_demo(sys.argv[1] if len(sys.argv) > 1 else "D3", sys.argv[2] if len(sys.argv) > 2 else "EU_ECOLABEL_RINSEOFF")
+    print(f"explain: ok={out.get('ok')} {time.monotonic() - t0:.1f}s error={out.get('error')} rag={out.get('rag_sources')}")
+    print(out.get("text", ""))

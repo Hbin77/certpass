@@ -141,3 +141,31 @@ def test_ocr_server_down_is_502(monkeypatch):
     monkeypatch.setenv("CERTCHECK_OCR_TIMEOUT", "2")
     monkeypatch.setattr(ocr_client, "RETRY_WAIT", (0.01, 0.01))
     assert call("/api/ocr", JPEG, "image/jpeg")[0] == 502
+
+
+def test_dictionary_keeps_digit_commas():
+    # '1,2-Hexanediol'의 쉼표는 이름의 일부다(영문명 여러 개를 잇는 쉼표와 구분)
+    assert ocr_client.lookup("1,2-헥산다이올")["inci"] == "1,2-Hexanediol"
+    assert ocr_client.lookup("12-Hexanediol")["kr_name"] == "1,2-헥산다이올"
+
+
+def test_english_inci_lookup():
+    assert ocr_client.match_name("Butyrospermum Parkii (Shea) Butter")["kr"] == "시어버터"
+    assert ocr_client.match_name("glycerin")["kr"] == "글리세린"
+
+
+def test_scan_lines_reads_table_rows():
+    # 위탁사 전성분표: 번호·성분명·CAS·출처·기능이 한 줄에 섞여 있고 '전성분' 표기가 없다
+    lines = ["FORMULA INGREDIENTS STATEMENT", "NO Ingredients Contents(%) CAS No. Source Function",
+             "1 정제수 7732-18-5 ICID Solvent", "2. Glycerin 56-81-5 ICID Humectant",
+             "3 마그네슘 알루미늄실리케이트 12511-31-8 ICID Viscosity", "4 Butylene Glycol 107-88-0 ICID Skin-Conditioning Agent"]
+    assert [i["kr"] for i in ocr_client.scan_lines(lines)] == ["정제수", "글리세린", "마그네슘알루미늄실리케이트", "부틸렌글라이콜"]
+
+
+def test_choose_prefers_section_unless_lines_find_far_more():
+    section = ocr_client.match_all(["정제수", "글리세린", "부틸렌글라이콜"])
+    items, method = ocr_client.choose(section, ["전성분: 정제수, 글리세린, 부틸렌글라이콜", "보습 히알루론산 함유"])
+    assert method == "section" and len(items) == 3  # 광고 문구 한 단어로 바꾸지 않는다
+    wrong = ocr_client.match_all(["STATEMENT"])  # 제목을 전성분 구역으로 잘못 잡은 경우
+    items, method = ocr_client.choose(wrong, ["1 정제수 7732-18-5", "2 글리세린 56-81-5", "3 Butylene Glycol 107-88-0"])
+    assert method == "lines" and [i["kr"] for i in items] == ["정제수", "글리세린", "부틸렌글라이콜"]
