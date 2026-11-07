@@ -138,6 +138,14 @@ def _facts(text: str) -> set[str]:
     return out
 
 
+REF = re.compile(r"근거\s*(\d{1,2})")
+
+
+def bad_refs(answer: str, n_sources: int) -> list[int]:
+    """설명이 인용한 '(근거 n)' 중 근거 목록(1..n)에 없는 번호. 캐시된 옛 설명에도 돌려줄 때마다 계산한다."""
+    return sorted({int(x) for x in REF.findall(answer or "") if not 1 <= int(x) <= n_sources})
+
+
 def unverified_facts(answer: str, corpus: str) -> list[str]:
     """설명에 나온 날짜·비율 중 요청(판정 사유)과 조회 문서 어디에도 없는 것. 월까지만 맞으면(일 생략) 있는 것으로 본다."""
     have = _facts(corpus)
@@ -453,7 +461,8 @@ def _rate_refund(client: str | None) -> None:
                 _calls[k].pop()
 
 
-def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None = None, pin: bool = False) -> dict:
+def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None = None, pin: bool = False,
+            cache_only: bool = False) -> dict:
     """판정 하나(Verdict.to_dict 모양)의 설명.
     - ai: AIStream 경보 dict, 또는 그것을 돌려주는 함수(캐시에 없을 때만 부른다 — 캐시 응답에 ML 왕복을 붙이지 않게).
     - 캐시 키는 경보를 뺀 프롬프트 해시. 같은 판정이면 ML이 잠깐 실패해도 같은 설명을 다시 쓴다.
@@ -476,7 +485,10 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
         if key in _cache:
             _cache.move_to_end(key)
             hit = {k: val for k, val in _cache[key].items() if k != "pin"}
-            return {**base, **hit, "enabled": True, "ok": True, "cached": True}
+            return {**base, **hit, "bad_refs": bad_refs(hit.get("text", ""), len(sources)),
+                    "enabled": True, "ok": True, "cached": True}
+    if cache_only:  # 저장된 설명만 확인(토큰을 쓰지 않음). 없으면 모델을 부르지 않고 알린다
+        return {**base, "enabled": True, "ok": False, "cached": False, "ai_alert": None, "error": "NotCached: 저장된 설명 없음"}
     if not _rate_take(client):
         return {**base, "enabled": True, "ok": False, "ai_alert": None,
                 "error": "RateLimit: 설명 요청이 많아 잠시 뒤 다시 시도해 주세요"}
@@ -506,7 +518,7 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
     ans = {**raw, **g, "ai_alert": ai, "unverified": unverified_facts(raw["text"], prompt + "\n".join(d["text"] for d in docs))}
     with _lock:
         _cache_put(key, ans, pin)
-    return {**base, **ans, "enabled": True, "ok": True, "cached": False}
+    return {**base, **ans, "bad_refs": bad_refs(ans["text"], len(sources)), "enabled": True, "ok": True, "cached": False}
 
 
 if __name__ == "__main__":  # 실제 호출 확인: .venv/bin/python -m certcheck.llm_client [제품=D3] [인증=EU_ECOLABEL_RINSEOFF]

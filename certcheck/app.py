@@ -258,7 +258,7 @@ def explain(req: ExplainRequest, request: Request):
     return _explain(req, request.client.host if request.client else None)
 
 
-def _explain(req: ExplainRequest, client: str | None):
+def _explain(req: ExplainRequest, client: str | None, cache_only: bool = False):
     cards, reg, attrs = resources()
     card = next((c for c in cards if c["id"] == req.cert_id), None)
     if not card:
@@ -270,7 +270,8 @@ def _explain(req: ExplainRequest, client: str | None):
     v = verdict.to_dict()
     v.pop("features", None)
     pin = json.dumps(p, sort_keys=True, ensure_ascii=False, default=str) in _demo_keys()
-    return llm_client.explain(v, card, p, lambda: ai_alert(verdict, card, p, reg), client=client, pin=pin)
+    return llm_client.explain(v, card, p, lambda: ai_alert(verdict, card, p, reg), client=client, pin=pin,
+                              cache_only=cache_only)
 
 
 def ai_alert(verdict, card: dict, p: dict, reg) -> dict | None:
@@ -313,7 +314,8 @@ def run_demo(pid: str):
 
 
 @app.get("/api/explain-demo/{pid}/{cert_id}")
-def explain_demo(pid: str, cert_id: str, request: Request = None):
+def explain_demo(pid: str, cert_id: str, request: Request = None, cache_only: bool = False):
+    """데모 제품 설명. cache_only=1이면 저장된 설명만 돌려주고 없으면 모델을 부르지 않는다(토큰 0)."""
     data = demo_products()
     p = next((x for x in data["products"] if x["id"] == pid), None)
     if not p:
@@ -322,7 +324,7 @@ def explain_demo(pid: str, cert_id: str, request: Request = None):
         raise HTTPException(404, "알 수 없는 인증 id입니다")
     product = Product(**{k: v for k, v in p.items() if k in Product.model_fields})
     client = request.client.host if request is not None and request.client else None
-    return _explain(ExplainRequest(product=product, company=data["company"], cert_id=cert_id), client)
+    return _explain(ExplainRequest(product=product, company=data["company"], cert_id=cert_id), client, cache_only)
 
 
 # 서류 초안 생성 라우터(별도 모듈). 모듈 파일이 없을 때만 건너뛰고, 모듈 안의 오류는 그대로 드러낸다.

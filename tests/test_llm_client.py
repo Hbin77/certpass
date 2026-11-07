@@ -408,3 +408,14 @@ def test_daily_cap(monkeypatch):
     out = explain_demo("D3", "EU_PPWR")
     assert out["ok"] is False and "오늘" in out["error"]
     assert explain_demo("D3", "EU_CPNP")["cached"] is True  # 미리 만든 설명은 상한과 상관없이
+
+
+def test_bad_refs():
+    assert llm_client.bad_refs("A (근거 1). B (근거 2, 근거 5). C 근거3", 3) == [5]
+    assert llm_client.bad_refs("근거 없음", 3) == []
+
+
+def test_cache_only_never_calls(monkeypatch):
+    _on(monkeypatch, lambda *a, **k: (_ for _ in ()).throw(AssertionError("cache_only인데 모델 호출")))
+    out = explain_demo("D3", "EU_CPNP", cache_only=True)
+    assert out["ok"] is False and out["error"].startswith("NotCached")

@@ -915,8 +915,13 @@
     const srcHTML = src ? `<details class="more aiexp__src"><summary>${icon('i-chevron', 'ic--sm')}근거 목록 ${(d.sources || []).length}건</summary>
       <div class="more__body"><ol class="flist" role="list">${src}</ol></div></details>` : '';
     if (st.error || !d.ok) {
-      const busy = /RateLimit|LLM_RATE_LIMITED|HTTP 429|HTTP 503/.test(d.error || '');
-      return `${head}<p class="aiexp__state">${icon('i-info', 'ic--sm')}${busy ? 'AI 모델에 요청이 몰려 지금은 설명을 만들지 못했습니다. 잠시 뒤 다시 불러오세요.' : 'AI 설명을 지금 불러오지 못했습니다.'} 판정과 근거는 위 내용 그대로 유효합니다.</p>
+      const e = d.error || '';
+      // 원인별 안내: 서버 하루 상한 / 모델 사용 한도(LLM_RATE_LIMITED — 7팀 일간 토큰 한도 소진에도 같은 코드) / 서버 분당 상한·대기열 / 그 밖
+      const why = /오늘 새로/.test(e) ? '오늘 새로 만들 수 있는 AI 설명 수를 다 썼습니다. 미리 만든 설명은 그대로 나옵니다.'
+        : /LLM_RATE_LIMITED/.test(e) ? 'AI 모델 사용 한도에 걸려 지금은 설명을 만들지 못했습니다(하루 토큰 한도일 수 있습니다).'
+        : /RateLimit|HTTP 429|HTTP 503/.test(e) ? '설명 요청이 몰려 지금은 만들지 못했습니다. 잠시 뒤 다시 불러오세요.'
+        : 'AI 설명을 지금 불러오지 못했습니다.';
+      return `${head}<p class="aiexp__state">${icon('i-info', 'ic--sm')}${why} 판정과 근거는 위 내용 그대로 유효합니다.</p>
         <button type="button" class="btn btn--secondary btn--sm" data-explain-retry="${esc(d.cert_id || st.certId || '')}">${icon('i-refresh', 'ic--sm')}다시 불러오기</button>${srcHTML}`;
     }
     // 지식베이스 조회 결과: 이 인증 카드 조각만 '파일: 절' 묶음으로, 다른 카드 조각은 개수만(rag_target·rag_other가 없으면 옛 응답 모양)
@@ -926,7 +931,9 @@
       : (d.rag_sources || []).length ? `<p class="aiexp__rag muted">지식베이스에서 찾은 이 인증 카드: ${esc(d.rag_sources.join(' / '))}${esc(other)}</p>` : '';
     const unv = (d.unverified || []).length
       ? `<p class="aiexp__check">${icon('i-alert', 'ic--sm')}<span>설명 속 날짜·비율 중 판정 사유와 지식베이스에서 확인되지 않은 값: ${esc(d.unverified.join(', '))}. 원문 확인이 필요합니다.</span></p>` : '';
-    return `${head}<div class="aiexp__text">${explainTextHTML(d.text)}</div>${unv}${rag}${srcHTML}
+    const bad = (d.bad_refs || []).length
+      ? `<p class="aiexp__check">${icon('i-alert', 'ic--sm')}<span>설명이 인용한 근거 ${esc(d.bad_refs.join(', '))}번은 근거 목록에 없습니다. 해당 문장은 근거 목록에서 다시 확인하세요.</span></p>` : '';
+    return `${head}<div class="aiexp__text">${explainTextHTML(d.text)}</div>${unv}${bad}${rag}${srcHTML}
       <p class="aiexp__notice">${icon('i-info', 'ic--xs')}${esc(d.notice || '참고용 설명이며 공식 인증·심사가 아닙니다.')}</p>`;
   }
   function renderExplain(certId) {
