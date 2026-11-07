@@ -326,3 +326,20 @@ def test_rejoin_digit_commas_from_line_text():
     assert oc.rejoin_digit_commas(raw, text) == ["정제수", "1,2-헥산다이올", "향료"]
     names = [i["kr"] for i in oc.match_all(raw, text)]
     assert "1,2-헥산다이올" in names
+
+
+def test_label_info_reads_package_fields():
+    from certcheck import ocr_client as oc
+    lines = ["카멜리아 수분 크림 50mL", "CAMELLIA MOISTURE CREAM", "[전성분] 정제수, 글리세린, 1,2-헥산다이올, 향료",
+             "제조업자·책임판매업자 : 데모 화장품사(가상)", "사용기한 : 제조일로부터 30개월", "Made in Korea"]
+    info = oc.label_info(lines)
+    assert info == {"net_content": "50 mL", "name_kr": "카멜리아 수분 크림", "name_en": "CAMELLIA MOISTURE CREAM", "manufacturer": "데모 화장품사(가상)",
+                    "shelf_life": "제조일로부터 30개월", "country": "KR"}
+    assert oc.label_info(["Water, Glycerin, Butylene Glycol, Niacinamide", "나이아신아마이드 2%"]) == {}
+    # 기울기 보정 뒤 줄이 섞여도: 영문명에 붙은 용량은 떼고, 국문명은 용량 없는 줄에서도 찾는다
+    assert oc.label_info(["카멜리아 수분 크림", "CAMELLIA MOISTURE CREAM 50mL"]) == {
+        "name_kr": "카멜리아 수분 크림", "net_content": "50 mL", "name_en": "CAMELLIA MOISTURE CREAM"}
+    # 옆 줄이 섞인 값은 버린다
+    assert oc.label_info(["제조업자 : 책임판매업자 제조일로부터 : 데모 30개월 화장품사(가상)"]) == {}
+    # 표 형식 문서: 이름 칸은 뽑지 않는다
+    assert oc.label_info(["총 합계", "IGLYCERIN 글리세린 Glycerin 56-81-5 1-2 HUMECTANT"], names=False) == {}

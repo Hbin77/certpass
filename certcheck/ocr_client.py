@@ -259,6 +259,53 @@ def photo_quality(words: list[dict]) -> dict:
             "blurry": bool(len(confs) >= 30 and share is not None and share >= BLURRY_SHARE)}
 
 
+# 포장·전성분표에서 서류 초안에 쓰는 표시 정보(영문 제품명·용량·제조업자·사용기한·원산국)를 줄 단위로 뽑는다.
+# 못 찾은 칸은 비워 둔다(서류에는 '확인 필요'로 남음). 화면 확인 칸에서 고칠 수 있다.
+NET_RE = re.compile(r"(?<![\d.,])(\d+(?:[.,]\d+)?)\s*(ml|mL|ML|g|G|kg|KG|L)(?![A-Za-z가-힣])")
+MFR_RE = re.compile(r"(제조업자|제조원|제조사|제조판매업자|책임판매업자|판매원)")
+LIFE_RE = re.compile(r"(?:사용\s*기한|유통\s*기한)\s*[:：]?\s*(.+)")
+PAO_RE = re.compile(r"(?<![\d])(\d{1,2})\s*M(?![A-Za-z])")
+EN_SKIP = re.compile(r"made in|ingredient|inci|www\.|http|lot|batch|exp|net\s*wt|\d{3,}", re.I)
+
+
+def label_info(lines: list[str], names: bool = True) -> dict:
+    """names=False: 표 형식 문서(위탁사 전성분표 등)라 제품명 줄을 믿을 수 없어 이름 칸은 뽑지 않는다."""
+    out: dict[str, str] = {}
+    for raw in lines:
+        t = re.sub(r"\s+", " ", str(raw or "")).strip()
+        if not t:
+            continue
+        if "net_content" not in out and not re.search(r"\d,\d|%", t):
+            m = NET_RE.search(t)
+            if m:
+                out["net_content"] = f"{m.group(1)} {m.group(2)}"
+        if "manufacturer" not in out and MFR_RE.search(t) and re.search(r"[:：]", t):
+            name = [x.strip() for x in re.split(r"[:：]", t) if x.strip()][-1]
+            # 기울어진 사진에서 옆 줄('사용기한 …')이 섞이면 버린다(빈칸이 틀린 값보다 낫다)
+            if not MFR_RE.search(name) and not re.search(r"\d+\s*개월|기한|제조일", name):
+                out["manufacturer"] = name[:80]
+        if "shelf_life" not in out:
+            m = LIFE_RE.search(t)
+            if m and m.group(1).strip() and not MFR_RE.search(m.group(1)) and not re.search(r"[:：]", m.group(1)):
+                out["shelf_life"] = m.group(1).strip()[:60]
+            elif PAO_RE.fullmatch(t):
+                out["shelf_life"] = f"개봉 후 {PAO_RE.fullmatch(t).group(1)}개월(PAO)"
+        if "country" not in out and re.search(r"made in korea|제조국\s*[:：]?\s*(대한민국|한국)", t, re.I):
+            out["country"] = "KR"
+        bare = NET_RE.sub("", t).strip(" ·-/")  # 용량을 뗀 줄
+        if names and "name_en" not in out and bare.count(",") < 2 and not EN_SKIP.search(bare) \
+                and not re.search(r"[가-힣]", bare):
+            letters = re.findall(r"[A-Za-z가-힣]", bare)
+            latin = re.findall(r"[A-Za-z]", bare)
+            if len(latin) >= 6 and len(latin) >= 0.8 * len(letters) and len(bare.split()) >= 2:
+                out["name_en"] = bare[:80]
+        # 국문 제품명: 위에서부터 처음 나오는 짧은 한글 줄(표시 항목 머리말·문장은 뺀다)
+        if names and "name_kr" not in out and len(re.findall(r"[가-힣]", bare)) >= 3 and len(bare) <= 30 \
+                and not re.search(r"[:：\[\]()%]|전성분|성분|사용|주의|제조|기한|보관|용량|내용량|판매|다\.?$", bare):
+            out["name_kr"] = bare
+    return out
+
+
 def read_package(image: bytes, content_type: str) -> dict:
     """사진 → OCR 서빙 → 전성분 목록과 표준명 맞추기 결과."""
     res = call_ocr(image, content_type)
@@ -276,4 +323,5 @@ def read_package(image: bytes, content_type: str) -> dict:
         "quality": photo_quality(res.get("words") or []),  # 화면이 1° 이상이면 반대로 돌려 한 번 더 읽는다
         "model": res.get("model"),
         "counts": {k: sum(i["match"] == k for i in items) for k in ("exact", "fuzzy", "unknown")},
+        "label": label_info(texts, names=method == "section"),
     }

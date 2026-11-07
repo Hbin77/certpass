@@ -147,6 +147,7 @@ def read_pdf(data: bytes) -> dict:
         "words": len(words) or sum(len(t.split()) for t in lines),
         "model": model,
         "counts": {k: sum(i["match"] == k for i in items) for k in ("exact", "fuzzy", "unknown")},
+        "label": oc.label_info(lines, names=method == "section"),
         "skew": None,  # 쪽마다 서버에서 이미 바로 세웠다(화면이 다시 돌리지 않게)
         "quality": oc.photo_quality(words) if words else {"low_conf_share": None, "text_px": None, "blurry": False},
         "pdf": {"pages_total": total, "pages_read": read, "pages": pages,

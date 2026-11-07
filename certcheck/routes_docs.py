@@ -25,9 +25,10 @@ router = APIRouter()
 
 
 class DocProduct(Product):
-    """서류용 제품: 판정 필드에 서류가 읽는 net_content를 더한다. 그 밖의 키(body_area 등)는 그대로 통과."""
+    """서류용 제품: 판정 필드에 서류가 읽는 net_content·shelf_life를 더한다. 그 밖의 키(body_area 등)는 그대로 통과."""
     model_config = ConfigDict(extra="allow")
     net_content: Short | None = None
+    shelf_life: Short | None = None
 
 
 class FindingIn(BaseModel):
