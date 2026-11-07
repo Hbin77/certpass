@@ -156,6 +156,16 @@ def _norm(t: str) -> str:
     return re.sub(r"\s+", "", t).lower()
 
 
+JOSA = re.compile(r"(?:으로|에서|하게|보이게|을|를|이|가|은|는|의|에|로|와|과|게|함)$")
+
+
+def _words_in(phrase: str, c: str) -> bool:
+    """따옴표 속 말의 낱말이 모두 근거에 있으면 줄여 쓴 말로 본다('생리적 변화 역전' ↔ 카드 '생리적 변화를 예방·감소·역전').
+    조사를 떼고 찾으며, 근거에 없는 낱말이 하나라도 있으면 False('톤 업'처럼 AI가 새로 지은 문구는 그대로 '확인 필요')."""
+    words = re.findall(r"[가-힣]+|[A-Za-z0-9]+", phrase)
+    return bool(words) and all(_norm(w) in c or (len(w) > 2 and _norm(JOSA.sub("", w)) in c) for w in words)
+
+
 def unsupported_terms(answer: str, corpus: str) -> list[str]:
     """설명에 나온 영문 용어·약어, 숫자, 따옴표 속 말, 서류·절차 이름 가운데 판정 사유·근거 목록·인증 카드 어디에도 없는 것.
     LLM이 지어낸 요건·서류를 사람이 볼 수 있게 표시하기 위한 것이라, 활용형 차이로 걸리는 말도 있을 수 있다(그래서 '확인 필요')."""
@@ -169,7 +179,7 @@ def unsupported_terms(answer: str, corpus: str) -> list[str]:
         if len(n.replace(",", "").replace(".", "")) >= 2 and n.replace(",", "") not in corpus.replace(",", ""):
             out.append(n)
     for q in QUOTED.findall(answer or ""):
-        if _norm(q) not in c:
+        if _norm(q) not in c and not _words_in(q, c):
             out.append(q)
     for t in KO_TERM.findall(answer or ""):
         if _norm(t) in c or any(_norm(t[i:]) in c for i in range(1, len(t) - 2)):

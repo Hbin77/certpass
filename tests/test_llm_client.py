@@ -404,6 +404,13 @@ def test_unsupported_terms_and_strip_refs():
     assert llm_client.strip_bad_refs("A (근거 1). B (근거 2)", 0) == "A. B"
 
 
+def test_quoted_paraphrase_vs_new_wording():
+    corpus = "표방 anti_wrinkle 주름 외관 개선. '노화로 인한 생리적 변화를 예방·감소·역전' 표현 불가"
+    ans = "'주름 개선'·'생리적 변화 역전'은 바꾸고 '톤 업'이나 '피부 톤을 균일하게 보이게 함'으로 쓰세요."
+    u = llm_client.unsupported_terms(ans, corpus)
+    assert u == ["톤 업", "피부 톤을 균일하게 보이게 함"]
+
+
 
 def test_tag_from_body_with_underscores():
     ev = _ndjson({"event": "tool.completed", "artifact": {"documents": [

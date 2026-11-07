@@ -40,7 +40,7 @@ def main(pids: list[str], url: str = URL) -> dict:
             un = L.unsupported_terms(d["text"], corpus)
             terms.update(un)
             rows.append({"product": pid, "cert": v["cert_id"], "unsupported": un,
-                         "bad_refs": L.bad_refs(d["text"], len(srcs)),
+                         "bad_refs": d.get("bad_refs") or [],  # 서버가 지우기 전 원문으로 센 값(받은 text는 이미 지운 뒤라 다시 세면 늘 0)
                          "unverified_facts": L.unverified_facts(d["text"], corpus)})
     n = len(rows)
     summ = {"explanations": n,
