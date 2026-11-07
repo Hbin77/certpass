@@ -317,3 +317,12 @@ def test_ocr_job_errors_and_full_queue(monkeypatch):
     jobs.submit(lambda: gate.wait(5) or {})  # 하나가 처리 중이면 대기열(1) 가득
     assert _post_job(JPEG, "image/jpeg")[0] == 429
     gate.set()
+
+
+def test_rejoin_digit_commas_from_line_text():
+    from certcheck import ocr_client as oc
+    raw = ["정제수", "2-헥산다이올", "향료"]
+    text = "[전성분] 정제수, 1,2-헥산다이올, 향료"
+    assert oc.rejoin_digit_commas(raw, text) == ["정제수", "1,2-헥산다이올", "향료"]
+    names = [i["kr"] for i in oc.match_all(raw, text)]
+    assert "1,2-헥산다이올" in names

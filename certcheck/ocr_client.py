@@ -149,10 +149,25 @@ def segment(chunk: str, max_span: int = 6, prefer_long: bool = False) -> list[st
     return [x for x in out if len(x) >= 2 and LETTER.search(x)]
 
 
-def match_all(raw_items: list[str]) -> list[dict]:
-    """OCR 전성분 덩어리 목록 → 표준명 맞추기 결과(쪼개기 포함, 같은 성분은 한 번만)."""
-    out, seen = [], set()
+def rejoin_digit_commas(raw_items: list[str], text: str) -> list[str]:
+    """서빙은 전성분을 쉼표로 자르므로 '1,2-헥산다이올'이 '2-헥산다이올'로 남는다(앞 '1'은 버려짐).
+    원문 줄에 '숫자,' + 그 조각이 있으면 숫자를 되붙인다."""
+    flat = re.sub(r"\s+", "", text or "")
+    out = []
     for raw in raw_items:
+        r = raw.strip()
+        if re.match(r"\d", r):
+            m = re.search(r"((?:\d+,)+)" + re.escape(re.sub(r"\s+", "", r)), flat)
+            if m:
+                r = m.group(1) + re.sub(r"\s+", "", r)
+        out.append(r)
+    return out
+
+
+def match_all(raw_items: list[str], text: str = "") -> list[dict]:
+    """OCR 전성분 덩어리 목록 → 표준명 맞추기 결과(쪼개기 포함, 같은 성분은 한 번만). text는 숫자 쉼표를 되붙일 원문."""
+    out, seen = [], set()
+    for raw in rejoin_digit_commas(raw_items, text) if text else raw_items:
         clean = JUNK.sub("", raw)
         m = match_name(clean) if clean else None
         parts = [m] if m and m["match"] == "exact" else [match_name(p) for p in segment(raw)]
@@ -248,7 +263,8 @@ def read_package(image: bytes, content_type: str) -> dict:
     """사진 → OCR 서빙 → 전성분 목록과 표준명 맞추기 결과."""
     res = call_ocr(image, content_type)
     lines = res.get("lines") or []
-    items, method = choose(match_all(res.get("ingredients") or []), [ln.get("text", "") for ln in lines])
+    texts = [ln.get("text", "") for ln in lines]
+    items, method = choose(match_all(res.get("ingredients") or [], "\n".join(texts)), texts)
     return {
         "ingredients": items,
         "found_section": bool(items),

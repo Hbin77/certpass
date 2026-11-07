@@ -51,7 +51,8 @@ def extract_section(lines: list[str]) -> list[str]:
 
 
 def _exact(res: dict) -> int:
-    items, _ = oc.choose(oc.match_all(res.get("ingredients") or []), [ln.get("text", "") for ln in res.get("lines") or []])
+    texts = [ln.get("text", "") for ln in res.get("lines") or []]
+    items, _ = oc.choose(oc.match_all(res.get("ingredients") or [], "\n".join(texts)), texts)
     return sum(i["match"] == "exact" for i in items)
 
 
@@ -135,7 +136,7 @@ def read_pdf(data: bytes) -> dict:
             pages.append({"page": i + 1, "source": "ocr", "angle": round(angle, 1), "calls": calls})
     finally:
         pdf.close()
-    items, method = oc.choose(oc.match_all(section), lines)
+    items, method = oc.choose(oc.match_all(section, "\n".join(lines)), lines)
     read = len(pages)
     return {
         "ingredients": items,

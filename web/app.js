@@ -135,7 +135,7 @@
     health: null, certs: [], certIndex: {}, demo: null, company: {}, explain: {}, explainGen: 0,
     docTypes: null, docMeta: {},
     product: null, result: null, source: null, demoId: null,
-    filter: 'all', expanded: new Set(), fill: null, ctrl: null, trigger: null, retry: null, ids: new Map(),
+    filter: 'all', expanded: new Set(), fill: null, ctrl: null, trigger: null, retry: null, ids: new Map(), files: [],
   };
 
   // ------------------------------------------------------------------ 도우미
@@ -191,17 +191,16 @@
     return res;
   }
   // OCR은 접수 → 결과 조회로 부른다. 공개 주소 프록시가 60초에 연결을 끊어서, 서빙 대기·PDF 여러 쪽처럼 오래 걸려도
-  // 요청 하나로 기다리지 않게 한다. onWait(앞 대기 수)로 화면 문구를 바꾼다
+  // 요청 하나로 기다리지 않게 한다
   const OCR_POLL_MS = 700; // 결과 묻기 간격(조회는 가벼워 짧게: 혼자 쓸 때 늘어나는 지연이 0.7초 이내)
   const OCR_WAIT_MAX_MS = 240000;
-  async function ocrRequest(body, ctype, onWait) {
+  async function ocrRequest(body, ctype) {
     const res = await fetch('api/ocr?mode=job', { method: 'POST', headers: { 'Content-Type': ctype, Accept: 'application/json' }, body });
     if (!res.ok) throw await readError(res);
     let job = await res.json();
     const t0 = Date.now();
     while (job.status === 'queued' || job.status === 'running') {
-      if (onWait) onWait(job.status === 'queued' ? job.ahead || 0 : 0);
-      if (Date.now() - t0 > OCR_WAIT_MAX_MS) throw new ApiError(504, '사진 읽기가 너무 오래 걸립니다. 잠시 뒤 다시 올리거나 전성분을 직접 입력해 주세요.');
+      if (Date.now() - t0 > OCR_WAIT_MAX_MS) throw new ApiError(504, '사진 읽기가 너무 오래 걸립니다. 잠시 뒤 다시 올려 주세요.');
       await new Promise((ok) => setTimeout(ok, OCR_POLL_MS));
       job = await getJSON(`api/ocr/jobs/${encodeURIComponent(job.job)}`);
     }
@@ -261,6 +260,7 @@
   const pState = (s) => {
     s = s || '';
     if (s === 'user_input') return '직접 입력';
+    if (s === 'from_file') return '파일에서 읽음';
     if (/^on_market/.test(s)) return '판매 중';
     if (/^pilot/.test(s)) return '시제품';
     if (/develop|concept|plan/.test(s)) return '기획';
@@ -494,38 +494,6 @@
     return { title, sub, where, n: vs.length, col: g.col, fail: g.fail, doc, link };
   }
 
-  function summarySentence(c, vs) {
-    const n = c.fail + c.cond + c.pass;
-    const out = { main: '', sub: [], fail: '' };
-    if (!n) {
-      out.main = '이 제품에 적용되는 인증이 없습니다.';
-      if (c.na) out.sub.push(`대상 인증 ${c.na}개 모두 이 제품 유형·표방에는 적용되지 않습니다.`);
-      return out;
-    }
-    if (!c.fail && !c.cond) out.main = `적용되는 인증 ${n}개 모두 지금 상태로 통과할 수 있습니다.`;
-    else if (!c.fail) out.main = `적용되는 인증 ${n}개 모두 재처방 없이 통과할 수 있습니다.`;
-    else if (c.fail === n) out.main = `적용되는 인증 ${n}개 모두 재처방해야 통과합니다.`;
-    else out.main = `적용되는 인증 ${n}개 중 ${c.cond + c.pass}개는 재처방 없이 통과할 수 있고, ${c.fail}개는 재처방이 필요합니다.`;
-
-    if (c.cond) {
-      out.sub.push(c.pass
-        ? `${c.pass}개는 지금 바로 통과하고, ${c.cond}개는 서류·현지 책임자·문구·시험을 보완하면 통과합니다.`
-        : `지금 바로 통과하는 인증은 없고, ${c.fail ? `${c.cond}개는` : `${c.cond}개 모두`} 서류·현지 책임자·문구·시험을 보완해야 합니다.`);
-    } else if (c.pass && c.fail) {
-      out.sub.push(`${c.pass}개는 지금 바로 통과합니다.`);
-    }
-    if (c.fail) {
-      const failVs = vs.filter((v) => v.status === ST.FAIL).sort(byMarket);
-      const ings = uniq([].concat(...failVs.map((v) => (v.findings || []).filter((f) => f.level === 'fail').map((f) => shortName(subjectOf(f))))));
-      const names = failVs.map((v) => v.cert_name);
-      out.fail = `재처방이 필요한 인증 ${failVs.length}개: ${names.slice(0, 2).join(', ')}${names.length > 2 ? ` 외 ${names.length - 2}개` : ''}.` +
-        (ings.length ? ` 걸리는 원료: ${ings.slice(0, 3).join(', ')}${ings.length > 3 ? ` 외 ${ings.length - 3}종` : ''}.` : '');
-    }
-    if (c.na) out.sub.push(`${c.na}개는 이 제품에 적용되지 않습니다.`);
-    return out;
-  }
-
-  // ------------------------------------------------------------------ 렌더: 공통 조각
   function badge(status, small) {
     const m = STATUS_BY[status] || STATUS_BY[ST.NA];
     return `<span class="badge badge--${m.key}${small ? ' badge--sm' : ''}">${icon(m.icon)}${esc(status)}</span>`;
@@ -632,13 +600,10 @@
   function pctAskHTML(vs) {
     const list = pctAskList(vs);
     if (!list.length) return '';
-    const shown = list.slice(0, 6);
-    return `<section class="pctask" aria-labelledby="pctask-title"><h3 class="sub-title" id="pctask-title">함량을 넣으면 판정이 확정되는 성분 ${list.length}종</h3>
-      <p class="pctask__text">한도가 있는 성분인데 함량이 없어 한도를 넘는지 알 수 없습니다. 함량을 넣고 다시 판정하면 이 성분 때문에 생긴 ‘조건부’가 통과 또는 불가로 바뀝니다.</p>
-      <ul class="pctask__list" role="list">${shown.map((x) => `<li><span class="pctask__name">${esc(x.name)}</span>
-        <span class="pctask__certs">인증 ${x.certs.length}개: ${esc(x.certs.slice(0, 3).join(', '))}${x.certs.length > 3 ? ' 외' : ''}</span></li>`).join('')}</ul>
-      ${list.length > shown.length ? `<p class="pctask__more">외 ${list.length - shown.length}종</p>` : ''}
-      <div class="pctask__act"><button type="button" class="btn btn--secondary btn--sm" data-pct-ask="${esc(shown[0].name)}">${icon('i-flask', 'ic--sm')}함량 입력하기</button></div>
+    const names = list.slice(0, 4).map((x) => x.name);
+    return `<section class="pctask" aria-label="함량 입력">${icon('i-flask', 'ic--sm')}
+      <p class="pctask__text">함량을 넣으면 판정이 확정되는 성분 <b>${list.length}종</b>: ${esc(names.join(', '))}${list.length > names.length ? ' 외' : ''}</p>
+      <button type="button" class="btn btn--secondary btn--sm" data-pct-ask="${esc(list[0].name)}">함량 입력</button>
     </section>`;
   }
   // 입력 화면으로 옮겨 첫 성분 줄 끝에 커서를 둔다(데모면 데모 내용을 직접 입력 칸에 채운 뒤)
@@ -682,10 +647,7 @@
     const vs = all.filter((v) => !isCompany(v));
     const cvs = all.filter(isCompany);
     const c = counts(vs);
-    const sen = summarySentence(c, vs);
     const ing = (p.ingredients || []).length;
-    const formula = FORMULA[p.formula_known] || '';
-    const fdef = filterDef();
     const title = $('#summary-title');
     title.innerHTML = `<span class="sr-only">판정 요약: </span>${esc(p.name_kr || '제품')}`;
     title.classList.add('report__title');
@@ -701,31 +663,22 @@
     const general = vs.filter((v) => !certOf(v).strategic_kr && /일반/.test(certOf(v).support_rate || ''));
     const todos = topActions(vs);
 
-    const meta = [
-      ['처방 상태', pState(p.status)],
-      ['사용 방식', appText(p.application)],
-      PTYPE[p.product_type] && p.product_type !== 'cosmetic' ? ['제품 유형', PTYPE[p.product_type]] : null,
-      ['전성분', `${ing}종${formula ? `, ${formula}` : ''}`],
-      ['판정 대상', `${fdef.label} ${vs.length}개${cvs.length ? `, 회사 단위 ${cvs.length}개` : ''}`],
-    ].filter(Boolean);
-
     let html = `<div class="report__body">
-      <p class="report__tags"><span class="tag tag--brand">${icon('i-info', 'ic--sm')}예비 판정</span><span>기준일 ${esc((S.result && S.result.eval_date) || today())}</span></p>
-      <dl class="report__meta">${meta.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
+      <p class="report__tags"><span class="tag tag--brand">${icon('i-info', 'ic--sm')}예비 판정</span><span>전성분 ${ing}종</span><span>${esc(appText(p.application))}</span><span>기준일 ${esc((S.result && S.result.eval_date) || today())}</span></p>`;
+    let extraHTML = '';
     if (!all.length) {
       html += `<div class="state state--quiet">${icon('i-info')}<div><p class="state__title">이 조건에 맞는 인증이 없습니다.</p>
         <p class="state__text">‘판정 대상’을 전체로 바꾸면 모든 인증의 판정을 볼 수 있습니다. 이 범위의 인증 요건 카드는 아직 준비 중일 수 있습니다.</p></div></div>`;
       html += legendHTML(c);
     } else {
-      html += `<p class="verdict">${esc(sen.main)}</p>`;
-      if (sen.sub.length) html += `<p class="verdict-sub">${esc(sen.sub.join(' '))}</p>`;
-      if (sen.fail) html += `<p class="note note--fail">${icon('i-fail', 'ic--sm')}<span>${esc(sen.fail)}</span></p>`;
+      html += legendHTML(c);
+      html += '<div class="aisum" id="ai-sum" aria-live="polite" hidden></div>';
       html += mlAlertHTML(vs);
       const concept = notes.length && /기획 단계/.test(notes[0]) ? notes.shift() : '';
       if (concept) html += `<p class="note note--cond">${icon('i-cond', 'ic--sm')}<span>${esc(concept)}</span></p>`;
-      html += legendHTML(c);
+      html += pctAskHTML(vs);
       if (todos.length) {
-        html += `<section class="todo" aria-labelledby="todo-title"><h3 class="sub-title" id="todo-title">가장 먼저 할 일</h3>
+        extraHTML += `<section class="todo" aria-labelledby="todo-title"><h3 class="sub-title" id="todo-title">가장 먼저 할 일</h3>
           <ol class="todo__list" role="list">${todos.map((t, i) => `<li class="todo__item">
             <span class="todo__n" aria-hidden="true">${i + 1}</span>
             <div>
@@ -736,9 +689,8 @@
               ${t.link ? '<div class="todo__act"><a class="btn btn--quiet btn--sm" href="#docs">서류 초안 보기</a></div>' : ''}
             </div></li>`).join('')}</ol></section>`;
       }
-      html += pctAskHTML(vs);
       if (strategic.length) {
-        html += `<section class="support" aria-labelledby="support-title">${icon('i-landmark', 'ic--lg support__icon')}<div>
+        extraHTML += `<section class="support" aria-labelledby="support-title">${icon('i-landmark', 'ic--lg support__icon')}<div>
           <h3 class="support__title" id="support-title">중기부 해외규격인증 지원 대상(비용 50~70%)</h3>
           <p class="support__text">전략인증 ${strategic.length}개는 인증 비용의 50~70%(최대 1억 원)를 지원받을 수 있습니다.${general.length ? ` 일반 지원 목록(583종)에 있는 인증도 ${general.length}개 있습니다.` : ''}</p>
           <ul class="support__rules" role="list">${SUPPORT_RULES.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
@@ -748,11 +700,34 @@
         </div></section>`;
       }
       const extra = notes.map((n) => `<p class="note">${icon('i-info', 'ic--sm')}<span>${esc(n)}</span></p>`).join('') + mlStatusHTML(vs) + nameConvHTML();
-      if (extra) html += `<details class="more more--info"><summary>${icon('i-chevron', 'ic--sm')}판정 정보: 신뢰도·AI 모델·성분명 변환</summary><div class="more__body">${extra}</div></details>`;
-      if (cvs.length) html += companyHTML(cvs);
+      if (extra) extraHTML += `<div class="extra__info">${extra}</div>`;
+      if (cvs.length) extraHTML += companyHTML(cvs);
     }
     html += '</div>';
     $('#summary-body').innerHTML = html;
+    $('#extra-body').innerHTML = extraHTML
+      ? `<details class="more more--info"><summary>${icon('i-chevron', 'ic--sm')}할 일과 지원사업</summary><div class="more__body">${extraHTML}</div></details>` : '';
+    renderAiSum();
+  }
+
+  // 결과 맨 위 AI 설명: 가장 먼저 볼 판정(불가, 없으면 조건부) 하나의 LLM 설명에서 '왜 이 등급인가'만 보인다
+  function aiKeyVerdict() {
+    const vs = ((S.result && S.result.verdicts) || []).filter((v) => !isCompany(v));
+    const pick = (st) => vs.filter((v) => v.status === st).sort(byMarket)[0];
+    return pick(ST.FAIL) || pick(ST.COND) || null;
+  }
+  function renderAiSum() {
+    const el = $('#ai-sum');
+    if (!el) return;
+    const v = aiKeyVerdict();
+    const st = v && S.explain[v.cert_id];
+    const text = st && st.data && st.data.ok ? String(st.data.text || '') : '';
+    const body = text.split(/\n\s*먼저 할 일\s*:/)[0].replace(/^\s*왜 이 등급인가\s*:\s*/, '')
+      .replace(/\s*\((?:근거\s*\d+[,\s]*)+\)/g, '').trim();
+    el.hidden = !body;
+    if (body) {
+      el.innerHTML = `<p class="aisum__head">${icon('i-cpu', 'ic--sm')}<span>AI 설명</span><b>${esc(v.cert_name)}</b></p><p class="aisum__text">${esc(body)}</p>`;
+    }
   }
 
   function nameConvHTML() {
@@ -787,7 +762,7 @@
     const names = alerts.map((v) => v.cert_name);
     return `<div class="mlalert" role="note">${icon('i-alert', 'ic--sm')}<div>
       <p class="mlalert__title">불가 가능성 경보 ${alerts.length}건: ${esc(names.slice(0, 2).join(', '))}${names.length > 2 ? ` 외 ${names.length - 2}개` : ''}</p>
-      <p class="mlalert__text">규칙으로는 불가가 아니지만, 입력한 자료가 부족한 상태라 AI 모델은 실제로는 불가일 가능성이 높다고 봤습니다. 해당 인증의 원료 규격서와 함량 자료를 다시 확인하세요.</p>
+      <p class="mlalert__text">규칙으로는 불가가 아니지만 AI 모델은 불가 가능성이 높다고 봤습니다.</p>
     </div></div>`;
   }
   // 행의 작은 AI 판정 표시: 규칙과 같으면 흐리게, 다르면 등급 색·확률과 함께
@@ -1070,7 +1045,7 @@
       ${GAP_COLS.map((c) => `<span class="vhead__gap">${c.lines.map((l) => `<span>${esc(l)}</span>`).join('')}</span>`).join('')}
       <span class="vhead__conf">신뢰도</span><span></span></div></div>`;
 
-    let html = `<p class="vtable__intro">행을 누르면 근거와 해야 할 일이 펼쳐집니다. 가운데 다섯 칸은 보완할 항목 수입니다.</p>${applicable.length ? head : ''}`;
+    let html = applicable.length ? head : '';
     for (const k of keys) {
       const list = groups.get(k).slice().sort((a, b) => (RANK[a.status] - RANK[b.status]) || a.cert_name.localeCompare(b.cert_name, 'ko'));
       const gid = `jg-${safeId(k)}`;
@@ -1194,6 +1169,8 @@
     S.trigger = trigger;
     $('#sheet').setAttribute('aria-busy', 'true');
     setTriggerBusy(trigger, true);
+    busy('판정하고 있습니다', ['인증 판정', 'AI 모델 검토', 'AI 설명 작성']);
+    step(0, 'run');
     try {
       const res = await postJSON('api/evaluate', { product, company: S.company }, { signal: ctrl.signal });
       const data = await res.json();
@@ -1208,16 +1185,35 @@
       S.explain = {};
       S.explainGen += 1;
       if (data.disclaimer) $('#disclaimer').textContent = data.disclaimer;
+      step(0, 'done', `${(data.verdicts || []).length}개`);
+      const ml = mlState();
+      const alerts = ml.kind === 'on' ? (data.verdicts || []).filter((v) => mlOf(v) && mlOf(v).hidden_fail_alert).length : 0;
+      step(1, ml.kind === 'on' ? 'done' : 'fail', ml.kind === 'on' ? (alerts ? `경보 ${alerts}건` : '이상 없음') : '연결 안 됨');
+      const key = aiKeyVerdict();
+      if (key && llmOn()) {
+        step(2, 'run');
+        await Promise.race([loadExplain(key.cert_id), new Promise((ok) => setTimeout(ok, AI_SUM_WAIT_MS))]);
+        if (ctrl !== S.ctrl) return;
+        const okExp = S.explain[key.cert_id] && S.explain[key.cert_id].data && S.explain[key.cert_id].data.ok;
+        step(2, okExp ? 'done' : 'fail', okExp ? '완료' : '나중에');
+        if (!okExp) loadExplain(key.cert_id).then(renderAiSum);
+      } else {
+        step(2, 'fail', '꺼짐');
+      }
+      await new Promise((ok) => setTimeout(ok, 350));
+      if (ctrl !== S.ctrl) return;
       renderResult(true);
       renderDemoPressed();
       const pv = visibleVerdicts().filter((v) => !isCompany(v));
       const c = counts(pv);
       const alertN = mlState().kind === 'on' ? pv.filter((v) => mlOf(v) && mlOf(v).hidden_fail_alert).length : 0;
       announce(`판정 완료: ${product.name_kr}. 불가 ${c.fail}개, 조건부 ${c.cond}개, 통과 가능 ${c.pass}개, 해당 없음 ${c.na}개.${alertN ? ` 불가 가능성 경보 ${alertN}건.` : ''}`);
-      revealSummary(source === 'manual');
+      show('result');
+      $('#summary').focus({ preventScroll: true });
     } catch (err) {
       if (err.name === 'AbortError') return;
       renderEvalError(err, () => evaluate(product, source, trigger));
+      show('result');
       if (source === 'manual') {
         const e = $('#m-submit-err');
         e.innerHTML = `${icon('i-alert', 'ic--sm')}<span>${esc(explain(err))}</span>`;
@@ -1233,15 +1229,6 @@
         setTriggerBusy(trigger, false); // 다른 버튼으로 새 요청이 시작돼 중단된 경우만 푼다
       }
     }
-  }
-
-  function revealSummary(moveFocus) {
-    const sec = $('#summary');
-    const top = sec.getBoundingClientRect().top;
-    const headerH = $('.top').offsetHeight;
-    const visible = top >= headerH - 4 && top < window.innerHeight * 0.6;
-    if (!visible) sec.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
-    sec.focus({ preventScroll: true });
   }
 
   function renderResult(fresh) {
@@ -1297,15 +1284,9 @@
     const r = parseIngredients($('#m-ing').value);
     const out = $('#m-ing-parse');
     const withPct = r.items.filter((i) => i.pct != null).length;
-    let text = `인식된 성분 ${r.items.length}종${r.items.length ? `(함량 있음 ${withPct}종)` : ''}`;
-    if (r.hangul) {
-      text += ` — 한글 성분명 ${r.hangul}종은 식약처 원료성분 사전으로 영문 INCI로 바꿔 대조합니다. 사전에 없는 이름은 결과에 따로 알려 드립니다.`;
-      out.className = 'parse parse--warn';
-      out.innerHTML = `${icon('i-cond', 'ic--sm')}<span>${esc(text)}</span>`;
-    } else {
-      out.className = 'parse';
-      out.textContent = text;
-    }
+    out.className = 'parse';
+    out.textContent = `성분 ${r.items.length}종${withPct ? `, 함량 ${withPct}종` : ''}`;
+    renderConfirm(r.items);
     return r;
   }
   // ------------------------------------------------------------------ 포장 사진 OCR
@@ -1315,7 +1296,9 @@
   const OCR_SKEW_MIN = 1; // 글자 줄이 이 각도(도) 이상 기울면 반대로 돌려 한 번 더 읽는다(2~4°만 기울어도 줄 묶기가 틀어진다)
   const OCR_SKEW_MAX = 20;
   const OCR_PDF_MAX = 8 * 1024 * 1024; // 서버 /api/ocr 본문 상한과 같게
-  const OCR_FEW_LINES = 10; // 표의 줄 대조로 이보다 적게 찾으면 전성분 표가 아닐 수 있다고 알린다(리플렛·기획서의 광고 성분)
+  const AI_SUM_WAIT_MS = 30000; // 판정 중 화면에서 AI 설명을 기다리는 최대 시간(넘으면 결과를 먼저 보이고 설명은 나중에 채운다)
+  const RINSE_HINT = /클렌징|클렌저|폼|워시|샴푸|세안|씻어|헹구|rinse|cleans|wash|shampoo/i; // 씻어내는 제품 표기
+
   function shrinkPhoto(file, deg = 0) {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
@@ -1341,88 +1324,105 @@
       img.src = url;
     });
   }
-  function pdfNote(p) {
-    if (!p) return '';
-    const ocr = (p.pages || []).filter((x) => x.source === 'ocr').length;
-    const parts = [`PDF ${p.pages_total}쪽 중 ${p.pages_read}쪽을 읽었습니다(글자 정보 ${p.pages_read - ocr}쪽, 그림으로 읽은 쪽 ${ocr}쪽).`];
-    if (p.partial) parts.push('시간·쪽 수 제한으로 뒤쪽은 읽지 않았습니다. 전성분표가 뒤에 있으면 그 쪽만 따로 올려 주세요.');
-    return parts.join(' ');
-  }
-  const tiltOf = (deg) => (deg || 0) - Math.round((deg || 0) / 90) * 90; // 90° 단위 회전을 뺀 기울기 보정 각
-  function blurryHTML(r) {
-    return r.quality && r.quality.blurry
-      ? `<p class="parse parse--warn">${icon('i-cond', 'ic--sm')}<span>사진 속 글자가 작거나 흐려서 잘못 읽었을 수 있습니다. 전성분 부분만 화면 가득 차게, 초점을 맞춰 다시 찍어 주세요.</span></p>`
-      : '';
-  }
-  function ocrResultHTML(r) {
-    const c = r.counts || {};
-    const items = r.ingredients || [];
-    if (!items.length) {
-      const lines = (r.lines || []).slice(0, 12).map((l) => `<li>${esc(l.text)}</li>`).join('');
-      return `${blurryHTML(r)}<p class="parse parse--warn">${icon('i-cond', 'ic--sm')}<span>사진에서 글자 ${esc(r.words)}개를 읽었지만 "전성분" 표기를 찾지 못했습니다. 전성분 부분이 화면 가운데 오게 다시 찍어 주세요.</span></p>
-        ${lines ? `<details class="ocr-out__raw"><summary>읽은 글자 보기</summary><ul>${lines}</ul></details>` : ''}`;
-    }
-    const check = items.filter((i) => i.match !== 'exact');
-    const rows = check.map((i) => (i.match === 'fuzzy'
-      ? `<li><span class="ocr-out__tag ocr-out__tag--fuzzy">이름 맞춤</span> 읽은 글자 <q>${esc(i.raw)}</q> → 표준명 <strong>${esc(i.kr)}</strong> (유사도 ${esc(i.score)})</li>`
-      : `<li><span class="ocr-out__tag ocr-out__tag--unknown">확인 필요</span> <q>${esc(i.raw)}</q> — 사전에 없는 이름입니다. 사진과 대조해 고쳐 주세요.</li>`)).join('');
-    const how = [r.method === 'lines' ? '"전성분" 표기 대신 표의 줄마다 성분명을 사전과 대조해 찾았습니다.' : '',
-      Math.round((r.angle || 0) / 90) % 4 ? '사진이 옆으로 누워 있어 돌려 읽었습니다.' : '',
-      Math.abs(tiltOf(r.angle)) >= 0.5 ? `사진이 ${Math.abs(tiltOf(r.angle)).toFixed(1)}° 기울어 있어 바로 세워 읽었습니다.` : '',
-      pdfNote(r.pdf)].filter(Boolean).join(' ');
-    const few = r.method === 'lines' && items.length < OCR_FEW_LINES
-      ? `<p class="parse parse--warn">${icon('i-cond', 'ic--sm')}<span>"전성분" 표기가 없는 문서에서 성분 이름 ${items.length}개만 찾았습니다. 리플렛·기획서처럼 일부 성분만 소개한 문서일 수 있으니 전성분 표와 대조해 주세요.</span></p>`
-      : '';
-    return `<p class="parse">${icon('i-check', 'ic--sm')}<span>${few ? '성분 이름' : '전성분'} ${items.length}종을 읽어 아래 칸에 채웠습니다. 식약처 사전과 그대로 일치 ${c.exact || 0}종, 비슷한 이름으로 맞춤 ${c.fuzzy || 0}종, 확인 필요 ${c.unknown || 0}종.${how ? ` ${esc(how)}` : ''}</span></p>
-      ${blurryHTML(r)}${few}${rows ? `<ul class="ocr-out__list">${rows}</ul>` : ''}`;
-  }
+  // 확인 화면의 '고치기'를 연다(함량 입력·직접 입력)
   function revealDetail(focusEl) {
-    const d = $('#m-detail');
-    d.hidden = false;
-    $('#m-type-btn').setAttribute('aria-expanded', 'true');
+    show('confirm');
+    $('#m-detail').open = true;
     if (focusEl) {
-      focusEl.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'center' });
+      focusEl.scrollIntoView({ behavior: 'auto', block: 'center' });
       focusEl.focus({ preventScroll: true });
     }
   }
-  // 여러 파일을 놓으면 차례로 읽고, 찾은 성분을 이름이 겹치지 않게 합친다
+  // ------------------------------------------------------------------ 화면 전환: 시작 → 읽는 중 → 확인 → 판정 중 → 결과
+  const VIEWS = { start: 'input', busy: 'busy', confirm: 'confirm', result: 'sheet' };
+  function show(view, push = true) {
+    Object.entries(VIEWS).forEach(([k, id]) => { $(`#${id}`).hidden = k !== view; });
+    document.body.dataset.view = view;
+    window.scrollTo(0, 0);
+    if (view === 'busy') return; // 읽는 중·판정 중은 뒤로 가기 기록에 남기지 않는다
+    if (push) history.pushState({ view }, ''); else history.replaceState({ view }, '');
+  }
+  function busy(title, steps) {
+    $('#busy-title').textContent = title;
+    $('#busy-steps').innerHTML = steps.map((t, i) => `<li class="step" data-step="${i}">
+      <span class="step__mark" aria-hidden="true">${icon('i-loader', 'ic--sm step__spin')}${icon('i-check', 'ic--sm step__ok')}${icon('i-na', 'ic--sm step__no')}</span>
+      <span class="step__name">${esc(t)}</span><span class="step__val"></span></li>`).join('');
+    show('busy');
+  }
+  function step(i, state, val) {
+    const li = document.querySelector(`#busy-steps [data-step="${i}"]`);
+    if (!li) return;
+    li.className = `step is-${state}`;
+    if (val != null) li.querySelector('.step__val').textContent = val;
+  }
+
+  // 고른 파일 목록(시작을 누르기 전까지 더하거나 뺄 수 있다)
+  function addFiles(list) {
+    const key = (f) => `${f.name}|${f.size}`;
+    const have = new Set(S.files.map(key));
+    Array.from(list || []).forEach((f) => { if (f && !have.has(key(f))) { S.files.push(f); have.add(key(f)); } });
+    renderPicked();
+  }
+  function renderPicked() {
+    $('#picked').hidden = !S.files.length;
+    $('#start-err').hidden = true;
+    $('#picked-list').innerHTML = S.files.map((f, i) => `<li class="picked__item">${icon(isPdfFile(f) ? 'i-file' : 'i-camera', 'ic--sm')}
+      <span class="picked__name">${esc(f.name || `파일 ${i + 1}`)}</span>
+      <button type="button" class="picked__x" data-unpick="${i}" aria-label="${esc(f.name || '파일')} 빼기">${icon('i-x', 'ic--sm')}</button></li>`).join('');
+  }
+  const isPdfFile = (f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name || '');
+
+  // 고른 파일을 차례로 읽고, 찾은 성분을 이름이 겹치지 않게 합친 뒤 확인 화면으로
   async function readFiles(list) {
     const files = Array.from(list || []).filter(Boolean);
     if (!files.length) return;
     S.ocrSeen = new Set();
+    S.ocrText = '';
+    S.ocrCheck = new Set();
+    S.ocrBlurry = false;
+    S.fill = null; // 새 파일은 새 제품이다(앞서 고른 데모 내용을 섞지 않는다)
+    $('#m-ing').value = '';
+    busy('파일을 읽고 있습니다', files.map((f, i) => f.name || `파일 ${i + 1}`));
     let total = 0;
+    let lastErr = '';
     for (let i = 0; i < files.length; i++) {
-      const n = await readPhoto(files[i], { append: i > 0, nth: i + 1, of: files.length });
-      total += n;
+      step(i, 'run');
+      const got = await readPhoto(files[i], { append: i > 0 });
+      step(i, got.error || !got.found ? 'fail' : 'done', got.error ? '못 읽음' : `${got.found}종`);
+      if (got.error) lastErr = got.error;
+      total += got.added;
     }
-    if (total) revealDetail($('#m-submit'));
+    S.files = [];
+    renderPicked();
+    await new Promise((ok) => setTimeout(ok, 400));
+    if (!total) {
+      show('start');
+      fieldError('start-err', null, lastErr || '전성분을 찾지 못했습니다. 전성분이 잘 보이게 다시 찍어 주세요.');
+      return;
+    }
+    // 상품명은 첫 파일 이름으로 채워 두고, 사용 방식은 읽은 글자로 짐작한다(고치기에서 바꿀 수 있다)
+    $('#m-name').value = String(files[0].name || '').replace(/\.[^.]+$/, '').replace(/^\d+[_\s.-]*/, '').replace(/_/g, ' ').trim();
+    const rinse = RINSE_HINT.test(`${S.ocrText} ${files.map((f) => f.name || '').join(' ')}`);
+    const app = document.querySelector(`input[name="m-app"][value="${rinse ? 'rinse_off' : 'leave_on'}"]`);
+    if (app) app.checked = true;
+    S.fromFile = true;
+    updateParse();
+    show('confirm');
+    $('#m-name').focus();
+    $('#m-name').select();
   }
+  // 파일 하나 읽기 → { added: 새로 더한 성분 수, found: 이 파일에서 찾은 수, error }
   async function readPhoto(file, opt = {}) {
-    const btn = $('#m-photo-btn');
-    const out = $('#m-photo-out');
-    const tag = opt.of > 1 ? `(${opt.nth}/${opt.of}) ` : '';
-    btn.setAttribute('aria-busy', 'true');
-    btn.disabled = true;
-    out.hidden = false;
-    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
-    let base = '';
-    const say = (text, ahead = 0) => {
-      base = text;
-      out.innerHTML = `<p class="parse">${icon('i-clock', 'ic--sm')}<span>${esc(text)}${ahead
-        ? ` 다른 요청 ${ahead}건이 먼저 처리되고 있어 차례를 기다리는 중입니다.` : ''}</span></p>`;
-    };
-    const wait = (ahead) => say(base, ahead);
-    say(`${tag}${isPdf ? 'PDF를 읽는 중입니다.' : '사진을 읽는 중입니다.'}`);
+    const isPdf = isPdfFile(file);
     try {
       let r = null;
       if (isPdf) { // 쪽 그림 만들기·돌려 읽기·바로 세우기는 서버(ocr_pdf)가 쪽마다 한다
         if (file.size > OCR_PDF_MAX) throw new Error('PDF는 8MB까지 올릴 수 있습니다. 전성분표가 있는 쪽만 따로 저장해 올려 주세요.');
-        r = await ocrRequest(file, 'application/pdf', wait);
+        r = await ocrRequest(file, 'application/pdf');
       }
       for (const deg of isPdf ? [] : OCR_ANGLES) {
-        if (deg) say(`성분을 거의 찾지 못해 사진을 ${deg}° 돌려 다시 읽는 중입니다.`);
         const blob = await shrinkPhoto(file, deg);
-        const got = { ...(await ocrRequest(blob, 'image/jpeg', wait)), angle: deg };
+        const got = { ...(await ocrRequest(blob, 'image/jpeg')), angle: deg };
         if (!r || (got.counts?.exact || 0) > (r.counts?.exact || 0)) r = got;
         if ((r.counts?.exact || 0) >= OCR_ENOUGH) break;
       }
@@ -1431,37 +1431,45 @@
       for (const min of isPdf ? [] : [OCR_SKEW_MIN, OCR_SKEW_MIN / 2]) {
         const skew = r.skew;
         if (typeof skew !== 'number' || Math.abs(skew) < min || Math.abs(skew) > OCR_SKEW_MAX) break;
-        say(`사진이 ${Math.abs(skew).toFixed(1)}° 기울어 있어 바로 세워 다시 읽는 중입니다.`);
         const deg = r.angle - skew; // 글자 줄이 오른쪽으로 올라가면(음수) 시계 방향으로 돌린다
         let got;
-        try { got = { ...(await ocrRequest(await shrinkPhoto(file, deg), 'image/jpeg', wait)), angle: deg }; } catch (e) { break; }
+        try { got = { ...(await ocrRequest(await shrinkPhoto(file, deg), 'image/jpeg')), angle: deg }; } catch (e) { break; }
         if ((got.counts?.exact || 0) < (r.counts?.exact || 0)) break;
         r = got;
       }
-      out.innerHTML = (opt.of > 1 ? `<p class="parse parse--file">${esc(file.name || `파일 ${opt.nth}`)}</p>` : '') + ocrResultHTML(r);
-      const names = (r.ingredients || []).map((i) => i.kr || i.raw).filter(Boolean);
-      const seen = S.ocrSeen || new Set();
+      const items = r.ingredients || [];
+      items.filter((i) => i.match !== 'exact').forEach((i) => S.ocrCheck.add(i.kr || i.raw));
+      if (r.quality && r.quality.blurry) S.ocrBlurry = true;
+      const names = items.map((i) => i.kr || i.raw).filter(Boolean);
+      const seen = S.ocrSeen;
       const ta = $('#m-ing');
       const prev = opt.append ? ta.value.split('\n').filter(Boolean) : [];
       prev.forEach((x) => seen.add(x));
       const add = names.filter((x) => !seen.has(x));
       add.forEach((x) => seen.add(x));
-      S.ocrSeen = seen;
-      if (names.length) {
-        ta.value = prev.concat(add).join('\n');
-        updateParse();
-        fieldError('m-ing-err', 'm-ing', '');
-      }
+      S.ocrText = `${S.ocrText || ''} ${r.text || ''}`;
+      if (names.length) ta.value = prev.concat(add).join('\n');
       announce(names.length ? `전성분 ${names.length}종을 읽었습니다.` : '전성분 표기를 찾지 못했습니다.');
-      return add.length;
+      return { added: add.length, found: names.length };
     } catch (err) {
-      out.innerHTML = `<p class="field__err">${icon('i-alert', 'ic--sm')}<span>${esc(tag)}${esc(err instanceof ApiError ? explain(err) : err.message)}</span></p>`;
-      return 0;
+      return { added: 0, found: 0, error: err instanceof ApiError ? explain(err) : err.message };
     } finally {
-      btn.removeAttribute('aria-busy');
-      btn.disabled = false;
       $('#m-photo').value = '';
     }
+  }
+  // 확인 화면: 읽은 성분(사전에 없거나 이름을 맞춘 것은 표시)과 개수
+  function renderConfirm(items) {
+    const check = S.ocrCheck || new Set();
+    $('#confirm-n').textContent = String(items.length);
+    $('#confirm-chips').innerHTML = items.map((i) => {
+      const n = i.kr || i.inci;
+      return `<li class="chip-ing${check.has(n) ? ' is-check' : ''}">${esc(n)}${i.pct != null ? ` <span class="chip-ing__pct">${esc(i.pct)}%</span>` : ''}</li>`;
+    }).join('');
+    const nCheck = items.filter((i) => check.has(i.kr || i.inci)).length;
+    const warn = [nCheck ? `표시한 ${nCheck}종은 확인이 필요합니다.` : '', S.ocrBlurry ? '흐린 사진이 있어 잘못 읽었을 수 있습니다.' : ''].filter(Boolean).join(' ');
+    const w = $('#confirm-warn');
+    w.hidden = !warn;
+    w.innerHTML = warn ? `${icon('i-cond', 'ic--sm')}<span>${esc(warn)}</span>` : '';
   }
   function fieldError(id, inputId, text) {
     const e = document.getElementById(id);
@@ -1492,7 +1500,7 @@
     const product = Object.assign({}, base, {
       id: base.id ? `${base.id}-edit` : 'U1',
       name_kr: name,
-      status: base.status || 'user_input',
+      status: base.status || (S.fromFile ? 'from_file' : 'user_input'),
       product_type: base.product_type || 'cosmetic',
       application: (document.querySelector('input[name="m-app"]:checked') || {}).value || 'leave_on',
       claims,
@@ -1614,11 +1622,25 @@
     ['dragend', 'drop'].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove('is-over')));
     drop.addEventListener('drop', (e) => {
       e.preventDefault();
-      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-      if (f && !drop.disabled) readFiles(e.dataTransfer.files);
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
     });
-    $('#m-photo').addEventListener('change', (e) => { if (e.target.files && e.target.files.length) readFiles(e.target.files); });
-    $('#m-type-btn').addEventListener('click', () => revealDetail($('#m-ing')));
+    $('#m-photo').addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length) addFiles(e.target.files);
+      e.target.value = '';
+    });
+    $('#picked-list').addEventListener('click', (e) => {
+      const x = e.target.closest('[data-unpick]');
+      if (!x) return;
+      S.files.splice(Number(x.dataset.unpick), 1);
+      renderPicked();
+    });
+    $('#start-btn').addEventListener('click', () => readFiles(S.files.slice()));
+    $('#m-type-btn').addEventListener('click', () => { S.ocrCheck = new Set(); S.ocrBlurry = false; S.fromFile = false; updateParse(); revealDetail($('#m-ing')); });
+    $('.brand').addEventListener('click', (e) => { e.preventDefault(); show('start'); });
+    window.addEventListener('popstate', (e) => {
+      const v = e.state && e.state.view;
+      show(v && v !== 'busy' && (v !== 'result' || S.result) ? v : 'start', false);
+    });
     $('#demo-btn').addEventListener('click', () => {
       const box = $('#demo');
       box.hidden = !box.hidden;
@@ -1675,7 +1697,7 @@
     spyFrame = window.requestAnimationFrame(() => {
       spyFrame = 0;
       const line = $('.top').offsetHeight + 16;
-      let current = 'input';
+      let current = 'summary';
       for (const id of ['summary', 'table', 'docs']) {
         const el = document.getElementById(id);
         if (el && el.offsetParent !== null && el.getBoundingClientRect().top <= line) current = id;
@@ -1722,55 +1744,158 @@
     $('#basis').textContent = parts.join(' ');
   }
 
-  // ------------------------------------------------------------------ 첫 화면 그림: 라벨 읽기 → 성분 수 → 판정
-  // 빛줄기가 지나가는 줄의 단어마다 인식 상자가 잡히고, 다 읽으면 인증별 판정이 차례로 나온다.
-  // 모든 움직임을 한 주기(CYCLE)의 시각으로 맞춰 반복한다. 움직임 줄이기 설정이면 CSS의 끝난 장면 그대로 둔다.
+  // ------------------------------------------------------------------ 첫 화면 그림: 포장 사진 → 글자 상자 → 전성분 → 판정
+  // 상자 좌표와 성분명은 그림 속 사진을 실제 OCR 서빙에 넣어 받은 결과(#scene-data)다. words: [x1, y1, x2, y2, k]
+  // k ≥ 0이면 items[k] 성분명이 적힌 글자, -2는 '[전성분]' 머리말, -3은 줄이 나뉜 성분명 조각, -1은 그 밖의 글자.
+  // 사진에 초점이 맞고 → 빛줄기가 훑으며 글자 상자가 잡히고 → 전성분만 남기고 어두워지고 → 성분명이 사진에서 떨어져
+  // 카드로 날아가 꽂히고 → 인증별 판정이 도장처럼 찍힌다. 모든 움직임을 한 주기(CYCLE)의 시각에 맞춰 반복한다.
+  // 움직임 줄이기 설정이면 끝난 장면(상자·성분명·판정이 다 나온 상태)으로 둔다.
+  function buildScene() {
+    const svg = $('#scene-boxes');
+    let data;
+    try { data = JSON.parse($('#scene-data').textContent); } catch (e) { return null; }
+    svg.setAttribute('viewBox', `0 0 ${data.w} ${data.h}`);
+    const NS = 'http://www.w3.org/2000/svg';
+    const el = (tag, attrs) => {
+      const e = document.createElementNS(NS, tag);
+      Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
+      return e;
+    };
+    const pad = 6;
+    const mask = el('mask', { id: 'scene-mask' });
+    mask.appendChild(el('rect', { x: 0, y: 0, width: data.w, height: data.h, fill: 'white' }));
+    const dim = el('rect', { class: 'scene__dim', x: 0, y: 0, width: data.w, height: data.h, mask: 'url(#scene-mask)' });
+    const defs = el('defs', {});
+    defs.appendChild(mask);
+    svg.append(defs, dim);
+    data.words.forEach(([x1, y1, x2, y2, k]) => {
+      const box = { x: x1 - pad, y: y1 - pad, width: x2 - x1 + 2 * pad, height: y2 - y1 + 2 * pad, rx: 6 };
+      const r = el('rect', box);
+      if (k !== -1) {
+        r.classList.add('is-ing');
+        mask.appendChild(el('rect', { ...box, fill: 'black' }));
+      }
+      if (k >= 0) r.dataset.item = String(k);
+      r.dataset.cy = String((y1 + y2) / 2 / data.h);
+      svg.appendChild(r);
+    });
+    $('#scene-chips').innerHTML = data.items.map((n, i) => `<li data-item="${i}">${esc(n)}</li>`).join('');
+    $('#scene-n').textContent = String(data.items.length);
+    return data;
+  }
+  // 판정 세 줄: 그림 속 성분명으로 실제 판정을 불러, 통과 가능·조건부·불가 중 처음 나온 인증을 하나씩 보인다(없는 등급 줄은 숨김)
+  async function fillSceneVerdicts() {
+    const rows = $('#scene-rows');
+    let data;
+    try { data = JSON.parse($('#scene-data').textContent); } catch (e) { return; }
+    if (!rows || !data) return;
+    const product = {
+      id: 'SCENE', name_kr: '그림 속 제품', status: 'from_file', product_type: 'cosmetic', application: 'leave_on',
+      claims: [], functional_kr: [], documents: [], formula_known: 'ingredients_only_no_concentration',
+      manufacturer: { name: '위탁제조사', country: 'KR', certs: [] },
+      ingredients: parseIngredients(data.items.join('\n')).items,
+    };
+    let res;
+    try { res = await (await postJSON('api/evaluate', { product, company: S.company })).json(); } catch (e) { rows.hidden = true; return; }
+    const pick = { pass: '통과 가능', cond: '조건부', fail: '불가' };
+    Object.entries(pick).forEach(([k, st]) => {
+      const row = rows.querySelector(`.scene__row--${k}`);
+      const v = (res.verdicts || []).find((x) => x.status === st);
+      row.hidden = !v;
+      if (!v) return;
+      row.querySelector('.scene__name').textContent = String(v.cert_name).replace(/\s*\([^)]*\)/g, '');
+      row.querySelector('.scene__st').textContent = st;
+    });
+  }
   function runScene() {
     const scene = $('#scene');
-    if (!scene || !scene.offsetParent || reduceMotion() || typeof scene.animate !== 'function') return;
-    const CYCLE = 9000, START = 700, S0 = 300, SWEEP = 2600, OUT = 8300;
+    const data = scene && buildScene();
+    if (!data || !scene.offsetParent || reduceMotion() || typeof scene.animate !== 'function') return;
+    const CYCLE = 11500, START = 700, FOCUS = 500, S0 = 500, SWEEP = 1900, DIM = 2600, FLY0 = 3200, FLY_GAP = 120, FLY = 760, OUT = 10600;
     const T = (ms) => ms / CYCLE;
     const tok = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
     const loop = { duration: CYCLE, iterations: Infinity, delay: START, fill: 'both' };
-    const lines = Array.from(scene.querySelectorAll('.scene__line'));
-    const lastLine = lines[lines.length - 1];
-    const y0 = lines[0].offsetTop - 12, y1 = lastLine.offsetTop + lastLine.offsetHeight + 12;
+    const photo = scene.querySelector('.scene__photo');
+    const card = scene.querySelector('.scene__card');
+    const H = photo.offsetHeight;
+    const k = photo.offsetWidth / data.w; // 사진 원본 좌표 → 화면 좌표
+
+    // 1. 초점: 흐릿하게 시작해 또렷해지고, 끝나면 다시 흐려지며 다음 장으로
+    photo.querySelector('img').animate([
+      { offset: 0, filter: 'blur(5px)', transform: 'scale(1.06)' },
+      { offset: T(FOCUS), filter: 'blur(0px)', transform: 'scale(1)', easing: 'ease-out' },
+      { offset: T(OUT), filter: 'blur(0px)', transform: 'scale(1)' },
+      { offset: 1, filter: 'blur(5px)', transform: 'scale(1.06)' },
+    ], loop);
+
+    // 2. 빛줄기와 글자 상자
     const beam = scene.querySelector('.scene__beam').animate([
-      { offset: 0, opacity: 0, transform: `translateY(${y0}px)` },
-      { offset: T(S0), opacity: 1, transform: `translateY(${y0}px)`, easing: 'linear' },
-      { offset: T(S0 + SWEEP), opacity: 1, transform: `translateY(${y1}px)` },
-      { offset: T(S0 + SWEEP + 300), opacity: 0, transform: `translateY(${y1}px)` },
-      { offset: 1, opacity: 0, transform: `translateY(${y1}px)` },
+      { offset: 0, opacity: 0, transform: 'translateY(0)' },
+      { offset: T(S0), opacity: 1, transform: 'translateY(0)', easing: 'cubic-bezier(.45, 0, .55, 1)' },
+      { offset: T(S0 + SWEEP), opacity: 1, transform: `translateY(${H}px)` },
+      { offset: T(S0 + SWEEP + 200), opacity: 0, transform: `translateY(${H}px)` },
+      { offset: 1, opacity: 0, transform: `translateY(${H}px)` },
     ], loop);
-
-    const off = 'inset 0 0 0 1.5px transparent', ring = `inset 0 0 0 1.5px ${tok('--c-brand-600')}`;
-    const hits = [];
-    lines.forEach((ln) => {
-      const mid = ln.offsetTop + ln.offsetHeight / 2;
-      ln.querySelectorAll('.w').forEach((w, j) => {
-        const t = S0 + ((mid - y0) / (y1 - y0)) * SWEEP + j * 90;
-        hits.push(t + 140);
-        w.animate([
-          { offset: 0, backgroundColor: 'transparent', boxShadow: off },
-          { offset: T(t), backgroundColor: 'transparent', boxShadow: off },
-          { offset: T(t + 140), backgroundColor: tok('--c-brand-100'), boxShadow: ring },
-          { offset: T(t + 700), backgroundColor: tok('--c-brand-050'), boxShadow: ring },
-          { offset: T(OUT), backgroundColor: tok('--c-brand-050'), boxShadow: ring },
-          { offset: T(OUT + 400), backgroundColor: 'transparent', boxShadow: off },
-          { offset: 1, backgroundColor: 'transparent', boxShadow: off },
-        ], loop);
-      });
+    const scan = tok('--c-scan'), pick = tok('--c-brand-600');
+    scene.querySelectorAll('.scene__boxes rect:not(.scene__dim)').forEach((r) => {
+      if (!r.dataset.cy) return;
+      const t = S0 + Number(r.dataset.cy) * SWEEP;
+      const ing = r.classList.contains('is-ing');
+      const on = { opacity: 1, stroke: scan, fillOpacity: 0 };
+      const end = ing ? { opacity: 1, stroke: pick, fillOpacity: 0.3 } : { opacity: 0, stroke: scan, fillOpacity: 0 };
+      r.animate([
+        { offset: 0, ...on, opacity: 0 },
+        { offset: T(t), ...on, opacity: 0 },
+        { offset: T(t + 160), ...on },
+        { offset: T(DIM), ...on },
+        { offset: T(DIM + 500), ...end },
+        { offset: T(OUT), ...end },
+        { offset: T(OUT + 400), ...end, opacity: 0 },
+        { offset: 1, ...on, opacity: 0 },
+      ], loop);
     });
-
-    const done = S0 + SWEEP;
-    scene.querySelector('.scene__bar span').animate([
-      { offset: 0, transform: 'scaleX(0)', opacity: 1 },
-      { offset: T(S0), transform: 'scaleX(0)', opacity: 1, easing: 'linear' },
-      { offset: T(done), transform: 'scaleX(1)', opacity: 1 },
-      { offset: T(OUT), transform: 'scaleX(1)', opacity: 1 },
-      { offset: T(OUT + 400), transform: 'scaleX(1)', opacity: 0 },
-      { offset: 1, transform: 'scaleX(0)', opacity: 0 },
+    // 3. 전성분만 남기고 어둡게
+    scene.querySelector('.scene__dim').animate([
+      { offset: 0, opacity: 0 },
+      { offset: T(DIM), opacity: 0, easing: 'ease-out' },
+      { offset: T(DIM + 500), opacity: 1 },
+      { offset: T(OUT), opacity: 1 },
+      { offset: T(OUT + 500), opacity: 0 },
+      { offset: 1, opacity: 0 },
     ], loop);
+
+    // 4. 성분명이 사진의 제 자리에서 떨어져 카드로 날아간다
+    const srcOf = {};
+    scene.querySelectorAll('.scene__boxes rect[data-item]').forEach((r) => {
+      const x = Number(r.getAttribute('x')), y = Number(r.getAttribute('y'));
+      const w = Number(r.getAttribute('width')), h = Number(r.getAttribute('height'));
+      srcOf[r.dataset.item] = { cx: photo.offsetLeft + (x + w / 2) * k, cy: photo.offsetTop + (y + h / 2) * k, w: w * k };
+    });
+    const chips = Array.from(scene.querySelectorAll('.scene__chips li'));
+    const lands = chips.map((c, i) => {
+      const t = FLY0 + i * FLY_GAP;
+      const src = srcOf[c.dataset.item];
+      const cx = card.offsetLeft + c.offsetLeft + c.offsetWidth / 2;
+      const cy = card.offsetTop + c.offsetTop + c.offsetHeight / 2;
+      const from = src
+        ? `translate(${src.cx - cx}px, ${src.cy - cy}px) scale(${Math.max(0.5, src.w / c.offsetWidth).toFixed(2)})`
+        : 'translateY(6px) scale(.9)';
+      const lift = src ? `translate(${(src.cx - cx) * 0.55}px, ${(src.cy - cy) * 0.55 - 46}px) scale(1.18) rotate(-3deg)` : 'none';
+      c.animate([
+        { offset: 0, opacity: 0, transform: from },
+        { offset: T(t), opacity: 0, transform: from },
+        { offset: T(t + 80), opacity: 1, transform: from, easing: 'cubic-bezier(.3, 0, .2, 1)' },
+        { offset: T(t + FLY * 0.5), opacity: 1, transform: lift, easing: 'cubic-bezier(.4, 0, .2, 1)' },
+        { offset: T(t + FLY), opacity: 1, transform: 'none', easing: 'cubic-bezier(.3, 1.5, .6, 1)' },
+        { offset: T(t + FLY + 160), opacity: 1, transform: 'scale(1.08)' },
+        { offset: T(t + FLY + 300), opacity: 1, transform: 'none' },
+        { offset: T(OUT), opacity: 1, transform: 'none' },
+        { offset: T(OUT + 300), opacity: 0, transform: 'none' },
+        { offset: 1, opacity: 0, transform: from },
+      ], loop);
+      return t + FLY;
+    });
+    const done = FLY0 + (chips.length - 1) * FLY_GAP + FLY + 200;
     const pop = 'cubic-bezier(.3, 1.6, .6, 1)';
     scene.querySelector('.scene__count .ic').animate([
       { offset: 0, opacity: 0, transform: 'scale(.4)' },
@@ -1781,50 +1906,55 @@
       { offset: 1, opacity: 0, transform: 'scale(.4)' },
     ], loop);
 
+    // 5. 판정이 도장처럼 찍힌다
     const tone = { pass: '--c-pass-200', cond: '--c-cond-200', fail: '--c-fail-200' };
     const line = tok('--c-line-200');
     scene.querySelectorAll('.scene__row').forEach((row, r) => {
-      const t = done + 500 + r * 420;
+      const t = done + 300 + r * 520;
       const hot = tok(tone[(row.className.match(/scene__row--(\w+)/) || [])[1]] || '--c-line-300');
       row.animate([
-        { offset: 0, borderColor: line },
-        { offset: T(t), borderColor: line },
-        { offset: T(t + 200), borderColor: hot },
-        { offset: T(t + 1400), borderColor: line },
-        { offset: 1, borderColor: line },
+        { offset: 0, borderColor: line, transform: 'none' },
+        { offset: T(t + 120), borderColor: line, transform: 'none' },
+        { offset: T(t + 200), borderColor: hot, transform: 'translateY(1px) scale(.985)' },
+        { offset: T(t + 420), borderColor: hot, transform: 'none' },
+        { offset: T(t + 1600), borderColor: line, transform: 'none' },
+        { offset: 1, borderColor: line, transform: 'none' },
       ], loop);
       row.querySelector('.scene__veil').animate([
         { offset: 0, opacity: 1 },
         { offset: T(t), opacity: 1 },
-        { offset: T(t + 260), opacity: 0 },
+        { offset: T(t + 120), opacity: 0 },
         { offset: T(OUT), opacity: 0 },
         { offset: T(OUT + 400), opacity: 1 },
         { offset: 1, opacity: 1 },
       ], loop);
-      row.querySelector('.scene__pill .ic').animate([
-        { offset: 0, opacity: 0, transform: 'scale(.3)' },
-        { offset: T(t + 120), opacity: 0, transform: 'scale(.3)', easing: pop },
-        { offset: T(t + 480), opacity: 1, transform: 'scale(1)' },
-        { offset: T(OUT + 400), opacity: 1, transform: 'scale(1)' },
-        { offset: T(OUT + 420), opacity: 0, transform: 'scale(.3)' },
-        { offset: 1, opacity: 0, transform: 'scale(.3)' },
+      const stamp = 'scale(1.9) rotate(-10deg)';
+      row.querySelector('.scene__pill').animate([
+        { offset: 0, opacity: 0, transform: stamp },
+        { offset: T(t), opacity: 0, transform: stamp, easing: 'cubic-bezier(.5, 0, .9, .4)' },
+        { offset: T(t + 200), opacity: 1, transform: 'scale(.94) rotate(0deg)', easing: 'cubic-bezier(.2, 0, 0, 1)' },
+        { offset: T(t + 380), opacity: 1, transform: 'none' },
+        { offset: T(OUT), opacity: 1, transform: 'none' },
+        { offset: T(OUT + 300), opacity: 0, transform: 'none' },
+        { offset: 1, opacity: 0, transform: stamp },
       ], loop);
     });
 
-    // 인식한 성분 수: 상자가 잡힌 단어 수를 그대로 센다
+    // 읽은 전성분 수: 카드에 꽂힌 성분명 수를 그대로 센다
     const out = $('#scene-n');
     let shown = -1;
     const tick = () => {
       const ct = Number(beam.currentTime) || 0;
       const t = ct < START ? 0 : (ct - START) % CYCLE;
-      const k = t >= OUT + 200 ? 0 : hits.filter((h) => h <= t).length;
-      if (k !== shown) { out.textContent = String(k); shown = k; }
+      const n = t >= OUT + 200 ? 0 : lands.filter((h) => h <= t).length;
+      if (n !== shown) { out.textContent = String(n); shown = n; }
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   }
 
   async function init() {
+    show('start', false);
     bindEvents();
     runScene();
     renderEmpty();
@@ -1835,7 +1965,7 @@
     // OCR 서빙이 연결되지 않은 서버에서는 사진 입력 칸을 숨긴다
     $('#m-photo-field').hidden = !(S.health && S.health.ocr_model);
     $('#m-photo-src').hidden = $('#m-photo-field').hidden;
-    if ($('#m-photo-field').hidden) revealDetail(); // 사진 인식이 없으면 바로 직접 입력 칸을 연다
+    $('#m-type-btn').hidden = !$('#m-photo-field').hidden; // 사진 인식이 없을 때만 전성분을 직접 넣는 길을 연다
     if (certs.status === 'fulfilled' && Array.isArray(certs.value)) {
       S.certs = certs.value;
       S.certIndex = Object.fromEntries(S.certs.map((c) => [c.id, c]));
@@ -1845,6 +1975,7 @@
       S.company = (demo.value && demo.value.company) || {};
     }
     S.docTypes = docs.status === 'fulfilled' ? normalizeDocTypes(docs.value) : false;
+    fillSceneVerdicts();
     if (S.docTypes instanceof Set && !S.docTypes.size) S.docTypes = false;
 
     renderCompany();
@@ -1869,7 +2000,13 @@
     const want = new URLSearchParams(location.search).get('demo');
     if (want && S.demo) {
       const p = (S.demo.products || []).find((x) => x.id === want);
-      if (p) evaluate(p, 'demo', document.querySelector(`.demo[data-demo="${CSS.escape(want)}"]`));
+      if (p) {
+        evaluate(p, 'demo', document.querySelector(`.demo[data-demo="${CSS.escape(want)}"]`)).then(() => {
+          const id = location.hash.slice(1);
+          const el = id && document.getElementById(id);
+          if (el && el.offsetParent !== null) el.scrollIntoView({ block: 'start' });
+        });
+      }
     }
   }
 
