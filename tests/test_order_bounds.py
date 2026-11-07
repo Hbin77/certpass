@@ -39,3 +39,13 @@ def test_banned_suspect_typo_only():
     card = next(c for c in load_cards() if c["id"] == "EU_CPNP")
     v = evaluate(card, d5, demo["company"], reg, load_attributes())
     assert any(f.code == "ING_BANNED_SUSPECT" for f in v.findings)
+
+
+def test_korean_variant_matching():
+    """자모 유사도로 사전에 없는 한글 표기를 표준명에 맞춤: 정상 표준명은 후보를 내지 않고, 잘린 이름은 찾는다."""
+    from certcheck.names import jamo, kr_dict, kr_fuzzy
+    assert jamo("셀") == "ㅅㅔㄹ"
+    name = next(h["kr_name"] for h in kr_dict().values() if len(h["kr_name"]) > 6)
+    assert kr_fuzzy(name) is None
+    r = kr_fuzzy(name[:-2])
+    assert r is None or r["kr_name"] == name

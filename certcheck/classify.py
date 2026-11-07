@@ -270,6 +270,15 @@ def _suspect(reg_id: int, juris: str, key: str) -> tuple[str, float] | None:
     return (hit, round(score / 100, 2)) if 90 <= score < 100 else None  # 100이면 같은 이름(금지 판정 쪽)
 
 
+_HANGUL = re.compile(r"[가-힣]")
+SOURCE_KR = "식약처 화장품 원료성분정보(data.go.kr 15111774) 자모 유사도 대조"
+
+
+def kr_fuzzy(name: str) -> dict | None:
+    from .names import kr_fuzzy as _kf  # names는 data·normalize만 import → 순환 없음
+    return _kf(name)
+
+
 def banned_suspect(reg: RegIndex, juris: str, inci: str) -> tuple[str, float] | None:
     """정확히 일치하지 않지만 금지 성분 이름과 90% 이상 같은 표기(오탈자 의심). 식약처 원료성분사전에 있는 정상 원료명은 제외."""
     from .names import inci_to_kr  # names는 data·normalize만 import → 순환 없음
@@ -364,6 +373,16 @@ def check_ingredients(v: Verdict, card: dict, p: dict, reg: RegIndex, attrs: dic
         if not hits and (sus := banned_suspect(reg, juris, inci)):
             v.add("cond", "ING_BANNED_SUSPECT", f"{inci}: 금지 성분 '{sus[0]}'와 표기가 {sus[1]:.0%} 같음 — 오기인지 확인",
                   f"{juris} 금지 목록 이름 대조(정확히 일치하지 않음)", "정확한 INCI명 확인, 금지 성분이면 제거 재처방")
+        elif not hits and _HANGUL.search(inci) and (kv := kr_fuzzy(inci)):
+            # 사전에 없는 한글 표기(OCR 오독·오타·잘림)를 자모 유사도로 표준명에 맞춰 본다 — 등급은 확정하지 않고 '확인 필요'
+            kt = {r.list_type for r, _ in reg.lookup(juris, kv["inci"], [])}
+            what = f"{inci}: 한글 표기가 '{kv['kr_name']}'({kv['inci']})와 비슷함({kv['how']} {kv['similarity']:.0%})"
+            if "banned" in kt:
+                v.add("cond", "ING_BANNED_SUSPECT", f"{what} — 금지 성분, 오기·OCR 오류인지 확인", SOURCE_KR,
+                      "포장·전성분표 원문으로 성분명 확인, 금지 성분이면 제거 재처방")
+            elif "restricted" in kt or any(t.startswith("allowed_") for t in kt):
+                v.add("cond", "ING_KR_VARIANT_LIMITED", f"{what} — 한도가 있는 성분, 표기와 함량 확인", SOURCE_KR,
+                      "성분명·함량 확인 후 한도 대조")
         if has_inventory and "inventory" not in types and ingredient_key(ing) not in ("parfum",):
             a = (attrs or {}).get(ingredient_key(ing)) or {}
             iec = (a.get("iecic_cn") or "").strip()
@@ -781,6 +800,7 @@ def features(v: Verdict, p: dict) -> dict:
         "formula_concept": int(p.get("formula_known") == "concept_only"),
         "n_banned": sum(1 for c in codes if c == "ING_BANNED"), "n_over_limit": cnt("ING_OVER_LIMIT"),
         "n_banned_suspect": cnt("ING_BANNED_SUSPECT"), "n_over_by_order": cnt("ING_OVER_LIMIT_BY_ORDER"),
+        "n_kr_variant_limited": cnt("ING_KR_VARIANT_LIMITED"),
         "n_ok_by_order": cnt("ING_RESTRICTED_OK_BY_ORDER"),
         "n_restricted_unknown": cnt("ING_RESTRICTED_PCT_UNKNOWN"), "n_restricted_cond": cnt("ING_RESTRICTED_CONDITIONS"),
         "n_not_in_inventory": cnt("ING_NOT_IN_INVENTORY"), "ing_no_data": cnt("ING_NO_DATA"), "ing_proxy": cnt("ING_PROXY"),

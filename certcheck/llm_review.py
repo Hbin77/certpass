@@ -17,7 +17,7 @@ LEVELS = ("불가 가능성 높음", "불가 가능성 낮음", "판단 불가")
 # 검토를 보낼 만한 판정: 규칙이 확정하지 못한 사유가 있을 때만(모든 판정을 보내면 느리고 헛경보만 는다)
 # 사유 문구에 실제 함량이 들어가는 코드(ING_RESTRICTED_SCOPE_CHECK 등)는 넣지 않는다(배합비를 외부 대화 기록에 남기지 않음)
 UNSURE = ("ING_RESTRICTED_PCT_UNKNOWN", "ING_BANNED_SUSPECT", "ING_BANNED_CONDITIONAL", "ING_BANNED_WITH_EXCEPTION",
-          "ING_SCOPE_MISMATCH", "ING_PEROXIDE", "ING_CYCLOMETHICONE_MIX")
+          "ING_SCOPE_MISMATCH", "ING_PEROXIDE", "ING_CYCLOMETHICONE_MIX", "ING_KR_VARIANT_LIMITED")
 RANGE = re.compile(r"\s*\(전성분 순서상 [^)]*\)")  # 순서로 계산한 범위도 주변 성분 함량을 드러내므로 뺀다
 NOTICE = "AI 검토 의견입니다. 규칙 엔진 판정(등급)을 바꾸지 않으며, 공식 인증·심사가 아닙니다. 표시된 정보로 직접 확인하세요."
 
