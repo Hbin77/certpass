@@ -356,10 +356,11 @@ def check_ingredients(v: Verdict, card: dict, p: dict, reg: RegIndex, attrs: dic
             v.add("cond", "ING_UNDEFINED", f"처방 미확정 성분: {ing.get('kr')} — 처방 확정 후 재판정", action="처방서(INCI·함량) 확보")
             continue
         hits = reg.lookup(juris, inci, cas)
-        if not hits and not cas and (cas2 := cas_by_name(reg, inci)):
-            # CAS가 비어 있으면 성분명(정확히 같은 INCI)으로 식약처 원료사전·다른 관할 목록의 CAS를 찾아 다시 대조한다
-            # (일본·일부 목록은 현지어 이름이라 CAS로만 맞출 수 있음)
-            hits = reg.lookup(juris, inci, cas2)
+        if not cas and (cas2 := cas_by_name(reg, inci)):
+            # CAS가 비어 있으면 성분명(정확히 같은 INCI)으로 식약처 원료사전·다른 관할 목록의 CAS를 찾아 한 번 더 대조해 합친다.
+            # 이름으로 제한 행만 걸리고 금지 행은 CAS로만 맞춰지는 경우(현지어 이름 목록)가 있어 이름 결과가 있어도 함께 본다
+            seen = {id(r) for r, _ in hits}
+            hits = hits + [(r, how) for r, how in reg.lookup(juris, inci, cas2) if id(r) not in seen]
         types = {r.list_type for r, _ in hits}
         pct = ing.get("pct")
         key = ingredient_key(ing)
