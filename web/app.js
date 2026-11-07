@@ -190,6 +190,24 @@
     if (!res.ok) throw await readError(res);
     return res;
   }
+  // OCR은 접수 → 결과 조회로 부른다. 공개 주소 프록시가 60초에 연결을 끊어서, 서빙 대기·PDF 여러 쪽처럼 오래 걸려도
+  // 요청 하나로 기다리지 않게 한다. onWait(앞 대기 수)로 화면 문구를 바꾼다
+  const OCR_POLL_MS = 1500;
+  const OCR_WAIT_MAX_MS = 240000;
+  async function ocrRequest(body, ctype, onWait) {
+    const res = await fetch('api/ocr?mode=job', { method: 'POST', headers: { 'Content-Type': ctype, Accept: 'application/json' }, body });
+    if (!res.ok) throw await readError(res);
+    let job = await res.json();
+    const t0 = Date.now();
+    while (job.status === 'queued' || job.status === 'running') {
+      if (onWait) onWait(job.status === 'queued' ? job.ahead || 0 : 0);
+      if (Date.now() - t0 > OCR_WAIT_MAX_MS) throw new ApiError(504, '사진 읽기가 너무 오래 걸립니다. 잠시 뒤 다시 올리거나 전성분을 직접 입력해 주세요.');
+      await new Promise((ok) => setTimeout(ok, OCR_POLL_MS));
+      job = await getJSON(`api/ocr/jobs/${encodeURIComponent(job.job)}`);
+    }
+    if (job.status === 'error') throw new ApiError(job.error?.status || 500, job.error?.detail);
+    return job.result;
+  }
   function explain(err) {
     if (err && err.name === 'AbortError') return '';
     if (err instanceof ApiError) {
@@ -1363,23 +1381,26 @@
     btn.disabled = true;
     out.hidden = false;
     const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
-    out.innerHTML = `<p class="parse">${icon('i-clock', 'ic--sm')}<span>${isPdf
+    let base = '';
+    const say = (text, ahead = 0) => {
+      base = text;
+      out.innerHTML = `<p class="parse">${icon('i-clock', 'ic--sm')}<span>${esc(text)}${ahead
+        ? ` 다른 요청 ${ahead}건이 먼저 처리되고 있어 차례를 기다리는 중입니다.` : ''}</span></p>`;
+    };
+    const wait = (ahead) => say(base, ahead);
+    say(isPdf
       ? 'PDF를 읽는 중입니다. 글자 정보가 없는 쪽은 그림으로 바꿔 읽어서 쪽마다 몇 초씩 걸립니다.'
-      : '사진을 읽는 중입니다. 서빙이 쉬고 있었다면 첫 응답에 시간이 더 걸립니다.'}</span></p>`;
+      : '사진을 읽는 중입니다. 서빙이 쉬고 있었다면 첫 응답에 시간이 더 걸립니다.');
     try {
       let r = null;
       if (isPdf) { // 쪽 그림 만들기·돌려 읽기·바로 세우기는 서버(ocr_pdf)가 쪽마다 한다
         if (file.size > OCR_PDF_MAX) throw new Error('PDF는 8MB까지 올릴 수 있습니다. 전성분표가 있는 쪽만 따로 저장해 올려 주세요.');
-        const res = await fetch('api/ocr', { method: 'POST', headers: { 'Content-Type': 'application/pdf', Accept: 'application/json' }, body: file });
-        if (!res.ok) throw await readError(res);
-        r = await res.json();
+        r = await ocrRequest(file, 'application/pdf', wait);
       }
       for (const deg of isPdf ? [] : OCR_ANGLES) {
-        if (deg) out.innerHTML = `<p class="parse">${icon('i-clock', 'ic--sm')}<span>성분을 거의 찾지 못해 사진을 ${deg}° 돌려 다시 읽는 중입니다.</span></p>`;
+        if (deg) say(`성분을 거의 찾지 못해 사진을 ${deg}° 돌려 다시 읽는 중입니다.`);
         const blob = await shrinkPhoto(file, deg);
-        const res = await fetch('api/ocr', { method: 'POST', headers: { 'Content-Type': 'image/jpeg', Accept: 'application/json' }, body: blob });
-        if (!res.ok) throw await readError(res);
-        const got = { ...(await res.json()), angle: deg };
+        const got = { ...(await ocrRequest(blob, 'image/jpeg', wait)), angle: deg };
         if (!r || (got.counts?.exact || 0) > (r.counts?.exact || 0)) r = got;
         if ((r.counts?.exact || 0) >= OCR_ENOUGH) break;
       }
@@ -1388,11 +1409,10 @@
       for (const min of isPdf ? [] : [OCR_SKEW_MIN, OCR_SKEW_MIN / 2]) {
         const skew = r.skew;
         if (typeof skew !== 'number' || Math.abs(skew) < min || Math.abs(skew) > OCR_SKEW_MAX) break;
-        out.innerHTML = `<p class="parse">${icon('i-clock', 'ic--sm')}<span>사진이 ${Math.abs(skew).toFixed(1)}° 기울어 있어 바로 세워 다시 읽는 중입니다.</span></p>`;
+        say(`사진이 ${Math.abs(skew).toFixed(1)}° 기울어 있어 바로 세워 다시 읽는 중입니다.`);
         const deg = r.angle - skew; // 글자 줄이 오른쪽으로 올라가면(음수) 시계 방향으로 돌린다
-        const res = await fetch('api/ocr', { method: 'POST', headers: { 'Content-Type': 'image/jpeg', Accept: 'application/json' }, body: await shrinkPhoto(file, deg) });
-        if (!res.ok) break;
-        const got = { ...(await res.json()), angle: deg };
+        let got;
+        try { got = { ...(await ocrRequest(await shrinkPhoto(file, deg), 'image/jpeg', wait)), angle: deg }; } catch (e) { break; }
         if ((got.counts?.exact || 0) < (r.counts?.exact || 0)) break;
         r = got;
       }

@@ -240,3 +240,80 @@ def test_pdf_image_pages_go_to_ocr(fake_ocr):
 def test_pdf_broken_is_422(fake_ocr):
     assert call("/api/ocr", b"%PDF-1.4 broken", "application/pdf")[0] == 422
     assert call("/api/ocr", b"not a pdf", "application/pdf")[0] == 415
+
+
+def _get(path: str):
+    messages = []
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(m):
+        messages.append(m)
+
+    scope = {"type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1", "method": "GET", "scheme": "http",
+             "path": path, "raw_path": path.encode(), "root_path": "", "query_string": b"",
+             "headers": [(b"host", b"t")], "client": ("127.0.0.1", 1), "server": ("t", 80)}
+    asyncio.run(app(scope, receive, send))
+    start = next(m for m in messages if m["type"] == "http.response.start")
+    return start["status"], b"".join(m.get("body", b"") for m in messages if m["type"] == "http.response.body")
+
+
+def _post_job(body: bytes, ctype: str):
+    path = "/api/ocr"
+    messages, sent = [], [False]
+
+    async def receive():
+        if sent[0]:
+            return {"type": "http.disconnect"}
+        sent[0] = True
+        return {"type": "http.request", "body": body, "more_body": False}
+
+    async def send(m):
+        messages.append(m)
+
+    scope = {"type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1", "method": "POST", "scheme": "http",
+             "path": path, "raw_path": path.encode(), "root_path": "", "query_string": b"mode=job",
+             "headers": [(b"host", b"t"), (b"content-type", ctype.encode()), (b"content-length", str(len(body)).encode())],
+             "client": ("127.0.0.1", 1), "server": ("t", 80)}
+    asyncio.run(app(scope, receive, send))
+    start = next(m for m in messages if m["type"] == "http.response.start")
+    return start["status"], b"".join(m.get("body", b"") for m in messages if m["type"] == "http.response.body")
+
+
+def test_ocr_job_submit_then_poll(fake_ocr):
+    import time as _t
+    status, body = _post_job(JPEG, "image/jpeg")
+    assert status == 202
+    job = json.loads(body)
+    for _ in range(100):
+        st, b = _get(f"/api/ocr/jobs/{job['job']}")
+        job = json.loads(b)
+        if job["status"] in ("done", "error"):
+            break
+        _t.sleep(0.05)
+    assert st == 200 and job["status"] == "done" and job["result"]["counts"]["exact"] == 4
+    assert _get("/api/ocr/jobs/" + "0" * 32)[0] == 404 and _get("/api/ocr/jobs/../x")[0] == 404
+
+
+def test_ocr_job_errors_and_full_queue(monkeypatch):
+    import threading as _th
+    import time as _t
+    from certcheck import app as appmod, ocr_jobs
+    monkeypatch.setenv("CERTCHECK_OCR_URL", "http://127.0.0.1:9/predict")  # 서빙 꺼짐 → 작업은 error(502)
+    monkeypatch.setenv("CERTCHECK_OCR_TIMEOUT", "2")
+    monkeypatch.setattr(ocr_client, "RETRY_WAIT", (0.01, 0.01))
+    status, body = _post_job(JPEG, "image/jpeg")
+    jid = json.loads(body)["job"]
+    for _ in range(200):
+        job = json.loads(_get(f"/api/ocr/jobs/{jid}")[1])
+        if job["status"] in ("done", "error"):
+            break
+        _t.sleep(0.05)
+    assert job["status"] == "error" and job["error"]["status"] == 502
+    gate = _th.Event()
+    jobs = ocr_jobs.Jobs(workers=1, max_queue=1)
+    monkeypatch.setattr(appmod, "OCR_JOBS", jobs)
+    jobs.submit(lambda: gate.wait(5) or {})  # 하나가 처리 중이면 대기열(1) 가득
+    assert _post_job(JPEG, "image/jpeg")[0] == 429
+    gate.set()

@@ -25,7 +25,7 @@ from starlette.datastructures import MutableHeaders
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import STATUS_ORDER
-from . import llm_client, ml_client, ocr_client, ocr_pdf
+from . import llm_client, ml_client, ocr_client, ocr_jobs, ocr_pdf
 from .names import convert_korean_names
 from .classify import evaluate, evaluate_company, gap_type
 from .data import DATA, load_attributes, load_cards, load_reg_index
@@ -302,14 +302,41 @@ async def ocr(request: Request):
     data = await request.body()
     if not data.startswith(OCR_TYPES[ctype]):
         raise HTTPException(415, "사진 파일이 아니거나 형식이 맞지 않습니다.")
+    if request.query_params.get("mode") == "job":  # 화면: 접수 번호만 받고 결과는 /api/ocr/jobs/{번호}로(공개 주소 60초 제한 회피)
+        try:
+            return JSONResponse(OCR_JOBS.submit(lambda: _ocr_work(data, ctype)), status_code=202)
+        except ocr_jobs.Busy as e:
+            raise HTTPException(429, "사진 읽기 요청이 몰려 대기열이 가득 찼습니다. 잠시 뒤 다시 올려 주세요.") from e
+    try:
+        return await run_in_threadpool(_ocr_work, data, ctype)
+    except ocr_jobs.JobError as e:
+        raise HTTPException(e.status, e.detail) from e
+
+
+OCR_JOBS = ocr_jobs.Jobs()
+
+
+def _ocr_work(data: bytes, ctype: str) -> dict:
+    """사진·PDF 한 건 읽기(동기 경로와 접수 경로가 같이 쓴다). 실패는 화면에 보낼 HTTP 상태와 문구로 바꾼다."""
     try:
         if ctype == "application/pdf":
-            return await run_in_threadpool(ocr_pdf.read_pdf, data)
-        return await run_in_threadpool(ocr_client.read_package, data, ctype)
+            return ocr_pdf.read_pdf(data)
+        return ocr_client.read_package(data, ctype)
     except ocr_pdf.PdfError as e:
-        raise HTTPException(422, "PDF를 열지 못했습니다. 암호가 걸렸거나 손상된 파일인지 확인해 주세요.") from e
+        raise ocr_jobs.JobError(422, "PDF를 열지 못했습니다. 암호가 걸렸거나 손상된 파일인지 확인해 주세요.") from e
     except (urllib.error.URLError, TimeoutError, ValueError) as e:
-        raise HTTPException(502, "OCR 서빙이 응답하지 않습니다. 잠시 뒤 다시 시도하거나 전성분을 직접 입력해 주세요.") from e
+        raise ocr_jobs.JobError(502, "OCR 서빙이 응답하지 않습니다. 잠시 뒤 다시 시도하거나 전성분을 직접 입력해 주세요.") from e
+
+
+@app.get("/api/ocr/jobs/{job_id}")
+def ocr_job(job_id: str):
+    """접수한 OCR의 상태: queued(앞 대기 수 ahead)·running·done(result)·error(error.status·detail)."""
+    if len(job_id) != 32 or not job_id.isalnum():
+        raise HTTPException(404, "접수 번호가 없습니다.")
+    job = OCR_JOBS.get(job_id)
+    if job is None:
+        raise HTTPException(404, "접수 번호가 없거나 기한(10분)이 지났습니다. 사진을 다시 올려 주세요.")
+    return job
 
 
 @app.get("/api/evaluate-demo/{pid}")
