@@ -475,3 +475,8 @@ def test_bad_cached_notice_is_dropped(monkeypatch):
     monkeypatch.setenv("AGENTSTREAM_CHATBOT_ID", "b")
     out = llm_client.explain(v, card, {}, None, cache_only=True)
     assert out["cached"] is False and key not in llm_client._cache
+
+
+def test_jp_g_per_100g_counts_as_percent():
+    assert llm_client.unverified_facts("일본 기준 한도(1.0%) 준수", "한도 合計量として1.0 / 0.2g/100g") == []
+    assert llm_client.unverified_facts("한도 0.2% 이하", "0.2g/100g") == []

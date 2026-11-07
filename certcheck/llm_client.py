@@ -208,6 +208,9 @@ def bad_refs(answer: str, n_sources: int) -> list[int]:
 def unverified_facts(answer: str, corpus: str) -> list[str]:
     """설명에 나온 날짜·비율 중 요청(판정 사유)과 조회 문서 어디에도 없는 것. 월까지만 맞으면(일 생략) 있는 것으로 본다."""
     have = _facts(corpus)
+    # 일본 화장품기준 별표는 '1.0g/100g'·'合計量として1.0'(= 1.0%)로 적는다 → 같은 값의 %로 본다
+    for n in re.findall(r"(\d+(?:\.\d+)?)\s*g/100g", corpus or "") + re.findall(r"として\s*(\d+(?:\.\d+)?)", corpus or ""):
+        have.add(f"{float(n):g}%")
     months = {f[:7] for f in have if re.fullmatch(r"\d{4}-\d{2}(-\d{2})?", f)}
     return sorted(f for f in _facts(answer) if f not in have and not (re.fullmatch(r"\d{4}-\d{2}", f) and f in months))
 
