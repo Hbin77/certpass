@@ -72,6 +72,8 @@ class Words(Dataset):
         if self.train:  # 가벼운 증강: 가로 늘이기·줄이기, 밝기·대비 흔들기
             w = max(8, int(img.width * random.uniform(0.8, 1.2)))
             img = img.resize((min(w, 400), H), Image.BILINEAR)
+        elif img.width > 400:  # 평가도 서비스(pipeline.recognize)와 같이 긴 단어를 가로 400px로 누른다
+            img = img.resize((400, H), Image.BILINEAR)
         x = np.asarray(img, dtype=np.float32) / 255.0
         if self.train:
             x = np.clip((x - 0.5) * random.uniform(0.7, 1.3) + 0.5 + random.uniform(-0.15, 0.15), 0, 1)
@@ -205,6 +207,8 @@ def main() -> None:
     ap.add_argument("--ingredients", default="", help="성분명 목록(한 줄에 하나, 한글·INCI). 성분 단어 정확도 계산용")
     ap.add_argument("--init", default="", help="이어서 학습할 가중치(best.pt). 글자표·모델 크기를 그대로 쓴다")
     ap.add_argument("--degrade", type=float, default=0.0, help="학습 단어 중 망가뜨릴 비율(0~1)")
+    ap.add_argument("--freeze_bn", action="store_true",
+                    help="이어서 학습할 때 BatchNorm 통계·가중치를 고정(망가뜨린 이미지가 섞여 깨끗한 이미지 통계가 틀어지는 것을 막음)")
     ap.add_argument("--max_cer_rise", type=float, default=0.002,
                     help="--init일 때 저장 기준: 깨끗한 평가 CER이 처음보다 이만큼 넘게 오르지 않은 회차 중 망가뜨린 평가 CER 최저")
     a = ap.parse_args()
@@ -251,9 +255,19 @@ def main() -> None:
     model = OCRNet(len(charset) + 1, a.d, a.layers, a.heads).to(device)
     if init:
         model.load_state_dict(init["model"])
+
+    def bn_eval():
+        if a.freeze_bn:
+            for mod in model.modules():
+                if isinstance(mod, nn.BatchNorm2d):
+                    mod.eval()
+                    for prm in mod.parameters():
+                        prm.requires_grad_(False)
+    bn_eval()  # 옵티마이저를 만들기 전에 고정할 파라미터를 표시
     n_param = sum(p.numel() for p in model.parameters())
     print(f"[model] 파라미터 {n_param / 1e6:.1f}M", flush=True)
-    opt = torch.optim.AdamW(model.parameters(), lr=a.lr, weight_decay=0.05)
+    opt = torch.optim.AdamW([q for q in model.parameters() if q.requires_grad] if a.freeze_bn else model.parameters(),
+                            lr=a.lr, weight_decay=0.05)
     steps = a.epochs * math.ceil(len(train) / a.batch)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=a.lr, total_steps=steps, pct_start=0.05)
     ctc = nn.CTCLoss(blank=0, zero_infinity=True)
@@ -267,6 +281,7 @@ def main() -> None:
         print(f"[eval] {json.dumps(base, ensure_ascii=False)}", flush=True)
     for ep in range(1, a.epochs + 1):
         tr_ld = DataLoader(tr_ds, batch_sampler=batches(), num_workers=a.workers, collate_fn=collate, pin_memory=True, prefetch_factor=1)
+        bn_eval()  # evaluate()가 model.train()으로 돌려놓으므로 회차마다 다시
         te = time.time()
         run = 0.0
         t_data = t_comp = 0.0
@@ -307,6 +322,9 @@ def main() -> None:
             keep = m["cer"] <= base["cer"] + a.max_cer_rise and (best is None or m["degraded"]["cer"] < best["degraded"]["cer"])
         else:
             keep = best is None or m["cer"] < best["cer"]
+        if init:  # 판단용으로 회차마다 남긴다(저장 기준과 별개)
+            torch.save({"model": model.state_dict(), "charset": charset, "config": {"H": H, "d": a.d, "layers": a.layers, "heads": a.heads}},
+                       out / f"ep{ep}.pt")
         if keep:
             best = m
             torch.save({"model": model.state_dict(), "charset": charset, "config": {"H": H, "d": a.d, "layers": a.layers, "heads": a.heads}},
@@ -315,11 +333,11 @@ def main() -> None:
         (out / "metrics.json").write_text(json.dumps({"best": best, "history": history, "params_M": round(n_param / 1e6, 1),
                                                       "train_words": len(train), "test_words": len(test)},
                                                      ensure_ascii=False, indent=1), encoding="utf-8")
-    # 최고 가중치로 평가셋 전체를 다시 잰다(보고용 최종 수치)
-    model.load_state_dict(torch.load(out / "best.pt", map_location=device, weights_only=False)["model"])
     if best is None:
         print("[done] 기준을 넘은 회차 없음 — best.pt를 만들지 않았다(처음 모델 유지)", flush=True)
         return
+    # 최고 가중치로 평가셋 전체를 다시 잰다(보고용 최종 수치)
+    model.load_state_dict(torch.load(out / "best.pt", map_location=device, weights_only=False)["model"])
     final, samples = evaluate(model, te_ld, charset, device, ing, keep_samples=500)
     (out / "samples.tsv").write_text("정답\t예측\n" + "\n".join(f"{t}\t{p}" for t, p in samples), encoding="utf-8")
     js = json.loads((out / "metrics.json").read_text(encoding="utf-8"))
