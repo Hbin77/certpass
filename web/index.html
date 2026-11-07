@@ -12,8 +12,8 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="styles.css?v=7">
-<script src="app.js?v=7" defer></script>
+<link rel="stylesheet" href="styles.css?v=8">
+<script src="app.js?v=8" defer></script>
 </head>
 <body>
 <a class="skip" href="#input">본문으로 건너뛰기</a>
@@ -82,92 +82,103 @@
 
         <p class="hero__alt">
           <button class="linkbtn" type="button" id="m-type-btn" aria-controls="m-detail" aria-expanded="false">전성분 직접 입력</button>
-          <a class="linkbtn" href="#demo">샘플 제품으로 보기</a>
+          <button class="linkbtn" type="button" id="demo-btn" aria-controls="demo" aria-expanded="false">샘플 제품으로 보기</button>
         </p>
+
+        <div class="hero__demo" id="demo" hidden>
+          <ul class="demo-list" id="demo-list" role="list" aria-busy="true" aria-label="샘플 제품">
+            <li class="demo-skel" aria-hidden="true"></li>
+            <li class="demo-skel" aria-hidden="true"></li>
+            <li class="demo-skel" aria-hidden="true"></li>
+            <li class="demo-skel" aria-hidden="true"></li>
+            <li class="demo-skel" aria-hidden="true"></li>
+          </ul>
+          <p class="company" id="company-line">회사 정보를 불러오는 중입니다.</p>
+        </div>
       </div>
 
-      <figure class="scanart" aria-hidden="true">
-        <div class="scanart__pack">
-          <svg class="scanart__bottle" viewBox="0 0 120 180" focusable="false">
-            <rect x="44" y="6" width="32" height="18" rx="5"/>
-            <rect x="20" y="34" width="80" height="140" rx="18"/>
-          </svg>
-          <ul class="scanart__lines"><li></li><li></li><li></li><li></li><li></li><li></li></ul>
-          <span class="scanart__beam"></span>
-        </div>
-        <ul class="scanart__out">
-          <li class="scanart__row scanart__row--pass"><span class="scanart__dot"></span>미국 MoCRA 등록<b>통과 가능</b></li>
-          <li class="scanart__row scanart__row--cond"><span class="scanart__dot"></span>EU 화장품 신고(CPNP)<b>조건부</b></li>
-          <li class="scanart__row scanart__row--fail"><span class="scanart__dot"></span>EU 에코라벨<b>불가</b></li>
-        </ul>
-      </figure>
-    </div>
-  </section>
+      <div class="hero__side">
+        <!-- 그림: 전성분 라벨을 읽고(글자 상자) → 성분 수를 세고 → 인증별 판정이 나온다 -->
+        <figure class="scene" id="scene" aria-hidden="true">
+          <div class="scene__label">
+            <p class="scene__head"><b>전성분</b><span>Ingredients</span></p>
+            <p class="scene__text">
+              <span class="scene__line"><span class="w">정제수</span>, <span class="w">글리세린</span>, <span class="w">부틸렌글라이콜</span>,</span>
+              <span class="scene__line"><span class="w">나이아신아마이드</span>, <span class="w">동백나무씨오일</span>,</span>
+              <span class="scene__line"><span class="w">판테놀</span>, <span class="w">세라마이드엔피</span>, <span class="w">알란토인</span>,</span>
+              <span class="scene__line"><span class="w">1,2-헥산다이올</span>, <span class="w">향료</span></span>
+            </p>
+            <p class="scene__foot"><span></span><span></span></p>
+            <span class="scene__beam"></span>
+          </div>
 
-  <section class="next" aria-label="전성분 확인과 샘플 제품">
-    <form class="next__form" id="manual-form" novalidate>
-      <div class="next__detail" id="m-detail" hidden>
-        <h2 class="next__title">읽은 전성분을 확인하고 판정하세요</h2>
-        <div class="field">
-          <label class="field__label" for="m-ing">전성분</label>
-          <textarea class="input input--area" id="m-ing" rows="6" spellcheck="false" aria-describedby="m-ing-hint m-ing-parse m-ing-err" aria-required="true"
-            placeholder="정제수, 글리세린, 나이아신아마이드 …"></textarea>
-          <div class="field__foot">
-            <p class="parse" id="m-ing-parse" aria-live="polite">인식된 성분 0종</p>
-            <p class="hint" id="m-ing-hint">함량을 알면 <code>INCI | 2</code>처럼</p>
+          <div class="scene__card">
+            <p class="scene__count"><svg class="ic ic--sm" focusable="false"><use href="#i-check"/></svg><span>성분 <b id="scene-n">10</b>종 인식</span></p>
+            <span class="scene__bar"><span></span></span>
+            <ul class="scene__rows">
+              <li class="scene__row scene__row--pass"><span class="scene__name">미국 MoCRA 등록</span>
+                <span class="scene__pill"><span class="scene__veil"></span><svg class="ic" focusable="false"><use href="#i-pass"/></svg><span>통과 가능</span></span></li>
+              <li class="scene__row scene__row--cond"><span class="scene__name">EU 화장품 신고(CPNP)</span>
+                <span class="scene__pill"><span class="scene__veil"></span><svg class="ic" focusable="false"><use href="#i-cond"/></svg><span>조건부</span></span></li>
+              <li class="scene__row scene__row--fail"><span class="scene__name">EU 에코라벨</span>
+                <span class="scene__pill"><span class="scene__veil"></span><svg class="ic" focusable="false"><use href="#i-fail"/></svg><span>불가</span></span></li>
+            </ul>
           </div>
-          <p class="field__err" id="m-ing-err" role="alert" hidden></p>
-        </div>
-        <div class="start__row">
-          <div class="field">
-            <label class="field__label" for="m-name">제품명</label>
-            <input class="input" id="m-name" type="text" autocomplete="off" placeholder="예: 동백 수분 크림">
-          </div>
-          <fieldset class="field">
-            <legend class="field__label">사용 방식</legend>
-            <div class="seg">
-              <label class="seg__opt"><input type="radio" name="m-app" value="leave_on" checked><span>바르는 제품</span></label>
-              <label class="seg__opt"><input type="radio" name="m-app" value="rinse_off"><span>씻어내는 제품</span></label>
+        </figure>
+
+        <form class="next__form" id="manual-form" novalidate>
+          <div class="next__detail" id="m-detail" hidden>
+            <h2 class="next__title">읽은 전성분을 확인하고 판정하세요</h2>
+            <div class="field">
+              <label class="field__label" for="m-ing">전성분</label>
+              <textarea class="input input--area" id="m-ing" rows="6" spellcheck="false" aria-describedby="m-ing-hint m-ing-parse m-ing-err" aria-required="true"
+                placeholder="정제수, 글리세린, 나이아신아마이드 …"></textarea>
+              <div class="field__foot">
+                <p class="parse" id="m-ing-parse" aria-live="polite">인식된 성분 0종</p>
+                <p class="hint" id="m-ing-hint">함량을 알면 <code>INCI | 2</code>처럼</p>
+              </div>
+              <p class="field__err" id="m-ing-err" role="alert" hidden></p>
             </div>
-          </fieldset>
-        </div>
-        <details class="more more--field" id="m-more">
-          <summary><svg class="ic ic--sm" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg>표방·보유 서류 더하기</summary>
-          <fieldset class="field">
-            <legend class="field__label">표방</legend>
-            <div class="opts opts--2" id="m-claims"></div>
-          </fieldset>
-          <fieldset class="field">
-            <legend class="field__label">보유 서류</legend>
-            <div class="opts" id="m-docs"></div>
-          </fieldset>
-          <div class="field">
-            <label class="field__label" for="m-fill">데모 제품 내용으로 시작하기</label>
-            <select class="input" id="m-fill">
-              <option value="">채우지 않음</option>
-            </select>
+            <div class="start__row">
+              <div class="field">
+                <label class="field__label" for="m-name">제품명</label>
+                <input class="input" id="m-name" type="text" autocomplete="off" placeholder="예: 동백 수분 크림">
+              </div>
+              <fieldset class="field">
+                <legend class="field__label">사용 방식</legend>
+                <div class="seg">
+                  <label class="seg__opt"><input type="radio" name="m-app" value="leave_on" checked><span>바르는 제품</span></label>
+                  <label class="seg__opt"><input type="radio" name="m-app" value="rinse_off"><span>씻어내는 제품</span></label>
+                </div>
+              </fieldset>
+            </div>
+            <details class="more more--field" id="m-more">
+              <summary><svg class="ic ic--sm" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg>표방·보유 서류 더하기</summary>
+              <fieldset class="field">
+                <legend class="field__label">표방</legend>
+                <div class="opts opts--2" id="m-claims"></div>
+              </fieldset>
+              <fieldset class="field">
+                <legend class="field__label">보유 서류</legend>
+                <div class="opts" id="m-docs"></div>
+              </fieldset>
+              <div class="field">
+                <label class="field__label" for="m-fill">데모 제품 내용으로 시작하기</label>
+                <select class="input" id="m-fill">
+                  <option value="">채우지 않음</option>
+                </select>
+              </div>
+            </details>
+            <button class="btn btn--primary btn--block" type="submit" id="m-submit">
+              <svg class="ic btn__spin" aria-hidden="true" focusable="false"><use href="#i-loader"/></svg>
+              <span class="btn__text">판정하기</span>
+            </button>
+            <p class="field__err" id="m-submit-err" role="alert" hidden></p>
           </div>
-        </details>
-        <button class="btn btn--primary btn--block" type="submit" id="m-submit">
-          <svg class="ic btn__spin" aria-hidden="true" focusable="false"><use href="#i-loader"/></svg>
-          <span class="btn__text">판정하기</span>
-        </button>
-        <p class="field__err" id="m-submit-err" role="alert" hidden></p>
+        </form>
       </div>
-    </form>
-
-    <div class="start__demo" id="demo">
-      <h2 class="start__demo-title">샘플 제품으로 보기</h2>
-      <p class="company" id="company-line">회사 정보를 불러오는 중입니다.</p>
-      <ul class="demo-list" id="demo-list" role="list" aria-busy="true">
-        <li class="demo-skel" aria-hidden="true"></li>
-        <li class="demo-skel" aria-hidden="true"></li>
-        <li class="demo-skel" aria-hidden="true"></li>
-        <li class="demo-skel" aria-hidden="true"></li>
-        <li class="demo-skel" aria-hidden="true"></li>
-      </ul>
     </div>
-    <p class="hint hint--src" id="m-photo-src">사진 인식 모델은 AI Hub '의약품, 화장품 패키징 OCR 데이터'(과학기술정보통신부·한국지능정보사회진흥원, <a href="https://aihub.or.kr" target="_blank" rel="noopener">aihub.or.kr</a>)로 학습했습니다.</p>
+    <p class="hero__src" id="m-photo-src">사진 인식 모델은 AI Hub '의약품, 화장품 패키징 OCR 데이터'(과학기술정보통신부·한국지능정보사회진흥원, <a href="https://aihub.or.kr" target="_blank" rel="noopener">aihub.or.kr</a>)로 학습했습니다.</p>
   </section>
 
   <!-- 2~4. 결과: 판정하면 나타나 아래로 이어진다 -->

@@ -1619,6 +1619,11 @@
     });
     $('#m-photo').addEventListener('change', (e) => { if (e.target.files && e.target.files.length) readFiles(e.target.files); });
     $('#m-type-btn').addEventListener('click', () => revealDetail($('#m-ing')));
+    $('#demo-btn').addEventListener('click', () => {
+      const box = $('#demo');
+      box.hidden = !box.hidden;
+      $('#demo-btn').setAttribute('aria-expanded', String(!box.hidden));
+    });
     $('#manual-form').addEventListener('submit', (e) => {
       e.preventDefault();
       fieldError('m-submit-err', null, '');
@@ -1717,8 +1722,111 @@
     $('#basis').textContent = parts.join(' ');
   }
 
+  // ------------------------------------------------------------------ 첫 화면 그림: 라벨 읽기 → 성분 수 → 판정
+  // 빛줄기가 지나가는 줄의 단어마다 인식 상자가 잡히고, 다 읽으면 인증별 판정이 차례로 나온다.
+  // 모든 움직임을 한 주기(CYCLE)의 시각으로 맞춰 반복한다. 움직임 줄이기 설정이면 CSS의 끝난 장면 그대로 둔다.
+  function runScene() {
+    const scene = $('#scene');
+    if (!scene || !scene.offsetParent || reduceMotion() || typeof scene.animate !== 'function') return;
+    const CYCLE = 9000, START = 700, S0 = 300, SWEEP = 2600, OUT = 8300;
+    const T = (ms) => ms / CYCLE;
+    const tok = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+    const loop = { duration: CYCLE, iterations: Infinity, delay: START, fill: 'both' };
+    const lines = Array.from(scene.querySelectorAll('.scene__line'));
+    const lastLine = lines[lines.length - 1];
+    const y0 = lines[0].offsetTop - 12, y1 = lastLine.offsetTop + lastLine.offsetHeight + 12;
+    const beam = scene.querySelector('.scene__beam').animate([
+      { offset: 0, opacity: 0, transform: `translateY(${y0}px)` },
+      { offset: T(S0), opacity: 1, transform: `translateY(${y0}px)`, easing: 'linear' },
+      { offset: T(S0 + SWEEP), opacity: 1, transform: `translateY(${y1}px)` },
+      { offset: T(S0 + SWEEP + 300), opacity: 0, transform: `translateY(${y1}px)` },
+      { offset: 1, opacity: 0, transform: `translateY(${y1}px)` },
+    ], loop);
+
+    const off = 'inset 0 0 0 1.5px transparent', ring = `inset 0 0 0 1.5px ${tok('--c-brand-600')}`;
+    const hits = [];
+    lines.forEach((ln) => {
+      const mid = ln.offsetTop + ln.offsetHeight / 2;
+      ln.querySelectorAll('.w').forEach((w, j) => {
+        const t = S0 + ((mid - y0) / (y1 - y0)) * SWEEP + j * 90;
+        hits.push(t + 140);
+        w.animate([
+          { offset: 0, backgroundColor: 'transparent', boxShadow: off },
+          { offset: T(t), backgroundColor: 'transparent', boxShadow: off },
+          { offset: T(t + 140), backgroundColor: tok('--c-brand-100'), boxShadow: ring },
+          { offset: T(t + 700), backgroundColor: tok('--c-brand-050'), boxShadow: ring },
+          { offset: T(OUT), backgroundColor: tok('--c-brand-050'), boxShadow: ring },
+          { offset: T(OUT + 400), backgroundColor: 'transparent', boxShadow: off },
+          { offset: 1, backgroundColor: 'transparent', boxShadow: off },
+        ], loop);
+      });
+    });
+
+    const done = S0 + SWEEP;
+    scene.querySelector('.scene__bar span').animate([
+      { offset: 0, transform: 'scaleX(0)', opacity: 1 },
+      { offset: T(S0), transform: 'scaleX(0)', opacity: 1, easing: 'linear' },
+      { offset: T(done), transform: 'scaleX(1)', opacity: 1 },
+      { offset: T(OUT), transform: 'scaleX(1)', opacity: 1 },
+      { offset: T(OUT + 400), transform: 'scaleX(1)', opacity: 0 },
+      { offset: 1, transform: 'scaleX(0)', opacity: 0 },
+    ], loop);
+    const pop = 'cubic-bezier(.3, 1.6, .6, 1)';
+    scene.querySelector('.scene__count .ic').animate([
+      { offset: 0, opacity: 0, transform: 'scale(.4)' },
+      { offset: T(done), opacity: 0, transform: 'scale(.4)', easing: pop },
+      { offset: T(done + 360), opacity: 1, transform: 'scale(1)' },
+      { offset: T(OUT), opacity: 1, transform: 'scale(1)' },
+      { offset: T(OUT + 300), opacity: 0, transform: 'scale(1)' },
+      { offset: 1, opacity: 0, transform: 'scale(.4)' },
+    ], loop);
+
+    const tone = { pass: '--c-pass-200', cond: '--c-cond-200', fail: '--c-fail-200' };
+    const line = tok('--c-line-200');
+    scene.querySelectorAll('.scene__row').forEach((row, r) => {
+      const t = done + 500 + r * 420;
+      const hot = tok(tone[(row.className.match(/scene__row--(\w+)/) || [])[1]] || '--c-line-300');
+      row.animate([
+        { offset: 0, borderColor: line },
+        { offset: T(t), borderColor: line },
+        { offset: T(t + 200), borderColor: hot },
+        { offset: T(t + 1400), borderColor: line },
+        { offset: 1, borderColor: line },
+      ], loop);
+      row.querySelector('.scene__veil').animate([
+        { offset: 0, opacity: 1 },
+        { offset: T(t), opacity: 1 },
+        { offset: T(t + 260), opacity: 0 },
+        { offset: T(OUT), opacity: 0 },
+        { offset: T(OUT + 400), opacity: 1 },
+        { offset: 1, opacity: 1 },
+      ], loop);
+      row.querySelector('.scene__pill .ic').animate([
+        { offset: 0, opacity: 0, transform: 'scale(.3)' },
+        { offset: T(t + 120), opacity: 0, transform: 'scale(.3)', easing: pop },
+        { offset: T(t + 480), opacity: 1, transform: 'scale(1)' },
+        { offset: T(OUT + 400), opacity: 1, transform: 'scale(1)' },
+        { offset: T(OUT + 420), opacity: 0, transform: 'scale(.3)' },
+        { offset: 1, opacity: 0, transform: 'scale(.3)' },
+      ], loop);
+    });
+
+    // 인식한 성분 수: 상자가 잡힌 단어 수를 그대로 센다
+    const out = $('#scene-n');
+    let shown = -1;
+    const tick = () => {
+      const ct = Number(beam.currentTime) || 0;
+      const t = ct < START ? 0 : (ct - START) % CYCLE;
+      const k = t >= OUT + 200 ? 0 : hits.filter((h) => h <= t).length;
+      if (k !== shown) { out.textContent = String(k); shown = k; }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
   async function init() {
     bindEvents();
+    runScene();
     renderEmpty();
     const [health, certs, demo, docs] = await Promise.allSettled([
       getJSON('api/health'), getJSON('api/certs'), getJSON('api/demo-products'), getJSON('api/docs/types'),
