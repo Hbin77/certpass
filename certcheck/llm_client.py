@@ -442,7 +442,9 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
     base = {"cert_id": v.get("cert_id"), "status": v.get("status"), "sources": sources, "notice": NOTICE}
     if not enabled():
         return {**base, "enabled": False, "reason": "AgentStream 설명 모델 미연결", "ai_alert": None}
-    key = hashlib.sha256(build_prompt(v, card, product, sources, None).encode()).hexdigest()
+    # 경보 내용(확률)은 키에서 빼되, 경보를 정하는 AIStream 모델 주소·기준값은 넣는다 — 모델·기준을 바꾸면 설명도 새로 만든다
+    ml_ver = f"{os.environ.get('AISTREAM_URL', '')}|{os.environ.get('AISTREAM_FAIL_THRESHOLD', '')}"
+    key = hashlib.sha256(f"{build_prompt(v, card, product, sources, None)}\n{ml_ver}".encode()).hexdigest()
     with _lock:
         _load_cache()
         if key in _cache:

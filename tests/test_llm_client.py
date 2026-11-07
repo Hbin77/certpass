@@ -357,3 +357,13 @@ def test_slow_stream_without_newline_times_out(monkeypatch):
 
     with pytest.raises(TimeoutError):
         list(llm_client._lines(Drip(), _t.monotonic() + 1, 1))
+
+
+def test_cache_key_changes_with_ml_model(monkeypatch):
+    """AIStream 모델 주소·경보 기준이 바뀌면 예전 설명을 쓰지 않는다(ax-45 지적)."""
+    _on(monkeypatch, lambda *a, **k: dict(GOOD_RAW))
+    monkeypatch.setenv("AISTREAM_FAIL_THRESHOLD", "0.175")
+    assert explain_demo("D3", "EU_CPNP")["cached"] is False
+    assert explain_demo("D3", "EU_CPNP")["cached"] is True
+    monkeypatch.setenv("AISTREAM_FAIL_THRESHOLD", "0.3")
+    assert explain_demo("D3", "EU_CPNP")["cached"] is False
