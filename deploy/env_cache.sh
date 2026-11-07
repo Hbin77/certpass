@@ -7,3 +7,6 @@ export HF_HOME=/data/.cache/huggingface
 export MPLCONFIGDIR=/data/.cache/matplotlib
 export CUDA_CACHE_PATH=/data/.nv/ComputeCache
 export PATH=/data/tools:$PATH
+# 임시 파일·Ray 세션 로그도 /data 아래로
+export TMPDIR=/data/tmp
+export RAY_TMPDIR=/data/tmp/ray
