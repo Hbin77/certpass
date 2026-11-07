@@ -227,8 +227,11 @@ def estimate_skew(words: list[dict], min_pairs: int = 10) -> float | None:
     return round(statistics.median(angles), 2) if len(angles) >= min_pairs else None
 
 
-LOW_CONF = 0.8  # 단어 글자 읽기 확신도가 이보다 낮으면 '흐릿한 단어'
-BLURRY_SHARE = 0.4  # 흐릿한 단어가 이 비율 이상이면 사진이 작거나 흐리다고 알린다
+# 흐린 사진 기준은 모델마다 확신도 분포가 달라 서버 설정으로 둔다(모델을 바꿀 때 같이 바꾼다)
+# rec2(기존): 0.8·0.4 / rec4(망가뜨리기 증강): 0.9·0.4 — 학습에 없던 제품 사진 150장×3상태 실측에서
+# 재현율 0.6 미만 사진 52장 중 39장을 잡고, 0.8 이상 사진 365장 중 6장(1.6%)만 잘못 알린다
+LOW_CONF = float(os.environ.get("CERTCHECK_OCR_LOW_CONF", "0.8"))  # 단어 확신도가 이보다 낮으면 '흐릿한 단어'
+BLURRY_SHARE = float(os.environ.get("CERTCHECK_OCR_BLURRY_SHARE", "0.4"))  # 흐릿한 단어 비율이 이 이상이면 알린다
 
 
 def photo_quality(words: list[dict]) -> dict:

@@ -3,6 +3,7 @@
 서빙(AIStream)과 시험에서 함께 쓴다. 가중치는 train_det.py·train_ocr.py의 best.pt.
 - 검출은 긴 변 1280px로 줄인 사본에서 하고, 상자를 원본 크기로 되돌려 원본에서 단어를 잘라 읽는다(학습과 같은 해상도)
 - 단어마다 확신도(글자별 최대 확률의 평균)를 같이 돌려준다
+- 사전(lexicon)을 주면 확신도가 낮은 단어를 성분명 사전으로 다시 푼다(lexicon.py, 고친 단어는 raw에 원래 글자)
 """
 from __future__ import annotations
 
@@ -25,7 +26,7 @@ STOP = re.compile(r"(사용\s*(방법|법|시의|상의)|주의\s*사항|용\s*�
 
 
 class PackageOCR:
-    def __init__(self, det_ckpt: str, rec_ckpt: str, device: str | None = None):
+    def __init__(self, det_ckpt: str, rec_ckpt: str, device: str | None = None, lexicon: str | None = None, **lex_kw):
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         if hasattr(torch.backends, "mha") and hasattr(torch.backends.mha, "set_fastpath_enabled"):
             torch.backends.mha.set_fastpath_enabled(False)  # 주의 연산 빠른 경로 끔(서빙 CPU에서 입력에 따라 실패 방지)
@@ -40,6 +41,10 @@ class PackageOCR:
         self.rec.load_state_dict(r["model"])
         self.det.to(self.device).eval()
         self.rec.to(self.device).eval()
+        self.lex = None
+        if lexicon:
+            from lexicon import Lexicon  # rapidfuzz가 필요해 사전을 쓸 때만 읽는다
+            self.lex = Lexicon.from_csv(lexicon, self.charset, **lex_kw)
 
     @torch.no_grad()
     def detect(self, img: Image.Image) -> list[list[float]]:
@@ -80,21 +85,28 @@ class PackageOCR:
             logits = self.rec(((x - 0.5) / 0.5).to(self.device), widths).float()
             probs = logits.softmax(-1)
             texts = greedy(logits, self.charset, widths)
+            logp = logits.log_softmax(-1).cpu() if self.lex else None
             for k, t in enumerate(texts):
                 T = min(probs.shape[1], (int(widths[k]) + 3) // 4)
                 mx = probs[k, :T].max(-1)
                 keep = mx.indices != 0
                 conf = float(mx.values[keep].mean()) if keep.any() else 0.0
-                out.append((t, round(conf, 3) if math.isfinite(conf) else 0.0))
+                conf = round(conf, 3) if math.isfinite(conf) else 0.0
+                raw = None
+                if self.lex:
+                    fixed, changed = self.lex.correct(t, conf, logp[k, :T])
+                    if changed:
+                        raw, t = t, fixed
+                out.append((t, conf, raw))
         return out
 
     def read(self, data: bytes) -> dict:
         img = ImageOps.exif_transpose(Image.open(io.BytesIO(data))).convert("L")
         boxes = self.detect(img)
-        words = [{"box": [int(round(float(v))) for v in b], "text": str(t), "conf": float(c)}
-                 for b, (t, c) in zip(boxes, self.recognize(img, boxes)) if t]
+        words = [{"box": [int(round(float(v))) for v in b], "text": str(t), "conf": float(c), **({"raw": raw} if raw else {})}
+                 for b, (t, c, raw) in zip(boxes, self.recognize(img, boxes)) if t]
         lines = group_lines(words)
-        text = "\n".join(l["text"] for l in lines)
+        text = "\n".join(ln["text"] for ln in lines)
         return {"width": img.width, "height": img.height, "words": words, "lines": lines, "text": text,
                 "ingredients": extract_ingredients(lines)}
 
@@ -123,7 +135,7 @@ def group_lines(words: list[dict]) -> list[dict]:
 
 def extract_ingredients(lines: list[dict]) -> list[str]:
     """'전성분' 다음부터 다음 항목 제목(사용법·주의사항 등) 전까지를 쉼표로 나눈다. 시작 문구가 없으면 빈 목록."""
-    text = " ".join(l["text"] for l in lines)
+    text = " ".join(ln["text"] for ln in lines)
     m = START.search(text)
     if not m:
         return []
