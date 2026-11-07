@@ -292,8 +292,13 @@ def build_prompt(v: dict, card: dict, product: dict, sources: list[dict], ai: di
     hint = f"지식베이스에서 이 카드는 꼬리표 '{tag}'입니다. '{tag} {card.get('name_ko')}'로 찾고 다른 꼬리표 카드는 쓰지 마세요.\n" if kb_hint else ""
     src = "\n".join(f"근거 {s['n']}: {s['title'][:120]}" for s in sources) or "없음"
     claims = ", ".join(map(str, product.get("claims") or [])) or "없음"
+    done = ("등급이 '통과 가능'이니 새 보완 과제나 '원문 확인 필요'를 만들지 말고 충족한 이유만 쓰세요.\n"
+            if v.get("status") == "통과 가능" else "")
     return f"""아래 판정을 설명하세요. 판정 등급 "{v.get('status')}"은 확정값입니다. {cite}
-{hint}형식(6문장 이내):
+{hint}사유에 '확인'·'가능'·'유사'·'미상'이 있으면 사실로 단정하지 말고 확인할 일로 쓰세요.
+한도가 제품 유형별로 여럿이면 하나만 고르지 말고 모두 적으세요(제품 유형 '{product.get('product_type') or '미상'}').
+사유의 시점·조건·대상·작성 주체를 바꾸지 마세요.
+{done}형식(6문장 이내):
 왜 이 등급인가: (2~3문장)
 먼저 할 일: (1~3개, 한 줄씩 "- "로 시작)
 {ai_rule}
@@ -572,6 +577,16 @@ def _checks(text: str, v: dict, card: dict, product: dict, sources: list[dict], 
             "unsupported": unsupported_terms(text, corpus)}
 
 
+def cache_keys(v: dict, card: dict, product: dict, sources: list[dict]) -> tuple[str, str]:
+    """(지금 키, 2026-11-08 00시 이전 키). 보내는 프롬프트를 줄여도 저장된 설명을 그대로 쓰도록 예전 프롬프트(_key_prompt)로 만든다."""
+    base_prompt = _key_prompt(v, card, product, sources, None)
+    key = hashlib.sha256(f"{base_prompt}\nkb{os.environ.get('AGENTSTREAM_KB_VERSION', '1')}".encode()).hexdigest()
+    legacy = hashlib.sha256(  # 예전 키(모델 주소·기준·버전 포함) → 찾으면 새 키로 옮긴다
+        (f"{base_prompt}\n{os.environ.get('AISTREAM_URL', '')}|{os.environ.get('AISTREAM_FAIL_THRESHOLD', '')}"
+         f"|{os.environ.get('AISTREAM_MODEL_VERSION', '')}|kb{os.environ.get('AGENTSTREAM_KB_VERSION', '1')}").encode()).hexdigest()
+    return key, legacy
+
+
 def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None = None, pin: bool = False,
             cache_only: bool = False) -> dict:
     """판정 하나(Verdict.to_dict 모양)의 설명.
@@ -587,11 +602,7 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
     # 캐시 키 = 경보를 뺀 프롬프트 + 지식베이스 버전. AIStream 모델을 바꿔도 키는 그대로이고, 적중할 때 경보 여부만 다시 물어
     # '경보가 새로 생기거나 사라진 판정'만 다시 만든다(모델 교체 때 저장된 설명을 통째로 버리지 않게 — 토큰 절약).
     # 지식베이스를 다시 올리면 AGENTSTREAM_KB_VERSION을 올려 예전 지식베이스로 만든 설명을 쓰지 않게 한다.
-    base_prompt = _key_prompt(v, card, product, sources, None)  # 보내는 프롬프트를 줄여도 저장된 설명 키는 그대로
-    key = hashlib.sha256(f"{base_prompt}\nkb{os.environ.get('AGENTSTREAM_KB_VERSION', '1')}".encode()).hexdigest()
-    legacy = hashlib.sha256(  # 2026-11-08 00시 이전 키(모델 주소·기준·버전 포함) → 찾으면 새 키로 옮긴다
-        (f"{base_prompt}\n{os.environ.get('AISTREAM_URL', '')}|{os.environ.get('AISTREAM_FAIL_THRESHOLD', '')}"
-         f"|{os.environ.get('AISTREAM_MODEL_VERSION', '')}|kb{os.environ.get('AGENTSTREAM_KB_VERSION', '1')}").encode()).hexdigest()
+    key, legacy = cache_keys(v, card, product, sources)
     ai_now, ai_known = ai, not callable(ai)
     with _lock:
         _load_cache()

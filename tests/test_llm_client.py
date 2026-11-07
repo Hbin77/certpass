@@ -480,3 +480,15 @@ def test_bad_cached_notice_is_dropped(monkeypatch):
 def test_jp_g_per_100g_counts_as_percent():
     assert llm_client.unverified_facts("일본 기준 한도(1.0%) 준수", "한도 合計量として1.0 / 0.2g/100g") == []
     assert llm_client.unverified_facts("한도 0.2% 이하", "0.2g/100g") == []
+
+
+def test_prompt_guards_against_common_distortions():
+    from certcheck.app import resources, run_demo
+    cards = {c["id"]: c for c in resources()[0]}
+    v = next(x for x in run_demo("D3")["verdicts"] if x["cert_id"] == "EU_CPNP")
+    p = llm_client.build_prompt(v, cards["EU_CPNP"], {}, llm_client.sources_for(v, cards["EU_CPNP"]))
+    assert "단정하지 말고" in p and "하나만 고르지 말고" in p and "작성 주체를 바꾸지" in p and "미상" in p
+    ok = next((x for x in run_demo("D3")["verdicts"] if x["status"] == "통과 가능"), None)
+    if ok:
+        assert "새 보완 과제" in llm_client.build_prompt(ok, cards[ok["cert_id"]], {}, [])
+    assert not any(line.lstrip("- ").startswith("[") for line in p.splitlines())
