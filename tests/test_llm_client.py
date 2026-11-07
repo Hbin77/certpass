@@ -413,6 +413,9 @@ def test_amine_spec_note_in_prompt():
     p = llm_client.build_prompt(v, {"id": "TH_FDA", "name_ko": "태국"}, {"product_type": "cream"}, [])
     assert "Tromethamine 조건의 2차 아민" in p and "제품 함량은 0.0005%입니다" in p
     assert llm_client.spec_notes([other]) == []
+    kr = {"level": "cond", "code": "ING_RESTRICTED_CONDITIONS", "message": "제한 성분 Tromethamine 0.0005% (한도 조건) — 조건/경고문: 일부 용도 금지 · "}
+    note, = llm_client.spec_notes([kr])
+    assert "% 수치가 아니라 조건" in note and "제품 함량은 0.0005%입니다" in note
 
 
 def test_quoted_paraphrase_vs_new_wording():

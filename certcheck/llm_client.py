@@ -301,6 +301,12 @@ def spec_notes(findings: list[dict]) -> list[str]:
             ing, conc = (r.group(1), r.group(2)) if r else ("이 성분", "")
             out.append(f"- 참고: {ing} 조건의 2차 아민·니트로소아민·순도 수치(예: 0.5%)는 원료 불순물 규격(원료 규격서·성적서로 확인)이며 "
                        f"제품 속 성분 함량 한도가 아닙니다." + (f" 제품 함량은 {conc}입니다." if conc else ""))
+        elif f.get("code") == "ING_RESTRICTED_CONDITIONS" and "(한도 조건)" in m:
+            # 한국 사유처럼 수치 없이 '일부 용도 금지'만 있으면 AI가 다른 나라 카드 조각의 0.5%를 제품 한도로 가져왔다(D3 KR_CFS_EXPORT)
+            r = RESTRICTED.search(m)
+            ing, conc = (r.group(1), r.group(2)) if r else ("이 성분", "")
+            out.append(f"- 참고: {ing}의 한도는 % 수치가 아니라 조건(용도 제한·원료 규격)입니다. 이 사유에 없는 % 수치(다른 나라 기준 등)를 "
+                       f"제품 함량 한도로 쓰지 마세요." + (f" 제품 함량은 {conc}입니다." if conc else ""))
     return out
 
 
