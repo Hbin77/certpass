@@ -9,10 +9,10 @@
   /* 프록시 접두사(/i/<토큰>) 아래에서 상대경로가 맞도록, 디렉터리 주소는 '/'로 끝나게 맞춘다. */
   (function (l) { var p = l.pathname; if (p.slice(-1) !== "/" && !/\.(?:html?|js|css)$/i.test(p)) l.replace(p + "/" + l.search + l.hash); })(location);
 </script>
-<link rel="icon" href="data:,">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=6">
 <script src="app.js?v=6" defer></script>
 </head>
 <body>
@@ -40,7 +40,7 @@
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
   <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></symbol>
-  <symbol id="i-mark" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12.5 2.8 2.8L16.5 9"/></symbol>
+  <symbol id="i-mark" viewBox="0 0 24 24"><rect x="8" y="2" width="6" height="3.6" rx="1.2" fill="currentColor" stroke="none"/><path d="M17.5 13.4v4.6a3.6 3.6 0 0 1-3.6 3.6H8.1A3.6 3.6 0 0 1 4.5 18v-6.8a3.6 3.6 0 0 1 3.6-3.6h5"/><path d="m8 14.6 2.4 2.4L21.5 6"/></symbol>
 </svg>
 
 <header class="top">

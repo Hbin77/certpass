@@ -157,7 +157,7 @@ a { color: var(--c-brand-600); }
   display: inline-flex; align-items: center; gap: var(--sp-2); min-height: 44px;
   color: var(--c-ink-900); text-decoration: none; border-radius: var(--r-sm);
 }
-.brand__mark { width: var(--ic-lg); height: var(--ic-lg); color: var(--c-brand-700); }
+.brand__mark { width: 28px; height: 28px; stroke-width: 2.2; color: var(--c-brand-700); }
 .brand__name { font-size: var(--fs-18); font-weight: 700; letter-spacing: -0.01em; }
 .brand__desc {
   display: none; margin-left: var(--sp-2); padding-left: var(--sp-3);
