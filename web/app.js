@@ -1218,7 +1218,9 @@
       step(1, ml.kind === 'on' ? 'done' : 'fail', ml.kind === 'on' ? (alerts ? `경보 ${alerts}건` : '이상 없음') : '연결 안 됨');
       // AI 설명: 가장 먼저 볼 판정부터, 설명이 판정과 다른 등급을 말하면 다음 판정으로(최대 2건)
       S.aiPick = null;
-      const cands = aiCandidates().slice(0, 2);
+      // 후보: 가장 먼저 볼 불가 하나와 조건부 하나(불가 설명이 등급을 잘못 말해 걸러져도 맨 위가 비지 않게)
+      const all = aiCandidates();
+      const cands = [all.find((x) => x.status === ST.FAIL), all.find((x) => x.status === ST.COND)].filter(Boolean);
       if (cands.length && llmOn()) {
         step(2, 'run');
         const t0 = Date.now();
@@ -1753,9 +1755,9 @@
       flushAdd();
       fieldError('m-submit-err', null, '');
       const r = buildManualProduct();
-      if (r.error) {
-        fieldError('m-ing-err', 'm-ing', r.error);
-        $('#m-ing').focus();
+      if (r.error) { // 원문 칸은 접혀 있을 수 있어 판정하기 단추 아래에 알리고 성분 추가 칸으로 보낸다
+        fieldError('m-submit-err', null, '전성분을 한 가지 이상 넣어 주세요.');
+        $('#ing-add').focus();
         return;
       }
       fieldError('m-ing-err', 'm-ing', '');

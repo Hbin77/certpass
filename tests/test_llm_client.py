@@ -267,8 +267,8 @@ def test_cache_hit_skips_ai_and_ignores_ai_result(monkeypatch):
     from certcheck.app import resources, run_demo
     card = next(c for c in resources()[0] if c["id"] == "EU_CPNP")
     v = next(x for x in run_demo("D3")["verdicts"] if x["cert_id"] == "EU_CPNP")
-    assert llm_client.explain(v, card, {}, lambda: {"fail_proba": 0.5, "threshold": 0.2, "near": []})["cached"] is False
-    out = llm_client.explain(v, card, {}, lambda: (_ for _ in ()).throw(AssertionError("캐시 적중인데 ML 호출")))
+    assert llm_client.explain(v, card, {}, pin=True, ai=lambda: {"fail_proba": 0.5, "threshold": 0.2, "near": []})["cached"] is False
+    out = llm_client.explain(v, card, {}, pin=True, ai=lambda: (_ for _ in ()).throw(AssertionError("캐시 적중인데 ML 호출")))
     assert out["cached"] is True and out["ai_alert"]["fail_proba"] == 0.5
 
 
@@ -368,17 +368,17 @@ def test_cache_survives_model_change_but_alert_change_regenerates(monkeypatch):
     card = next(c for c in resources()[0] if c["id"] == "EU_CPNP")
     v = next(x for x in run_demo("D3")["verdicts"] if x["cert_id"] == "EU_CPNP")
     alert = {"fail_proba": 0.5, "threshold": 0.25, "near": []}
-    assert llm_client.explain(v, card, {}, lambda: None)["cached"] is False
+    assert llm_client.explain(v, card, {}, pin=True, ai=lambda: None)["cached"] is False
     monkeypatch.setenv("AISTREAM_MODEL_VERSION", "v8")
     monkeypatch.setenv("AISTREAM_FAIL_THRESHOLD", "0.3")
-    assert llm_client.explain(v, card, {}, lambda: None)["cached"] is True and len(calls) == 1
+    assert llm_client.explain(v, card, {}, pin=True, ai=lambda: None)["cached"] is True and len(calls) == 1
     def boom():
         raise RuntimeError("AIStream 실패")
-    assert llm_client.explain(v, card, {}, boom)["cached"] is True  # ML 실패면 저장본 그대로
-    out = llm_client.explain(v, card, {}, lambda: alert)  # 경보가 새로 생김 → 다시 만듦
+    assert llm_client.explain(v, card, {}, pin=True, ai=boom)["cached"] is True  # ML 실패면 저장본 그대로
+    out = llm_client.explain(v, card, {}, pin=True, ai=lambda: alert)  # 경보가 새로 생김 → 다시 만듦
     assert out["cached"] is False and out["ai_alert"] == alert and len(calls) == 2
     monkeypatch.setenv("AGENTSTREAM_KB_VERSION", "9")  # 지식베이스를 다시 올리면 새로
-    assert llm_client.explain(v, card, {}, lambda: alert)["cached"] is False
+    assert llm_client.explain(v, card, {}, pin=True, ai=lambda: alert)["cached"] is False
 
 
 def test_legacy_key_migrates(monkeypatch):
@@ -392,7 +392,7 @@ def test_legacy_key_migrates(monkeypatch):
     monkeypatch.setenv("AISTREAM_MODEL_VERSION", "v6")
     with llm_client._lock:
         llm_client._cache_put(old, {"text": "왜 이 등급인가: 예전 키 설명", "ai_alert": None}, False)
-    assert llm_client.explain(v, card, {}, lambda: None)["text"] == "왜 이 등급인가: 예전 키 설명"
+    assert llm_client.explain(v, card, {}, pin=True, ai=lambda: None)["text"] == "왜 이 등급인가: 예전 키 설명"
 
 
 def test_unsupported_terms_and_strip_refs():
@@ -532,3 +532,19 @@ def test_prompt_carries_engine_actions():
                                           "action": "자사가 발급해 수입자에게 전달"}]}
     p = llm_client.build_prompt(v, {"id": "TH_FDA", "name_ko": "태국"}, {"product_type": "face_cream"}, [])
     assert "/ 할 일: 자사가 발급해 수입자에게 전달" in p and "작성 주체를 바꾸지 마세요" in p
+
+
+def test_user_products_are_never_served_from_or_stored_in_cache(monkeypatch):
+    """사용자가 넣은 제품(pin=False)은 판정 사유가 같아도 저장본을 쓰지 않고 매번 새로 만든다."""
+    from certcheck import llm_client
+    calls = []
+    monkeypatch.setattr(llm_client, "enabled", lambda: True)
+    monkeypatch.setattr(llm_client, "call", lambda prompt, timeout, title="", bot=None: calls.append(1) or
+                        {"text": "왜 이 등급인가: 불가 사유입니다.\n먼저 할 일:\n- 재처방", "rag_sources": [], "tool_failed": False, "docs": []})
+    monkeypatch.setattr(llm_client, "_save_cache", lambda: None)
+    llm_client._cache.clear()
+    v = {"cert_id": "X", "status": "불가", "findings": [{"level": "fail", "message": "금지 성분"}]}
+    card = {"id": "X", "name_ko": "X"}
+    a = llm_client.explain(v, card, {}, None)
+    b = llm_client.explain(v, card, {}, None)
+    assert a["cached"] is False and b["cached"] is False and len(calls) == 2 and not llm_client._cache

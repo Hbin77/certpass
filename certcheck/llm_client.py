@@ -675,7 +675,8 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
             _cache[key] = _cache.pop(legacy)
             if _cache[key].get("pin"):
                 _save_cache()
-        hit = dict(_cache[key]) if key in _cache else None
+        # 저장본은 미리 만든 데모 제품(pin)만 쓴다. 사용자가 넣은 제품은 판정 사유가 같아도 그 제품으로 새로 만든다
+        hit = dict(_cache[key]) if key in _cache and pin else None
     if hit is not None and grade_mismatch(hit.get("text", ""), v.get("status")):
         hit = None  # 판정과 다른 등급을 말한 저장본은 쓰지 않고 새로 만든다(새 답이 같은 키에 덮어쓴다)
     if hit is not None and not cache_only and callable(ai):
@@ -726,7 +727,9 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
             if _day_take():
                 log.warning("agentstream grade mismatch %s %s → 다시 만듦", card.get("id"), v.get("status"))
                 try:
-                    again = call(prompt + f"\n앞선 답이 판정 등급을 잘못 썼습니다. 이 판정의 등급은 '{v.get('status')}'입니다.\n",
+                    fails = [KW.sub("", f.get("message", ""))[:160] for f in v.get("findings") or [] if f.get("level") == "fail"][:3]
+                    why = f" 등급의 이유는 다음 사유입니다: {' / '.join(fails)}. 이 사유로 설명을 시작하세요." if fails else ""
+                    again = call(prompt + f"\n앞선 답이 판정 등급을 잘못 썼습니다. 이 판정의 등급은 '{v.get('status')}'입니다.{why}\n",
                                  timeout, title)
                     if again["text"] and valid_answer(again["text"]) and not grade_mismatch(again["text"], v.get("status")):
                         raw = again
@@ -734,6 +737,8 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
                     log.warning("agentstream 다시 만들기 실패 %s: 첫 답을 씀", type(e).__name__)
             else:
                 _rate_refund(client)
+        if grade_mismatch(raw["text"], v.get("status")):  # 끝까지 등급이 어긋나면 틀린 설명을 보여 주지 않는다(다시 불러오기로)
+            raise ValueError("설명이 판정 등급과 맞지 않음")
     except Busy as e:
         _rate_refund(client)
         return {**base, "enabled": True, "ok": False, "ai_alert": ai, "error": f"RateLimit: {e}"}
@@ -742,8 +747,9 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
     docs = raw.pop("docs", [])
     g = group_sources(docs, card.get("id")) if docs else {"rag_target": None, "rag_other": None}
     ans = {**raw, **g, "ai_alert": ai, "unverified": unverified_facts(raw["text"], _key_prompt(v, card, product, sources, ai) + "\n".join(d["text"] for d in docs))}
-    with _lock:
-        _cache_put(key, ans, pin)
+    if pin:  # 데모 제품만 저장한다(사용자 제품은 매번 새로)
+        with _lock:
+            _cache_put(key, ans, pin)
     return {**base, **ans, **_checks(ans["text"], v, card, product, sources, docs, ai), "enabled": True, "ok": True, "cached": False}
 
 
