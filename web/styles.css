@@ -482,7 +482,7 @@ code {
 .vrow__detail > .mlalert { margin-bottom: var(--sp-4); }
 /* AgentStream 판정 설명 */
 .aiexp {
-  max-width: 46em; margin-top: var(--sp-4); padding: var(--sp-3) var(--sp-4);
+  max-width: 46em; margin: 0 0 var(--sp-4); padding: var(--sp-3) var(--sp-4);
   background: var(--c-brand-050); border: 1px solid var(--c-brand-100); border-left: 3px solid var(--c-brand-700); border-radius: var(--r-sm);
 }
 .aiexp__title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); font-size: var(--fs-14); font-weight: 600; color: var(--c-ink-900); }

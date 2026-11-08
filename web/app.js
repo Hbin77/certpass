@@ -716,8 +716,14 @@
 
   // LLM 설명이 판정과 다른 등급을 말하는지(예: 불가 판정인데 "'조건부' 판정"). 판정 등급은 규칙 엔진 결과를 따른다
   const GRADE_SAID = /['‘"“]?(불가|조건부|통과 가능|해당 없음)['’"”]?\s*(?:판정|등급)/g;
+  // '보완하지 않으면 불가 판정이 날 수 있습니다'처럼 조건을 단 문장은 빼고 본다(서버 llm_client.grade_mismatch와 같은 기준)
+  const GRADE_IF_AFTER = /^\s*(?:으로|로|이|가)?\s*(?:바뀔|바뀝|될|날|나올|내려질)/;
+  const GRADE_IF_BEFORE = /(?:않으면|않을 경우|이후에?는?|되면|경우)\s*$/;
   function gradeMismatch(text, status) {
-    return Array.from(String(text || '').matchAll(GRADE_SAID)).some((m) => m[1] !== status);
+    const t = String(text || '');
+    return Array.from(t.matchAll(GRADE_SAID)).some((m) => m[1] !== status
+      && !GRADE_IF_AFTER.test(t.slice(m.index + m[0].length))
+      && !GRADE_IF_BEFORE.test(t.slice(Math.max(0, m.index - 12), m.index)));
   }
   // 결과 맨 위 AI 설명: 가장 먼저 볼 판정(불가, 없으면 조건부) 하나의 LLM 설명에서 '왜 이 등급인가'만 보인다
   function aiCandidates() {
@@ -987,7 +993,8 @@
     const fs = v.findings || [];
     const confWhy = uniq(fs.filter((f) => CONF_CODES.has(f.code)).map((f) => clean(f.message)));
     const ml = mlDetailHTML(v);
-    let html = `${ml ? ml.alert : ''}<dl class="dmeta">
+    // AI 판정 설명을 맨 위에(펼치면 바로 보이게), 그 아래 인증 정보·근거 문서·사유
+    let html = `${ml ? ml.alert : ''}${explainSlotHTML(v)}<dl class="dmeta">
       <dt>관할</dt><dd>${esc(jurName(v.jurisdiction))} <span class="muted">${esc(v.jurisdiction)}</span></dd>
       <dt>종류</dt><dd>${esc(KIND[v.kind] || v.kind || '-')}</dd>
       ${c.name_en ? `<dt>영문명</dt><dd>${esc(c.name_en)}</dd>` : ''}
@@ -1008,7 +1015,7 @@
     if (v.status === ST.NA) {
       const na = fs.filter((f) => f.level === 'na');
       html += `<ul class="flist" role="list">${na.map((f) => findingHTML({ type: 'one', f })).join('')}</ul>`;
-      return html + explainSlotHTML(v);
+      return html;
     }
     const gaps = fs.filter(isGap);
     if (!gaps.length) html += `<p class="pass-note">${icon('i-pass')}보완할 항목이 없습니다. 현재 처방·서류로 요건을 충족합니다.</p>`;
@@ -1032,7 +1039,6 @@
         <div class="more__body"><p class="hint">아래에 해당하면 재처방해야 합니다. 판정 엔진이 성분 규정 목록으로 함께 대조합니다.</p>
         <ul class="rules" role="list">${rules.map((f) => `<li>${icon('i-fail', 'ic--sm')}<span>${esc(clean(f.message))}</span></li>`).join('')}</ul></div></details>`;
     }
-    html += explainSlotHTML(v);
     const docs = relatedDocs(v).filter((d) => S.docTypes instanceof Set && S.docTypes.has(d));
     if (docs.length) {
       html += `<div class="ddocs"><span class="ddocs__label">관련 서류 초안</span>${docs.map((d) =>

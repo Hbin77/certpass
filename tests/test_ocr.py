@@ -357,6 +357,9 @@ def test_grade_mismatch_detects_other_grade_words():
     assert lc.grade_mismatch("속성표가 없어 '조건부' 판정이 나왔습니다.", "불가")
     assert not lc.grade_mismatch("금지 성분이 있어 '불가' 판정입니다. 인증이 불가능합니다.", "불가")
     assert not lc.grade_mismatch("현재 제품은 통과가 어렵습니다.", "불가")
+    # 조건을 단 문장은 등급을 바꿔 말한 것이 아니다
+    assert not lc.grade_mismatch("2027년 6월 이후에는 불가 판정으로 바뀔 수 있습니다.", "조건부")
+    assert not lc.grade_mismatch("보완하지 않으면 불가 판정이 날 수 있습니다.", "조건부")
     v = {"status": "불가", "findings": [], "cert_id": "X"}
     prompt = lc.build_prompt(v, {"id": "X", "name_ko": "X"}, {"ingredients": []}, [])
     assert "'불가' 사유(재처방)를 먼저" in prompt and "다른 등급 이름은 쓰지 마세요" in prompt

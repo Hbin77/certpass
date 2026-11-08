@@ -199,9 +199,21 @@ PLATFORM_NOTICE = ("모델 공급자의 순간 요청 한도", "설명 검증을
 GRADE_SAID = re.compile(r"['‘\"“]?(불가|조건부|통과 가능|해당 없음)['’\"”]?\s*(?:판정|등급)")
 
 
+GRADE_IF_AFTER = re.compile(r"\s*(?:으로|로|이|가)?\s*(?:바뀔|바뀝|될|날|나올|내려질)")
+GRADE_IF_BEFORE = re.compile(r"(?:않으면|않을 경우|이후에?는?|되면|경우)\s*$")
+
+
 def grade_mismatch(text: str, status: str | None) -> bool:
-    """설명이 판정과 다른 등급을 말하는지(예: 불가 판정인데 "'조건부' 판정이 나왔습니다")."""
-    return any(m.group(1) != status for m in GRADE_SAID.finditer(text or ""))
+    """설명이 판정과 다른 등급을 말하는지(예: 불가 판정인데 "'조건부' 판정이 나왔습니다").
+    '보완하지 않으면 불가 판정이 날 수 있습니다'처럼 조건을 단 문장은 등급을 바꿔 말한 것이 아니라 뺀다."""
+    t = text or ""
+    for m in GRADE_SAID.finditer(t):
+        if m.group(1) == status:
+            continue
+        if GRADE_IF_AFTER.match(t, m.end()) or GRADE_IF_BEFORE.search(t[max(0, m.start() - 12):m.start()]):
+            continue
+        return True
+    return False
 
 
 def valid_answer(text: str) -> bool:
@@ -664,6 +676,8 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
             if _cache[key].get("pin"):
                 _save_cache()
         hit = dict(_cache[key]) if key in _cache else None
+    if hit is not None and grade_mismatch(hit.get("text", ""), v.get("status")):
+        hit = None  # 판정과 다른 등급을 말한 저장본은 쓰지 않고 새로 만든다(새 답이 같은 키에 덮어쓴다)
     if hit is not None and not cache_only and callable(ai):
         try:  # 적중해도 경보 여부는 지금 모델 기준으로 확인(빠른 RF 한 번). 실패하면 저장된 설명을 그대로 쓴다
             ai_now, ai_known = ai(), True
@@ -707,11 +721,19 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
             if "순간 요청 한도" in raw["text"]:
                 raise RateLimited("turn LLM_RATE_LIMITED(답 자리에 플랫폼 안내문)")
             raise ValueError("답이 요청한 형식이 아님")
-        if grade_mismatch(raw["text"], v.get("status")):  # 등급을 바꿔 말하면 한 번만 바로잡아 다시 만든다
-            log.warning("agentstream grade mismatch %s %s → 다시 만듦", card.get("id"), v.get("status"))
-            again = call(prompt + f"\n앞선 답이 판정 등급을 잘못 썼습니다. 이 판정의 등급은 '{v.get('status')}'입니다.\n", timeout, title)
-            if again["text"] and valid_answer(again["text"]) and not grade_mismatch(again["text"], v.get("status")):
-                raw = again
+        # 등급을 바꿔 말하면 한 번만 바로잡아 다시 만든다 — 분당·하루 상한 안에서만, 실패하면 첫 답을 그대로 쓴다
+        if grade_mismatch(raw["text"], v.get("status")) and _rate_take(client):
+            if _day_take():
+                log.warning("agentstream grade mismatch %s %s → 다시 만듦", card.get("id"), v.get("status"))
+                try:
+                    again = call(prompt + f"\n앞선 답이 판정 등급을 잘못 썼습니다. 이 판정의 등급은 '{v.get('status')}'입니다.\n",
+                                 timeout, title)
+                    if again["text"] and valid_answer(again["text"]) and not grade_mismatch(again["text"], v.get("status")):
+                        raw = again
+                except Exception as e:
+                    log.warning("agentstream 다시 만들기 실패 %s: 첫 답을 씀", type(e).__name__)
+            else:
+                _rate_refund(client)
     except Busy as e:
         _rate_refund(client)
         return {**base, "enabled": True, "ok": False, "ai_alert": ai, "error": f"RateLimit: {e}"}
