@@ -343,3 +343,10 @@ def test_label_info_reads_package_fields():
     assert oc.label_info(["제조업자 : 책임판매업자 제조일로부터 : 데모 30개월 화장품사(가상)"]) == {}
     # 표 형식 문서: 이름 칸은 뽑지 않는다
     assert oc.label_info(["총 합계", "IGLYCERIN 글리세린 Glycerin 56-81-5 1-2 HUMECTANT"], names=False) == {}
+
+
+def test_heading_fragments_and_headers_are_not_ingredients_or_names():
+    from certcheck import ocr_client as oc
+    names = [i["kr"] or i["raw"] for i in oc.match_all(["리모넨", "알파-터피넨", "피넨", "사용 시"])]
+    assert names == ["리모넨", "알파-터피넨", "피넨"]  # 사전에 없는 성분(알파-터피넨)은 남기고 머리말 조각만 버린다
+    assert oc.label_info(["제품 정보", "PRODUCT INFORMATION", "카멜리아 수분 크림"]) == {"name_kr": "카멜리아 수분 크림"}

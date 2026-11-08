@@ -164,6 +164,10 @@ def rejoin_digit_commas(raw_items: list[str], text: str) -> list[str]:
     return out
 
 
+# 전성분 구역 끝을 넘어 들어온 다음 머리말 조각('사용 시의 주의사항' → '사용 시'). 사전에 없을 때만 버린다
+HEADING_BITS = re.compile(r"^(사용|주의|보관|제조|내용량|용량|효능|효과|포장|제품\s*정보)")
+
+
 def match_all(raw_items: list[str], text: str = "") -> list[dict]:
     """OCR 전성분 덩어리 목록 → 표준명 맞추기 결과(쪼개기 포함, 같은 성분은 한 번만). text는 숫자 쉼표를 되붙일 원문."""
     out, seen = [], set()
@@ -172,6 +176,8 @@ def match_all(raw_items: list[str], text: str = "") -> list[dict]:
         m = match_name(clean) if clean else None
         parts = [m] if m and m["match"] == "exact" else [match_name(p) for p in segment(raw)]
         for p in parts:
+            if p["match"] == "unknown" and HEADING_BITS.match(p["raw"].strip()):
+                continue
             key = p["kr"] or p["raw"]
             if key not in seen:
                 seen.add(key)
@@ -265,7 +271,7 @@ NET_RE = re.compile(r"(?<![\d.,])(\d+(?:[.,]\d+)?)\s*(ml|mL|ML|g|G|kg|KG|L)(?![A
 MFR_RE = re.compile(r"(제조업자|제조원|제조사|제조판매업자|책임판매업자|판매원)")
 LIFE_RE = re.compile(r"(?:사용\s*기한|유통\s*기한)\s*[:：]?\s*(.+)")
 PAO_RE = re.compile(r"(?<![\d])(\d{1,2})\s*M(?![A-Za-z])")
-EN_SKIP = re.compile(r"made in|ingredient|inci|www\.|http|lot|batch|exp|net\s*wt|\d{3,}", re.I)
+EN_SKIP = re.compile(r"made in|ingredient|inci|information|www\.|http|lot|batch|exp|net\s*wt|\d{3,}", re.I)
 
 
 def label_info(lines: list[str], names: bool = True) -> dict:
@@ -301,7 +307,7 @@ def label_info(lines: list[str], names: bool = True) -> dict:
                 out["name_en"] = bare[:80]
         # 국문 제품명: 위에서부터 처음 나오는 짧은 한글 줄(표시 항목 머리말·문장은 뺀다)
         if names and "name_kr" not in out and len(re.findall(r"[가-힣]", bare)) >= 3 and len(bare) <= 30 \
-                and not re.search(r"[:：\[\]()%]|전성분|성분|사용|주의|제조|기한|보관|용량|내용량|판매|다\.?$", bare):
+                and not re.search(r"[:：\[\]()%]|전성분|성분|사용|주의|제조|기한|보관|용량|내용량|판매|정보|표시|안내|다\.?$", bare):
             out["name_kr"] = bare
     return out
 
