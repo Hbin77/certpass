@@ -915,7 +915,7 @@
       const line = raw.trim().replace(/^\*\*(.+?)\*\*/, '$1');
       if (!line) continue;
       const m = line.match(/^[-*•]\s+(.*)$/);
-      if (m) list.push(`<li>${esc(m[1])}</li>`);
+      if (m) { const li = `<li>${esc(m[1])}</li>`; if (!list.includes(li)) list.push(li); } // 같은 할 일이 되풀이되면 한 번만
       else { flush(); out.push(`<p>${esc(line)}</p>`); }
     }
     flush();
