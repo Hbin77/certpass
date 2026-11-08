@@ -1294,13 +1294,22 @@
         part = part.trim().replace(/^\d+[.)]\s+/, '').replace(/[.;]+$/, '');
         if (!part) continue;
         const cols = part.split(/\s*[|\t]\s*/);
-        const name = (cols[0] || '').trim();
-        if (!name) continue;
+        let name = (cols[0] || '').trim();
         let pct = null;
         if (cols[1]) {
           const m = cols[1].replace(',', '.').match(/\d+(?:\.\d+)?/);
           if (m) { const n = parseFloat(m[0]); if (n >= 0 && n <= 100) pct = n; }
         }
+        // 시판 표기: 이름 뒤 괄호의 함량('살리실릭애씨드(5,000ppm)' → 0.5%)과 색소 번호('(CI 77891)')는 이름에서 뗀다
+        const inName = name.match(/\s*[(（]\s*([\d.,]+)\s*(ppm|%)\s*[)）]\s*$/i);
+        if (inName) {
+          name = name.slice(0, inName.index).trim();
+          const n = parseFloat(inName[1].replace(/,/g, ''));
+          const v = /ppm/i.test(inName[2]) ? n / 10000 : n;
+          if (pct == null && v >= 0 && v <= 100) pct = Math.round(v * 10000) / 10000;
+        }
+        name = name.replace(/\s*[(（]\s*CI\s*\d{5}\s*[)）]/i, '').trim();
+        if (!name) continue;
         const casCol = (cols[2] || '').trim();
         const isKr = /[가-힣]/.test(name);
         if (isKr) hangul += 1;
