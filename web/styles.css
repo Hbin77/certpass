@@ -206,13 +206,24 @@ body:not([data-view="result"]) .tabsnav { display: none; }
 /* ---------- 첫 화면: 화면 한 장 — 왼쪽은 할 일(파일 놓기), 오른쪽은 그 뒤에 일어나는 일 */
 .hero {
   position: relative; display: flex; flex-direction: column; min-height: calc(100dvh - var(--header-h));
-  background: radial-gradient(60% 70% at 78% 45%, var(--c-hero-2) 0%, transparent 70%), var(--c-hero); color: var(--c-on-hero);
+  background: radial-gradient(70% 60% at 50% 40%, var(--c-hero-2) 0%, transparent 70%), var(--c-hero); color: var(--c-on-hero);
 }
 .hero__in { flex: 1; width: 100%; max-width: 1180px; margin: 0 auto; padding: var(--sp-10) var(--sp-4) var(--sp-8);
   display: grid; gap: var(--sp-10); align-content: center; align-items: center; }
-@media (min-width: 960px) { .hero__in { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-12); padding: var(--sp-12) var(--sp-8); } }
-.hero__title { font-size: clamp(1.9rem, 1.2rem + 2.6vw, 3rem); font-weight: 700; line-height: 1.2; letter-spacing: -0.025em; text-wrap: balance; }
-.hero__lede { margin: var(--sp-4) 0 var(--sp-8); max-width: 34em; color: var(--c-on-hero-soft); font-size: var(--fs-18); }
+@media (min-width: 960px) { .hero__in { padding: var(--sp-12) var(--sp-8); } }
+/* 첫 화면은 한 줄 가운데: 문장 → 넓은 파일 칸 → 링크 */
+.hero__copy { width: 100%; max-width: 1000px; margin: 0 auto; display: grid; justify-items: center; text-align: center; }
+.hero__copy > * { width: 100%; }
+.hero .drop { grid-template-columns: 1fr; justify-items: center; text-align: center; min-height: 230px; padding: var(--sp-10) var(--sp-8); }
+.hero .drop__icon { width: 48px; height: 48px; }
+.hero .drop__text .btn__text { font-size: var(--fs-24); }
+.hero .drop__pick { grid-column: auto; justify-self: center; min-height: 48px; padding: 0 var(--sp-6); font-size: var(--fs-16); }
+.hero .hero__alt, .hero .picked__list { justify-content: center; }
+.hero .picked { justify-items: center; }
+.hero .btn--start { justify-self: center; }
+.hero .demo-list { margin-left: auto; margin-right: auto; text-align: left; }
+.hero__title { font-size: clamp(2rem, 1.2rem + 3vw, 3.6rem); font-weight: 700; line-height: 1.2; letter-spacing: -0.025em; text-wrap: balance; }
+.hero__lede { margin: var(--sp-4) auto var(--sp-8); max-width: 34em; color: var(--c-on-hero-soft); font-size: var(--fs-18); }
 .hero__alt { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-6); margin-top: var(--sp-4); }
 .hero__src { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 var(--sp-4) var(--sp-4); font-size: var(--fs-12); color: var(--c-on-hero-soft); }
 .hero__src a { color: inherit; }
@@ -260,9 +271,7 @@ body:not([data-view="result"]) .tabsnav { display: none; }
 
 /* 오른쪽 그림: 전성분 라벨을 빛줄기가 훑으며 단어마다 인식 상자 → 성분 수 → 인증별 판정.
    CSS만으로는 끝난 장면(정지 화면)을 그리고, 움직임은 app.js가 Web Animations로 한 주기에 맞춰 돌린다. */
-.hero__side { display: grid; align-content: center; min-width: 0; }
-.scene { display: none; position: relative; margin: 0; width: 100%; max-width: 560px; height: 500px; justify-self: center; }
-@media (min-width: 960px) { .scene { display: block; } }
+.scene { position: relative; margin: 0; width: 560px; height: 500px; }
 
 .scene__photo {
   position: absolute; left: 0; top: 0; width: 400px; aspect-ratio: 800 / 786; border-radius: var(--r-md); overflow: hidden;
@@ -890,3 +899,29 @@ code {
 .aisum__head span { font-weight: 700; }
 .aisum__text { margin-top: var(--sp-2); max-width: 70ch; color: var(--c-ink-900); line-height: 1.65; }
 .extra { margin-top: var(--sp-8); }
+
+/* ---------- 인트로: OCR 그림 → CertPass가 써짐 → 이름은 머리글로, 그림은 사라짐 → 첫 화면 */
+.intro { display: none; position: fixed; inset: 0; z-index: 40; place-items: center; overflow: hidden;
+  background: radial-gradient(70% 60% at 50% 45%, var(--c-hero-2) 0%, transparent 70%), var(--c-hero); color: var(--c-on-hero); cursor: pointer; }
+.intro-on .intro, .intro-fly .intro { display: grid; }
+.intro-fly .intro { background: transparent; pointer-events: none; }
+html.intro-on, .intro-on body { overflow: hidden; }
+.intro__stage { position: absolute; left: 50%; top: 50%; width: 560px; height: 500px; margin: -250px 0 0 -280px; transform-origin: center; }
+.intro__scrim { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .45s var(--ease-out);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--c-hero) 88%, transparent), color-mix(in srgb, var(--c-hero) 62%, transparent)); }
+.intro.is-word .intro__scrim { opacity: 1; }
+.intro__word { position: absolute; inset: 0; margin: auto; width: fit-content; height: fit-content; display: flex; align-items: center; gap: .22em;
+  font-size: clamp(3rem, 1.6rem + 5vw, 6rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; color: var(--c-on-hero);
+  transform-origin: 0 0; pointer-events: none; }
+.intro__mark { width: .82em; height: .82em; stroke-width: 2.2; color: var(--c-scan); opacity: 0; transform: scale(.6);
+  transition: opacity .4s var(--ease-out), transform .45s cubic-bezier(.3, 1.6, .6, 1); }
+.intro__name span { display: inline-block; opacity: 0; transform: translateY(.3em); filter: blur(10px);
+  transition: opacity .5s var(--ease-out), transform .5s var(--ease-out), filter .5s var(--ease-out); transition-delay: calc(var(--i) * 55ms + 150ms); }
+.intro.is-word .intro__mark, .intro.is-word .intro__name span { opacity: 1; transform: none; filter: none; }
+.intro.is-fast .intro__mark, .intro.is-fast .intro__name span { transition-duration: .15s; transition-delay: 0s; }
+.intro-on .top .brand, .intro-fly .top .brand { opacity: 0; }
+.intro-on .hero__copy > * { opacity: 0; }
+.hero--enter .hero__copy > * { animation: rise .55s var(--ease-out) both; }
+.hero--enter .hero__copy > :nth-child(2) { animation-delay: .08s; }
+.hero--enter .hero__copy > :nth-child(3) { animation-delay: .16s; }
+.hero--enter .hero__copy > :nth-child(n+4) { animation-delay: .24s; }

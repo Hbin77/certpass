@@ -1914,10 +1914,11 @@
     const scene = $('#scene');
     const data = scene && buildScene();
     if (!data || !scene.offsetParent || reduceMotion() || typeof scene.animate !== 'function') return;
-    const CYCLE = 12500, START = 700, FOCUS = 500, S0 = 500, SWEEP = 1900, DIM = 2600, FLY0 = 3100, FLY_GAP = 250, FLY = 460, OUT = 11600;
+    // 인트로에서 한 번만 재생한다(끝 장면은 인트로가 끝날 때까지 유지)
+    const CYCLE = 9000, START = 250, FOCUS = 400, S0 = 350, SWEEP = 1500, DIM = 2000, FLY0 = 2400, FLY_GAP = 130, FLY = 420, OUT = 8400;
     const T = (ms) => ms / CYCLE;
     const tok = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-    const loop = { duration: CYCLE, iterations: Infinity, delay: START, fill: 'both' };
+    const loop = { duration: CYCLE, iterations: 1, delay: START, fill: 'both' };
     const photo = scene.querySelector('.scene__photo');
     const card = scene.querySelector('.scene__card');
     const H = photo.offsetHeight;
@@ -2015,7 +2016,7 @@
     const tone = { pass: '--c-pass-200', cond: '--c-cond-200', fail: '--c-fail-200' };
     const line = tok('--c-line-200');
     scene.querySelectorAll('.scene__row').forEach((row, r) => {
-      const t = done + 300 + r * 520;
+      const t = done + 300 + r * 380;
       const hot = tok(tone[(row.className.match(/scene__row--(\w+)/) || [])[1]] || '--c-line-300');
       row.animate([
         { offset: 0, borderColor: line, transform: 'none' },
@@ -2049,6 +2050,7 @@
     const out = $('#scene-n');
     let shown = -1;
     const tick = () => {
+      if (scene.offsetParent === null) return; // 인트로가 끝나 그림이 사라지면 멈춘다
       const ct = Number(beam.currentTime) || 0;
       const t = ct < START ? 0 : (ct - START) % CYCLE;
       const n = t >= OUT + 200 ? 0 : lands.filter((h) => h <= t).length;
@@ -2058,10 +2060,60 @@
     requestAnimationFrame(tick);
   }
 
+  // 인트로: 그림 재생 → CertPass가 써짐 → 이름은 머리글 자리로 날아가고 그림은 사라짐 → 첫 화면. 누르거나 키를 치면 건너뛴다
+  const INTRO_WORD_MS = 6300, INTRO_END_MS = 7400;
+  function runIntro() {
+    const root = document.documentElement;
+    if (!root.classList.contains('intro-on')) return;
+    const intro = $('#intro');
+    const stage = $('#intro-stage');
+    const fit = Math.min(1.2, (window.innerWidth * 0.9) / 560, (window.innerHeight * 0.8) / 500);
+    stage.style.transform = `scale(${fit.toFixed(3)})`;
+    runScene();
+    const timers = [setTimeout(() => intro.classList.add('is-word'), INTRO_WORD_MS), setTimeout(() => end(false), INTRO_END_MS)];
+    let ended = false;
+    const fly = () => {
+      const word = $('#intro-word');
+      const W = word.getBoundingClientRect();
+      const N = word.querySelector('.intro__name').getBoundingClientRect();
+      const B = $('.top .brand__name').getBoundingClientRect();
+      const k = B.height / N.height;
+      const tx = B.left - W.left - (N.left - W.left) * k;
+      const ty = B.top - W.top - (N.top - W.top) * k;
+      const tok = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+      const ease = 'cubic-bezier(.65, 0, .35, 1)';
+      word.animate([{ transform: 'none', color: tok('--c-on-hero') }, { transform: `translate(${tx}px, ${ty}px) scale(${k})`, color: tok('--c-ink-900') }],
+        { duration: 700, easing: ease, fill: 'forwards' });
+      word.querySelector('.intro__mark').animate([{ color: tok('--c-scan') }, { color: tok('--c-brand-700') }], { duration: 700, easing: ease, fill: 'forwards' });
+      stage.animate([{ opacity: 1, transform: stage.style.transform }, { opacity: 0, transform: `${stage.style.transform} scale(.94)` }],
+        { duration: 500, easing: 'ease-in', fill: 'forwards' });
+      intro.querySelector('.intro__scrim').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, fill: 'forwards' });
+      setTimeout(() => { // 그림이 걷히면 첫 화면을 띄운다(이름은 아직 날아가는 중)
+        root.classList.remove('intro-on');
+        root.classList.add('intro-fly');
+        $('#input').classList.add('hero--enter');
+      }, 260);
+      setTimeout(() => { root.classList.remove('intro-fly'); }, 760);
+    };
+    const end = (skip) => {
+      if (ended) return;
+      ended = true;
+      timers.forEach(clearTimeout);
+      window.removeEventListener('keydown', onKey);
+      if (intro.classList.contains('is-word')) { fly(); return; }
+      intro.classList.add('is-word');
+      if (skip) intro.classList.add('is-fast');
+      setTimeout(fly, skip ? 220 : 600);
+    };
+    const onKey = () => end(true);
+    intro.addEventListener('click', () => end(true));
+    window.addEventListener('keydown', onKey);
+  }
+
   async function init() {
     show('start', false);
     bindEvents();
-    runScene();
+    runIntro();
     renderEmpty();
     const [health, certs, demo, docs] = await Promise.allSettled([
       getJSON('api/health'), getJSON('api/certs'), getJSON('api/demo-products'), getJSON('api/docs/types'),
@@ -2080,7 +2132,7 @@
       S.company = (demo.value && demo.value.company) || {};
     }
     S.docTypes = docs.status === 'fulfilled' ? normalizeDocTypes(docs.value) : false;
-    fillSceneVerdicts();
+    if (document.documentElement.classList.contains('intro-on')) fillSceneVerdicts();
     if (S.docTypes instanceof Set && !S.docTypes.size) S.docTypes = false;
 
     renderCompany();
