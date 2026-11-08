@@ -1847,230 +1847,70 @@
     $('#basis').textContent = parts.join(' ');
   }
 
-  // ------------------------------------------------------------------ 첫 화면 그림: 포장 사진 → 글자 상자 → 전성분 → 판정
-  // 상자 좌표와 성분명은 그림 속 사진을 실제 OCR 서빙에 넣어 받은 결과(#scene-data)다. words: [x1, y1, x2, y2, k]
-  // k ≥ 0이면 items[k] 성분명이 적힌 글자, -2는 '[전성분]' 머리말, -3은 줄이 나뉜 성분명 조각, -1은 그 밖의 글자.
-  // 사진에 초점이 맞고 → 빛줄기가 훑으며 글자 상자가 잡히고 → 전성분만 남기고 어두워지고 → 성분명이 사진에서 떨어져
-  // 카드로 날아가 꽂히고 → 인증별 판정이 도장처럼 찍힌다. 모든 움직임을 한 주기(CYCLE)의 시각에 맞춰 반복한다.
-  // 움직임 줄이기 설정이면 끝난 장면(상자·성분명·판정이 다 나온 상태)으로 둔다.
-  function buildScene() {
-    const svg = $('#scene-boxes');
-    let data;
-    try { data = JSON.parse($('#scene-data').textContent); } catch (e) { return null; }
-    svg.setAttribute('viewBox', `0 0 ${data.w} ${data.h}`);
-    const NS = 'http://www.w3.org/2000/svg';
-    const el = (tag, attrs) => {
-      const e = document.createElementNS(NS, tag);
-      Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
-      return e;
-    };
-    const pad = 2;
-    const mask = el('mask', { id: 'scene-mask' });
-    mask.appendChild(el('rect', { x: 0, y: 0, width: data.w, height: data.h, fill: 'white' }));
-    const dim = el('rect', { class: 'scene__dim', x: 0, y: 0, width: data.w, height: data.h, mask: 'url(#scene-mask)' });
-    const defs = el('defs', {});
-    defs.appendChild(mask);
-    svg.append(defs, dim);
-    data.words.forEach(([x1, y1, x2, y2, k]) => {
-      const box = { x: x1 - pad, y: y1 - pad, width: x2 - x1 + 2 * pad, height: y2 - y1 + 2 * pad, rx: 6 };
-      const r = el('rect', box);
-      if (k !== -1) {
-        r.classList.add('is-ing');
-        mask.appendChild(el('rect', { ...box, fill: 'black' }));
-      }
-      if (k >= 0) r.dataset.item = String(k);
-      r.dataset.cy = String((y1 + y2) / 2 / data.h);
-      svg.appendChild(r);
-    });
-    $('#scene-chips').innerHTML = data.items.map((n, i) => `<li data-item="${i}">${esc(n)}</li>`).join('');
-    $('#scene-n').textContent = String(data.items.length);
-    return data;
+  // ------------------------------------------------------------------ 인트로
+  // 여러 자료를 빛줄기가 훑고 → 성분명이 사방에서 떨어져 나와 가운데로 모이고 → 빨려 들며 CertPass가 써지고
+  // → 이름은 머리글 자리로 날아가고 자료는 사라진 뒤 첫 화면. 누르거나 키를 치면 건너뛴다.
+  // 성분명은 실제 화장품 성분 이름(식약처 표준명·INCI)이고, 자료 모양은 그림이다(자사·AI Hub 자료는 쓰지 않음).
+  const INTRO_DOCS = [
+    { name: '크림_뒷면.jpg', icon: 'i-camera', img: true, x: -33, y: -24, r: -5, s: 1 },
+    { name: '전성분표.pdf', icon: 'i-file', x: 31, y: -27, r: 4, s: 0.95, sep: '',
+      rows: [['정제수', 'Water'], ['글리세린', 'Glycerin'], ['나이아신아마이드', 'Niacinamide'], ['판테놀', 'Panthenol'], ['알란토인', 'Allantoin'], ['아데노신', 'Adenosine']] },
+    { name: 'INGREDIENTS', icon: 'i-tag', x: -36, y: 27, r: 3, s: 0.9, sep: ', ',
+      rows: [['Butylene Glycol', 'Squalane'], ['Sodium Hyaluronate', 'Tocopherol'], ['Ceramide NP', 'Betaine'], ['Centella Asiatica Extract'], ['Phenoxyethanol', 'Xanthan Gum']] },
+    { name: '성분함량표.xlsx', icon: 'i-file', x: 33, y: 28, r: -4, s: 0.92, sep: '',
+      rows: [['티타늄디옥사이드', '5.0%'], ['살리실릭애씨드', '0.5%'], ['다이메티콘', '3.0%'], ['스쿠알란', '2.0%'], ['토코페롤', '0.5%']] },
+    { name: '포장_측면.jpg', icon: 'i-camera', x: -2, y: -38, r: 2, s: 0.78, sep: ', ',
+      rows: [['병풀추출물', '마데카소사이드', '세라마이드엔피'], ['1,2-헥산다이올', '에틸헥실글리세린', '향료']] },
+    { name: '라벨_영문.pdf', icon: 'i-file', x: 2, y: 38, r: -2, s: 0.8, sep: ', ',
+      rows: [['Retinol', 'Ascorbic Acid', 'Zinc Oxide'], ['Limonene', 'Linalool', 'Caprylyl Glycol']] },
+  ];
+  function buildIntroDocs() {
+    $('#intro-docs').innerHTML = INTRO_DOCS.map((d, i) => {
+      const body = d.img ? '<img src="scene.jpg" alt="" decoding="async">'
+        : d.rows.map((r) => `<p>${r.map((w, k) => (/%$/.test(w) ? `<em>${esc(w)}</em>` : `<span class="w" style="--k:${k}">${esc(w)}</span>`)).join(esc(d.sep))}</p>`).join('');
+      return `<div class="idoc${d.img ? ' idoc--img' : ''}${d.sep === '' ? ' idoc--table' : ''}" style="--x:${d.x};--y:${d.y};--r:${d.r}deg;--s:${d.s};--d:${i}">
+        <p class="idoc__name">${icon(d.icon, 'ic--sm')}${esc(d.name)}</p><div class="idoc__body">${body}</div><span class="idoc__beam"></span></div>`;
+    }).join('');
   }
-  // 판정 세 줄: 그림 속 성분명으로 실제 판정을 불러, 통과 가능·조건부·불가 중 처음 나온 인증을 하나씩 보인다(없는 등급 줄은 숨김)
-  async function fillSceneVerdicts() {
-    const rows = $('#scene-rows');
-    let data;
-    try { data = JSON.parse($('#scene-data').textContent); } catch (e) { return; }
-    if (!rows || !data) return;
-    const product = {
-      id: 'SCENE', name_kr: '그림 속 제품', status: 'from_file', product_type: 'cosmetic', application: 'leave_on',
-      claims: [], functional_kr: [], documents: [], formula_known: 'ingredients_only_no_concentration',
-      manufacturer: { name: '위탁제조사', country: 'KR', certs: [] },
-      ingredients: parseIngredients(data.items.join('\n')).items,
-    };
-    let res;
-    try { res = await (await postJSON('api/evaluate', { product, company: S.company })).json(); } catch (e) { rows.hidden = true; return; }
-    const pick = { pass: '통과 가능', cond: '조건부', fail: '불가' };
-    Object.entries(pick).forEach(([k, st]) => {
-      const row = rows.querySelector(`.scene__row--${k}`);
-      const v = (res.verdicts || []).find((x) => x.status === st);
-      row.hidden = !v;
-      if (!v) return;
-      row.querySelector('.scene__name').textContent = String(v.cert_name).replace(/\s*\([^)]*\)/g, '').replace(/\s*—.*$/, '').trim();
-      row.querySelector('.scene__st').textContent = st;
-    });
-  }
-  function runScene() {
-    const scene = $('#scene');
-    const data = scene && buildScene();
-    if (!data || !scene.offsetParent || reduceMotion() || typeof scene.animate !== 'function') return;
-    // 인트로에서 한 번만 재생한다(끝 장면은 인트로가 끝날 때까지 유지)
-    const CYCLE = 9000, START = 250, FOCUS = 400, S0 = 350, SWEEP = 1500, DIM = 2000, FLY0 = 2400, FLY_GAP = 130, FLY = 420, OUT = 8400;
-    const T = (ms) => ms / CYCLE;
-    const tok = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-    const loop = { duration: CYCLE, iterations: 1, delay: START, fill: 'both' };
-    const photo = scene.querySelector('.scene__photo');
-    const card = scene.querySelector('.scene__card');
-    const H = photo.offsetHeight;
-    const k = photo.offsetWidth / data.w; // 사진 원본 좌표 → 화면 좌표
-
-    // 1. 초점: 흐릿하게 시작해 또렷해지고, 끝나면 다시 흐려지며 다음 장으로
-    photo.querySelector('img').animate([
-      { offset: 0, filter: 'blur(5px)', transform: 'scale(1.06)' },
-      { offset: T(FOCUS), filter: 'blur(0px)', transform: 'scale(1)', easing: 'ease-out' },
-      { offset: T(OUT), filter: 'blur(0px)', transform: 'scale(1)' },
-      { offset: 1, filter: 'blur(5px)', transform: 'scale(1.06)' },
-    ], loop);
-
-    // 2. 빛줄기와 글자 상자
-    const beam = scene.querySelector('.scene__beam').animate([
-      { offset: 0, opacity: 0, transform: 'translateY(0)' },
-      { offset: T(S0), opacity: 1, transform: 'translateY(0)', easing: 'cubic-bezier(.45, 0, .55, 1)' },
-      { offset: T(S0 + SWEEP), opacity: 1, transform: `translateY(${H}px)` },
-      { offset: T(S0 + SWEEP + 200), opacity: 0, transform: `translateY(${H}px)` },
-      { offset: 1, opacity: 0, transform: `translateY(${H}px)` },
-    ], loop);
-    const scan = tok('--c-scan'), pick = tok('--c-brand-600');
-    scene.querySelectorAll('.scene__boxes rect:not(.scene__dim)').forEach((r) => {
-      if (!r.dataset.cy) return;
-      const t = S0 + Number(r.dataset.cy) * SWEEP;
-      const ing = r.classList.contains('is-ing');
-      const on = { opacity: 1, stroke: scan, fillOpacity: 0 };
-      const end = ing ? { opacity: 1, stroke: pick, fillOpacity: 0.3 } : { opacity: 0, stroke: scan, fillOpacity: 0 };
-      r.animate([
-        { offset: 0, ...on, opacity: 0 },
-        { offset: T(t), ...on, opacity: 0 },
-        { offset: T(t + 160), ...on },
-        { offset: T(DIM), ...on },
-        { offset: T(DIM + 500), ...end },
-        { offset: T(OUT), ...end },
-        { offset: T(OUT + 400), ...end, opacity: 0 },
-        { offset: 1, ...on, opacity: 0 },
-      ], loop);
-    });
-    // 3. 전성분만 남기고 어둡게
-    scene.querySelector('.scene__dim').animate([
-      { offset: 0, opacity: 0 },
-      { offset: T(DIM), opacity: 0, easing: 'ease-out' },
-      { offset: T(DIM + 500), opacity: 1 },
-      { offset: T(OUT), opacity: 1 },
-      { offset: T(OUT + 500), opacity: 0 },
-      { offset: 1, opacity: 0 },
-    ], loop);
-
-    // 4. 성분명이 사진의 제 자리에서 떨어져 카드로 날아간다
-    const srcOf = {};
-    scene.querySelectorAll('.scene__boxes rect[data-item]').forEach((r) => {
-      const x = Number(r.getAttribute('x')), y = Number(r.getAttribute('y'));
-      const w = Number(r.getAttribute('width')), h = Number(r.getAttribute('height'));
-      srcOf[r.dataset.item] = { cx: photo.offsetLeft + (x + w / 2) * k, cy: photo.offsetTop + (y + h / 2) * k, w: w * k };
-    });
-    const chips = Array.from(scene.querySelectorAll('.scene__chips li'));
-    const shadow = tok('--sh-drop');
-    const lands = chips.map((c, i) => {
-      const t = FLY0 + i * FLY_GAP;
-      const src = srcOf[c.dataset.item];
-      const cx = card.offsetLeft + c.offsetLeft + c.offsetWidth / 2;
-      const cy = card.offsetTop + c.offsetTop + c.offsetHeight / 2;
-      const from = src
-        ? `translate(${src.cx - cx}px, ${src.cy - cy}px) scale(${Math.max(0.5, src.w / c.offsetWidth).toFixed(2)})`
-        : 'translateY(6px) scale(.9)';
-      const lift = src ? `translate(${(src.cx - cx) * 0.5}px, ${(src.cy - cy) * 0.5 - 40}px) scale(1.15) rotate(-3deg)` : 'none';
-      const fly = { boxShadow: shadow, zIndex: 2 }, rest = { boxShadow: 'none', zIndex: 1 };
-      c.animate([
-        { offset: 0, opacity: 0, transform: from, ...rest },
-        { offset: T(t), opacity: 0, transform: from, ...fly },
-        { offset: T(t + 60), opacity: 1, transform: from, ...fly, easing: 'cubic-bezier(.3, 0, .2, 1)' },
-        { offset: T(t + FLY * 0.5), opacity: 1, transform: lift, ...fly, easing: 'cubic-bezier(.4, 0, .2, 1)' },
-        { offset: T(t + FLY), opacity: 1, transform: 'none', ...rest, easing: 'cubic-bezier(.3, 1.5, .6, 1)' },
-        { offset: T(t + FLY + 140), opacity: 1, transform: 'scale(1.08)', ...rest },
-        { offset: T(t + FLY + 260), opacity: 1, transform: 'none', ...rest },
-        { offset: T(OUT), opacity: 1, transform: 'none', ...rest },
-        { offset: T(OUT + 300), opacity: 0, transform: 'none', ...rest },
-        { offset: 1, opacity: 0, transform: from, ...rest },
-      ], loop);
-      return t + FLY;
-    });
-    const done = FLY0 + (chips.length - 1) * FLY_GAP + FLY + 200;
-    const pop = 'cubic-bezier(.3, 1.6, .6, 1)';
-    scene.querySelector('.scene__count .ic').animate([
-      { offset: 0, opacity: 0, transform: 'scale(.4)' },
-      { offset: T(done), opacity: 0, transform: 'scale(.4)', easing: pop },
-      { offset: T(done + 360), opacity: 1, transform: 'scale(1)' },
-      { offset: T(OUT), opacity: 1, transform: 'scale(1)' },
-      { offset: T(OUT + 300), opacity: 0, transform: 'scale(1)' },
-      { offset: 1, opacity: 0, transform: 'scale(.4)' },
-    ], loop);
-
-    // 5. 판정이 도장처럼 찍힌다
-    const tone = { pass: '--c-pass-200', cond: '--c-cond-200', fail: '--c-fail-200' };
-    const line = tok('--c-line-200');
-    scene.querySelectorAll('.scene__row').forEach((row, r) => {
-      const t = done + 300 + r * 380;
-      const hot = tok(tone[(row.className.match(/scene__row--(\w+)/) || [])[1]] || '--c-line-300');
-      row.animate([
-        { offset: 0, borderColor: line, transform: 'none' },
-        { offset: T(t + 120), borderColor: line, transform: 'none' },
-        { offset: T(t + 200), borderColor: hot, transform: 'translateY(1px) scale(.985)' },
-        { offset: T(t + 420), borderColor: hot, transform: 'none' },
-        { offset: T(t + 1600), borderColor: line, transform: 'none' },
-        { offset: 1, borderColor: line, transform: 'none' },
-      ], loop);
-      row.querySelector('.scene__veil').animate([
-        { offset: 0, opacity: 1 },
-        { offset: T(t), opacity: 1 },
-        { offset: T(t + 120), opacity: 0 },
-        { offset: T(OUT), opacity: 0 },
-        { offset: T(OUT + 400), opacity: 1 },
-        { offset: 1, opacity: 1 },
-      ], loop);
-      const stamp = 'scale(1.9) rotate(-10deg)';
-      row.querySelector('.scene__pill').animate([
-        { offset: 0, opacity: 0, transform: stamp },
-        { offset: T(t), opacity: 0, transform: stamp, easing: 'cubic-bezier(.5, 0, .9, .4)' },
-        { offset: T(t + 200), opacity: 1, transform: 'scale(.94) rotate(0deg)', easing: 'cubic-bezier(.2, 0, 0, 1)' },
-        { offset: T(t + 380), opacity: 1, transform: 'none' },
-        { offset: T(OUT), opacity: 1, transform: 'none' },
-        { offset: T(OUT + 300), opacity: 0, transform: 'none' },
-        { offset: 1, opacity: 0, transform: stamp },
-      ], loop);
-    });
-
-    // 읽은 전성분 수: 카드에 꽂힌 성분명 수를 그대로 센다
-    const out = $('#scene-n');
-    let shown = -1;
-    const tick = () => {
-      if (scene.offsetParent === null) return; // 인트로가 끝나 그림이 사라지면 멈춘다
-      const ct = Number(beam.currentTime) || 0;
-      const t = ct < START ? 0 : (ct - START) % CYCLE;
-      const n = t >= OUT + 200 ? 0 : lands.filter((h) => h <= t).length;
-      if (n !== shown) { out.textContent = String(n); shown = n; }
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }
-
-  // 인트로: 그림 재생 → CertPass가 써짐 → 이름은 머리글 자리로 날아가고 그림은 사라짐 → 첫 화면. 누르거나 키를 치면 건너뛴다
-  const INTRO_WORD_MS = 6300, INTRO_END_MS = 7400;
+  const INTRO_FLY_MS = 2300, INTRO_GATHER_MS = 4300, INTRO_WORD_MS = 4500, INTRO_END_MS = 5700;
   function runIntro() {
     const root = document.documentElement;
     if (!root.classList.contains('intro-on')) return;
     const intro = $('#intro');
-    const stage = $('#intro-stage');
-    const fit = Math.min(1.2, (window.innerWidth * 0.9) / 560, (window.innerHeight * 0.8) / 500);
-    stage.style.transform = `scale(${fit.toFixed(3)})`;
-    runScene();
-    const timers = [setTimeout(() => intro.classList.add('is-word'), INTRO_WORD_MS), setTimeout(() => end(false), INTRO_END_MS)];
+    const docs = $('#intro-docs');
+    buildIntroDocs();
+    intro.style.setProperty('--fit', Math.min(1, window.innerWidth / 1280, window.innerHeight / 820).toFixed(3));
+    const flying = [];
+    // 성분명이 자료에서 떨어져 가운데 둘레로 모인다(황금각 나선으로 고르게)
+    const lift = () => {
+      const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+      const fit = Math.min(1, window.innerWidth / 1280, window.innerHeight / 820);
+      const words = Array.from(docs.querySelectorAll('.w'));
+      words.forEach((w, i) => {
+        const r = w.getBoundingClientRect();
+        const f = document.createElement('span');
+        f.className = 'flyw';
+        f.textContent = w.textContent;
+        f.style.cssText = `left:${r.left}px;top:${r.top}px;font-size:${(r.height * 0.74).toFixed(1)}px`;
+        intro.appendChild(f);
+        w.classList.add('is-lifted');
+        const ang = i * 2.39996, rad = (90 + 290 * Math.sqrt((i + 1) / words.length)) * fit;
+        const tx = cx + Math.cos(ang) * rad * 1.6 - r.left - r.width / 2;
+        const ty = cy + Math.sin(ang) * rad * 0.82 - r.top - r.height / 2;
+        f.animate([{ transform: 'translate(0, 0) scale(1)', opacity: 0.4 }, { transform: `translate(${tx}px, ${ty}px) scale(1.12)`, opacity: 1 }],
+          { duration: 1150, delay: i * 26, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'forwards' });
+        flying.push({ f, tx, ty, cx: cx - r.left - r.width / 2, cy: cy - r.top - r.height / 2 });
+      });
+    };
+    // 모인 성분명이 가운데로 빨려 들며 사라지고, 자료는 어두워진다
+    const gather = () => {
+      intro.classList.add('is-gather');
+      flying.forEach(({ f, tx, ty, cx, cy }, i) => f.animate(
+        [{ transform: `translate(${tx}px, ${ty}px) scale(1.12)`, opacity: 1 }, { transform: `translate(${cx}px, ${cy}px) scale(.2)`, opacity: 0 }],
+        { duration: 620, delay: (i % 12) * 14, easing: 'cubic-bezier(.6, 0, .8, .4)', fill: 'forwards' }));
+    };
+    const timers = [setTimeout(lift, INTRO_FLY_MS), setTimeout(gather, INTRO_GATHER_MS),
+      setTimeout(() => intro.classList.add('is-word'), INTRO_WORD_MS), setTimeout(() => end(false), INTRO_END_MS)];
     let ended = false;
     const fly = () => {
       const word = $('#intro-word');
@@ -2085,10 +1925,10 @@
       word.animate([{ transform: 'none', color: tok('--c-on-hero') }, { transform: `translate(${tx}px, ${ty}px) scale(${k})`, color: tok('--c-ink-900') }],
         { duration: 700, easing: ease, fill: 'forwards' });
       word.querySelector('.intro__mark').animate([{ color: tok('--c-scan') }, { color: tok('--c-brand-700') }], { duration: 700, easing: ease, fill: 'forwards' });
-      stage.animate([{ opacity: 1, transform: stage.style.transform }, { opacity: 0, transform: `${stage.style.transform} scale(.94)` }],
-        { duration: 500, easing: 'ease-in', fill: 'forwards' });
+      docs.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(1.06)' }], { duration: 500, easing: 'ease-in', fill: 'forwards' });
+      intro.querySelectorAll('.flyw').forEach((f) => f.remove());
       intro.querySelector('.intro__scrim').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, fill: 'forwards' });
-      setTimeout(() => { // 그림이 걷히면 첫 화면을 띄운다(이름은 아직 날아가는 중)
+      setTimeout(() => { // 자료가 걷히면 첫 화면을 띄운다(이름은 아직 날아가는 중)
         root.classList.remove('intro-on');
         root.classList.add('intro-fly');
         $('#input').classList.add('hero--enter');
@@ -2101,7 +1941,7 @@
       timers.forEach(clearTimeout);
       window.removeEventListener('keydown', onKey);
       if (intro.classList.contains('is-word')) { fly(); return; }
-      intro.classList.add('is-word');
+      intro.classList.add('is-word', 'is-gather');
       if (skip) intro.classList.add('is-fast');
       setTimeout(fly, skip ? 220 : 600);
     };
@@ -2132,7 +1972,6 @@
       S.company = (demo.value && demo.value.company) || {};
     }
     S.docTypes = docs.status === 'fulfilled' ? normalizeDocTypes(docs.value) : false;
-    if (document.documentElement.classList.contains('intro-on')) fillSceneVerdicts();
     if (S.docTypes instanceof Set && !S.docTypes.size) S.docTypes = false;
 
     renderCompany();

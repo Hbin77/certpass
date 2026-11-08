@@ -269,57 +269,6 @@ body:not([data-view="result"]) .tabsnav { display: none; }
 .drop[aria-busy="true"] .drop__scan { opacity: 1; animation: sweep 1.6s var(--ease-out) infinite; }
 @keyframes sweep { from { top: -30%; } to { top: 100%; } }
 
-/* 오른쪽 그림: 전성분 라벨을 빛줄기가 훑으며 단어마다 인식 상자 → 성분 수 → 인증별 판정.
-   CSS만으로는 끝난 장면(정지 화면)을 그리고, 움직임은 app.js가 Web Animations로 한 주기에 맞춰 돌린다. */
-.scene { position: relative; margin: 0; width: 560px; height: 500px; }
-
-.scene__photo {
-  position: absolute; left: 0; top: 0; width: 400px; aspect-ratio: 800 / 786; border-radius: var(--r-md); overflow: hidden;
-  box-shadow: var(--sh-drop); animation: scene-in .7s var(--ease-out) both;
-}
-.scene__photo img { display: block; width: 100%; height: 100%; }
-.scene__boxes { position: absolute; inset: 0; width: 100%; height: 100%; }
-.scene__boxes > rect { fill: var(--c-scan); fill-opacity: 0; stroke: var(--c-scan); stroke-width: 1.25; vector-effect: non-scaling-stroke; }
-.scene__boxes > rect:not(.is-ing) { opacity: 0; }
-.scene__boxes > rect.is-ing { fill-opacity: .3; stroke: var(--c-brand-600); stroke-width: 1.75; }
-/* 전성분 상자만 뚫린 어두운 막: 전성분에 조명이 비친 것처럼 */
-.scene__boxes > rect.scene__dim { fill: var(--c-hero); fill-opacity: .6; stroke: none; opacity: 1; }
-.scene__beam { position: absolute; left: 0; right: 0; top: 0; height: 2px; opacity: 0; pointer-events: none;
-  background: var(--c-scan); box-shadow: 0 0 16px 4px color-mix(in srgb, var(--c-scan) 65%, transparent); }
-.scene__beam::before { content: ""; position: absolute; left: 0; right: 0; bottom: 2px; height: 56px;
-  background: linear-gradient(to top, color-mix(in srgb, var(--c-scan) 30%, transparent), transparent); }
-.scene__file { position: absolute; left: var(--sp-3); top: var(--sp-3); display: inline-flex; align-items: center; gap: var(--sp-1);
-  padding: 4px var(--sp-2); border-radius: var(--r-xs); background: color-mix(in srgb, var(--c-hero) 82%, transparent);
-  color: var(--c-on-hero); font-size: var(--fs-12); font-weight: 600; }
-
-.scene__card {
-  position: absolute; right: 0; top: 150px; width: 330px; padding: var(--sp-5);
-  border-radius: var(--r-lg); background: var(--c-paper); color: var(--c-ink-900); box-shadow: var(--sh-drop);
-  animation: scene-in .7s var(--ease-out) .15s both;
-}
-.scene__count { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-14); font-weight: 600; color: var(--c-ink-700); }
-.scene__count b { margin-right: 1px; font-size: var(--fs-20); color: var(--c-ink-900); font-variant-numeric: tabular-nums; text-align: right; }
-.scene__count .ic { color: var(--c-brand-700); stroke-width: 3; }
-.scene__chips { list-style: none; padding: 0; margin: var(--sp-3) 0 var(--sp-4); display: flex; flex-wrap: wrap; gap: 4px; min-height: 104px; align-content: flex-start; }
-.scene__chips li { position: relative; padding: 2px 6px; border-radius: var(--r-xs); background: var(--c-brand-050); color: var(--c-brand-800);
-  font-size: var(--fs-12); font-weight: 600; line-height: 1.5; }
-.scene__rows { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--sp-2); }
-.scene__row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); min-height: 44px; padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-3);
-  border: 1px solid var(--c-line-200); border-radius: var(--r-sm); font-size: var(--fs-14); }
-.scene__rows > li { min-width: 0; }
-.scene__name { min-width: 0; line-height: 1.35; }
-.scene__row[hidden] { display: none; }
-.scene__pill { position: relative; display: inline-flex; align-items: center; gap: var(--sp-1); min-width: 92px; justify-content: center;
-  padding: 4px var(--sp-2); border-radius: var(--r-xs); font-size: var(--fs-14); font-weight: 700; overflow: hidden; }
-.scene__pill .ic { width: var(--ic-xs); height: var(--ic-xs); stroke-width: 2.5; }
-.scene__row--pass .scene__pill { background: var(--c-pass-050); color: var(--c-pass-700); }
-.scene__row--cond .scene__pill { background: var(--c-cond-050); color: var(--c-cond-700); }
-.scene__row--fail .scene__pill { background: var(--c-fail-050); color: var(--c-fail-700); }
-/* 판정 전 가림막: 판정이 나오면 걷힌다 */
-.scene__veil { position: absolute; inset: 0; opacity: 0; border-radius: inherit;
-  background: linear-gradient(90deg, var(--c-line-200) 0%, var(--c-canvas) 50%, var(--c-line-200) 100%); background-size: 200% 100%;
-  animation: shimmer 1.3s linear infinite; }
-@keyframes scene-in { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
 
 .field__foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-1) var(--sp-4); margin-top: var(--sp-2); }
 .field__foot .parse, .field__foot .hint { margin: 0; }
@@ -906,11 +855,37 @@ code {
 .intro-on .intro, .intro-fly .intro { display: grid; }
 .intro-fly .intro { background: transparent; pointer-events: none; }
 html.intro-on, .intro-on body { overflow: hidden; }
-.intro__stage { position: absolute; left: 50%; top: 50%; width: 560px; height: 500px; margin: -250px 0 0 -280px; transform-origin: center; }
+/* 흩어진 자료: 화면 가장자리에 넓게, 기울기·크기를 달리해 깊이를 준다 */
+.intro__docs { position: absolute; inset: 0; pointer-events: none; }
+.idoc { position: absolute; left: calc(50% + var(--x) * 1vw); top: calc(50% + var(--y) * 1vh); width: 300px; padding: var(--sp-4);
+  translate: -50% -50%; rotate: var(--r); scale: calc(var(--s) * var(--fit, 1)); overflow: hidden;
+  border-radius: var(--r-md); background: var(--c-paper); color: var(--c-ink-700); box-shadow: var(--sh-drop);
+  animation: idoc-in .9s var(--ease-out) calc(var(--d) * 90ms) both; transition: opacity .5s var(--ease-out), filter .5s var(--ease-out); }
+.idoc--img { padding: 0; width: 280px; }
+.idoc--img img { display: block; width: 100%; }
+.idoc--img .idoc__name { position: absolute; left: var(--sp-2); top: var(--sp-2); z-index: 1; padding: 2px var(--sp-2); border-radius: var(--r-xs);
+  background: color-mix(in srgb, var(--c-hero) 82%, transparent); color: var(--c-on-hero); }
+.idoc__name { display: flex; align-items: center; gap: var(--sp-1); margin-bottom: var(--sp-2); font-size: var(--fs-12); font-weight: 700; color: var(--c-ink-600); }
+.idoc__body { display: grid; gap: 6px; font-size: var(--fs-14); line-height: 1.5; }
+.idoc--table .idoc__body p { display: flex; justify-content: space-between; gap: var(--sp-3); padding-bottom: 4px; border-bottom: 1px solid var(--c-line-200); }
+.idoc__body em { font-style: normal; color: var(--c-ink-500); font-variant-numeric: tabular-nums; }
+.idoc .w { padding: 0 2px; border-radius: 3px; animation: w-hit .3s var(--ease-out) calc(1s + var(--d) * 150ms + var(--k) * 40ms) both; }
+.idoc .w.is-lifted { color: transparent; background: color-mix(in srgb, var(--c-scan) 18%, transparent); transition: color .3s; }
+.idoc__beam { position: absolute; left: 0; right: 0; top: 0; height: 2px; opacity: 0; pointer-events: none; background: var(--c-scan);
+  box-shadow: 0 0 14px 3px color-mix(in srgb, var(--c-scan) 60%, transparent);
+  animation: idoc-scan 1.3s cubic-bezier(.45, 0, .55, 1) calc(.6s + var(--d) * 150ms) both; }
+@keyframes idoc-in { from { opacity: 0; filter: blur(8px); } to { opacity: 1; filter: none; } }
+@keyframes idoc-scan { 0% { top: 0; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+@keyframes w-hit { from { box-shadow: inset 0 0 0 1.5px transparent; } to { box-shadow: inset 0 0 0 1.5px var(--c-brand-600); background: var(--c-brand-050); } }
+.intro.is-gather .idoc { opacity: .35; filter: blur(2px); }
+/* 자료에서 떨어져 가운데로 모이는 성분명 */
+.flyw { position: fixed; z-index: 1; white-space: nowrap; line-height: 1.2; padding: 1px 6px; border-radius: var(--r-xs); pointer-events: none;
+  background: color-mix(in srgb, var(--c-hero-2) 70%, transparent); border: 1px solid color-mix(in srgb, var(--c-scan) 70%, transparent);
+  color: var(--c-on-hero); font-weight: 600; will-change: transform, opacity; }
 .intro__scrim { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .45s var(--ease-out);
   background: radial-gradient(closest-side, color-mix(in srgb, var(--c-hero) 88%, transparent), color-mix(in srgb, var(--c-hero) 62%, transparent)); }
 .intro.is-word .intro__scrim { opacity: 1; }
-.intro__word { position: absolute; inset: 0; margin: auto; width: fit-content; height: fit-content; display: flex; align-items: center; gap: .22em;
+.intro__word { position: absolute; z-index: 2; inset: 0; margin: auto; width: fit-content; height: fit-content; display: flex; align-items: center; gap: .22em;
   font-size: clamp(3rem, 1.6rem + 5vw, 6rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; color: var(--c-on-hero);
   transform-origin: 0 0; pointer-events: none; }
 .intro__mark { width: .82em; height: .82em; stroke-width: 2.2; color: var(--c-scan); opacity: 0; transform: scale(.6);
