@@ -1428,10 +1428,8 @@
       fieldError('start-err', null, lastErr || '전성분을 찾지 못했습니다. 전성분이 잘 보이게 다시 찍어 주세요.');
       return;
     }
-    // 상품명은 포장에서 읽은 국문 이름, 없으면 첫 파일 이름. 포장 표시 정보는 확인 칸에 채워 서류 초안에 쓴다
-    const L = S.ocrLabel;
-    $('#m-name').value = L.name_kr || String(files[0].name || '').replace(/\.[^.]+$/, '').replace(/^\d+[_\s.-]*/, '').replace(/_/g, ' ').trim();
-    setLabelFields(L);
+    // 상품명은 포장에서 읽은 국문 이름, 없으면 첫 파일 이름
+    $('#m-name').value = S.ocrLabel.name_kr || String(files[0].name || '').replace(/\.[^.]+$/, '').replace(/^\d+[_\s.-]*/, '').replace(/_/g, ' ').trim();
     const rinse = RINSE_HINT.test(`${S.ocrText} ${files.map((f) => f.name || '').join(' ')}`);
     const app = document.querySelector(`input[name="m-app"][value="${rinse ? 'rinse_off' : 'leave_on'}"]`);
     if (app) app.checked = true;
@@ -1487,12 +1485,6 @@
     } finally {
       $('#m-photo').value = '';
     }
-  }
-  function setLabelFields(L = {}) {
-    $('#m-name-en').value = L.name_en || '';
-    $('#m-net').value = L.net_content || '';
-    $('#m-mfr').value = L.manufacturer || '';
-    $('#m-life').value = L.shelf_life || '';
   }
   // 확인 화면에서 성분 빼기·넣기: '고치기'의 원문 칸(#m-ing)을 기준으로 다시 쓴다(함량·CAS 열 유지)
   const fmtIng = (i) => [i.inci, i.pct != null ? String(i.pct) : '', i.cas || ''].join(' | ').replace(/(\s*\|\s*)+$/, '');
@@ -1571,12 +1563,7 @@
       functional_kr: claims.filter((c) => FUNCTIONAL.has(c)),
       documents: docs,
       formula_known: withPct === r.items.length ? 'full_with_concentration' : withPct ? 'partial_concentration' : 'ingredients_only_no_concentration',
-      manufacturer: Object.assign({ name: '위탁제조사', country: 'KR' }, base.manufacturer || {}, { certs: mfrCerts },
-        $('#m-mfr').value.trim() ? { name: $('#m-mfr').value.trim() } : {},
-        (S.ocrLabel || {}).country ? { country: S.ocrLabel.country } : {}),
-      name_en: $('#m-name-en').value.trim() || base.name_en || null,
-      net_content: $('#m-net').value.trim() || base.net_content || null,
-      shelf_life: $('#m-life').value.trim() || base.shelf_life || null,
+      manufacturer: Object.assign({ name: '위탁제조사', country: 'KR' }, base.manufacturer || {}, { certs: mfrCerts }),
       ingredients: r.items,
     });
     return { product };
@@ -1732,8 +1719,7 @@
       addIngredients(t);
     });
     $('#m-type-btn').addEventListener('click', () => {
-      S.ocrCheck = new Set(); S.ocrBlurry = false; S.fromFile = false; S.ocrLabel = {};
-      setLabelFields();
+      S.ocrCheck = new Set(); S.ocrBlurry = false; S.fromFile = false;
       updateParse();
       revealDetail($('#m-ing'));
     });

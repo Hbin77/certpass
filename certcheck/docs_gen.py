@@ -833,7 +833,6 @@ def _label_draft(ctx: _Ctx) -> bytes:
     metric, us_net = _net(p.get("net_content"))
     origin = _origin(p) or f"{TBC} 원산국"
     name = p.get("name_en") or f"{TBC} 영문 제품명 (국문: {p.get('name_kr') or '-'})"
-    life = str(p.get("shelf_life") or "").strip()  # 포장에서 읽은 사용기한(화면 확인 칸)
     eu_vs = _juris_verdicts(ctx, {"EU"})
     uk_vs = _juris_verdicts(ctx, {"UK", "GB"})
     us_vs = _juris_verdicts(ctx, {"US"})
@@ -888,8 +887,7 @@ def _label_draft(ctx: _Ctx) -> bytes:
                 ["책임자 (Responsible person)", rp, f"{art}(1)(a) — 역내 RP 이름·주소, 여러 주소면 PIF 보관 주소 강조"],
                 ["로트 (Batch No.)", f"LOT {TBC}", f"{art}(1)(e) — 제조번호(용기가 너무 작으면 포장에만)"],
                 ["사용기한/PAO (Durability / PAO)",
-                 (f"포장 표기: {life}\n" if life else "")
-                 + f"{TBC} 최소 내구 기한 30개월 초과: PAO 기호 + 개월(예: 12M) / 30개월 이하: 'Best used before the end of' + 날짜",
+                 f"{TBC} 최소 내구 기한 30개월 초과: PAO 기호 + 개월(예: 12M) / 30개월 이하: 'Best used before the end of' + 날짜",
                  f"{art}(1)(c), 부속서 VII 기호"],
                 ["원산국 (Country of origin)", origin, f"{art}(1)(a) — 수입품은 원산국 표시"],
                 ["주의문구 (Precautions)", precautions(vs, basis_us=False), f"{art}(1)(d) — 부속서 III~VI의 조건·경고문 포함"],
@@ -916,7 +914,7 @@ def _label_draft(ctx: _Ctx) -> bytes:
                 ["미국 내 연락처 (US domestic contact)", contact,
                  "FD&C Act §609(a)(MoCRA) — 미국 내 주소·전화 또는 전자 연락처, 2024-12-29 시행"],
                 ["로트 (Batch No.)", f"LOT {TBC}", "연방 표시 의무는 아님 — 추적·회수 대비 권장"],
-                ["사용기한/PAO (Expiration / PAO)", f"포장 표기: {life}" if life else f"{TBC} (선택 표시)", "연방 표시 의무는 아님 — 권장"],
+                ["사용기한/PAO (Expiration / PAO)", f"{TBC} (선택 표시)", "연방 표시 의무는 아님 — 권장"],
                 ["원산국 (Country of origin)", origin, "19 CFR 134 — 수입품 원산지 표시"],
                 ["주의문구 (Warnings)", precautions(vs, basis_us=True), "21 CFR 740 — 제품 유형별 경고문 해당 여부 확인"],
             ]

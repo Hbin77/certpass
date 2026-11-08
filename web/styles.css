@@ -874,10 +874,6 @@ code {
   border-radius: 0 var(--r-sm) var(--r-sm) 0; background: transparent; color: var(--c-ink-500); cursor: pointer; }
 .chip-ing__x:hover { background: var(--c-fail-050); color: var(--c-fail-700); }
 .confirm__add .input { max-width: 360px; }
-.confirm__label { margin: 0; padding: 0; border: 0; }
-.confirm__grid { display: grid; gap: var(--sp-3); margin-top: var(--sp-2); }
-@media (min-width: 640px) { .confirm__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.field__sub { display: block; margin-bottom: var(--sp-1); font-size: var(--fs-14); color: var(--c-ink-600); }
 .chip-ing.is-check { border-color: var(--c-cond-500); background: var(--c-cond-050); color: var(--c-cond-700); }
 .chip-ing__pct { font-weight: 500; color: var(--c-ink-600); }
 .confirm .field { margin: 0; }
