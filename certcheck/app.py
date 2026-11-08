@@ -265,12 +265,14 @@ def _explain(req: ExplainRequest, client: str | None, cache_only: bool = False):
     if not card:
         raise HTTPException(404, f"알 수 없는 인증 id입니다: {req.cert_id}")
     p = req.product.model_dump()
+    pin = json.dumps(p, sort_keys=True, ensure_ascii=False, default=str) in _demo_keys()
+    if not pin:  # /api/evaluate와 같은 판정이 되도록 한글 성분명을 영문 INCI로 바꾼다(데모는 저장된 설명 열쇠를 그대로 두려고 예전 그대로)
+        convert_korean_names(p["ingredients"])
     company = req.company.model_dump(exclude_unset=True)
     verdict = (evaluate_company(card, company) if card.get("kind") == "company_certification"
                else evaluate(card, p, company, reg, attrs, req.eval_date))
     v = verdict.to_dict()
     v.pop("features", None)
-    pin = json.dumps(p, sort_keys=True, ensure_ascii=False, default=str) in _demo_keys()
     return llm_client.explain(v, card, p, lambda: ai_alert(verdict, card, p, reg), client=client, pin=pin,
                               cache_only=cache_only)
 
