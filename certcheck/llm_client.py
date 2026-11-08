@@ -196,6 +196,14 @@ PLATFORM_NOTICE = ("모델 공급자의 순간 요청 한도", "설명 검증을
                    "원문·수치·출처를 확인하지 못해 제외", "이미 확보한 계산·차트")
 
 
+GRADE_SAID = re.compile(r"['‘\"“]?(불가|조건부|통과 가능|해당 없음)['’\"”]?\s*(?:판정|등급)")
+
+
+def grade_mismatch(text: str, status: str | None) -> bool:
+    """설명이 판정과 다른 등급을 말하는지(예: 불가 판정인데 "'조건부' 판정이 나왔습니다")."""
+    return any(m.group(1) != status for m in GRADE_SAID.finditer(text or ""))
+
+
 def valid_answer(text: str) -> bool:
     """우리가 요청한 형식('왜 이 등급인가')이 있고 플랫폼 안내문이 섞이지 않은 답만 설명으로 쓴다(나머지는 실패로 보고 저장하지 않음)."""
     t = text or ""
@@ -330,7 +338,10 @@ def build_prompt(v: dict, card: dict, product: dict, sources: list[dict], ai: di
     src = "\n".join(f"근거 {s['n']}: {s['title'][:120]}" for s in sources) or "없음"
     claims = ", ".join(map(str, product.get("claims") or [])) or "없음"
     done = ("등급이 '통과 가능'이니 새 보완 과제나 '원문 확인 필요'를 만들지 말고 충족한 이유만 쓰세요.\n"
-            if v.get("status") == "통과 가능" else "")
+            if v.get("status") == "통과 가능" else
+            "등급이 '불가'이니 '불가' 사유(재처방)를 먼저 설명하고, 보완 사유만으로 등급을 설명하지 마세요.\n"
+            if v.get("status") == "불가" else "")
+    done += f"설명에 등급을 쓸 때는 '{v.get('status')}'만 쓰고 다른 등급 이름은 쓰지 마세요.\n"
     return f"""아래 판정을 설명하세요. 판정 등급 "{v.get('status')}"은 확정값입니다. {cite}
 {hint}사유에 '확인'·'가능'·'유사'·'미상'이 있으면 사실로 단정하지 말고 확인할 일로 쓰세요.
 한도가 제품 유형별로 여럿이면 하나만 고르지 말고 모두 적으세요(제품 유형 '{product.get('product_type') or '미상'}').
@@ -696,6 +707,11 @@ def explain(v: dict, card: dict, product: dict, ai=None, *, client: str | None =
             if "순간 요청 한도" in raw["text"]:
                 raise RateLimited("turn LLM_RATE_LIMITED(답 자리에 플랫폼 안내문)")
             raise ValueError("답이 요청한 형식이 아님")
+        if grade_mismatch(raw["text"], v.get("status")):  # 등급을 바꿔 말하면 한 번만 바로잡아 다시 만든다
+            log.warning("agentstream grade mismatch %s %s → 다시 만듦", card.get("id"), v.get("status"))
+            again = call(prompt + f"\n앞선 답이 판정 등급을 잘못 썼습니다. 이 판정의 등급은 '{v.get('status')}'입니다.\n", timeout, title)
+            if again["text"] and valid_answer(again["text"]) and not grade_mismatch(again["text"], v.get("status")):
+                raw = again
     except Busy as e:
         _rate_refund(client)
         return {**base, "enabled": True, "ok": False, "ai_alert": ai, "error": f"RateLimit: {e}"}

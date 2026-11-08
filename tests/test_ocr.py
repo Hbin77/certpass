@@ -350,3 +350,13 @@ def test_heading_fragments_and_headers_are_not_ingredients_or_names():
     names = [i["kr"] or i["raw"] for i in oc.match_all(["리모넨", "알파-터피넨", "피넨", "사용 시"])]
     assert names == ["리모넨", "알파-터피넨", "피넨"]  # 사전에 없는 성분(알파-터피넨)은 남기고 머리말 조각만 버린다
     assert oc.label_info(["제품 정보", "PRODUCT INFORMATION", "카멜리아 수분 크림"]) == {"name_kr": "카멜리아 수분 크림"}
+
+
+def test_grade_mismatch_detects_other_grade_words():
+    from certcheck import llm_client as lc
+    assert lc.grade_mismatch("속성표가 없어 '조건부' 판정이 나왔습니다.", "불가")
+    assert not lc.grade_mismatch("금지 성분이 있어 '불가' 판정입니다. 인증이 불가능합니다.", "불가")
+    assert not lc.grade_mismatch("현재 제품은 통과가 어렵습니다.", "불가")
+    v = {"status": "불가", "findings": [], "cert_id": "X"}
+    prompt = lc.build_prompt(v, {"id": "X", "name_ko": "X"}, {"ingredients": []}, [])
+    assert "'불가' 사유(재처방)를 먼저" in prompt and "다른 등급 이름은 쓰지 마세요" in prompt
