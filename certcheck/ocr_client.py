@@ -398,9 +398,12 @@ def best_section(res: dict) -> tuple[list[str], list[str], bool]:
     texts = [ln.get("text", "") for ln in res.get("lines") or []]
     base = res.get("ingredients") or []
     panel = panel_section(res.get("words") or [])
-    if panel:  # 최종 결과(표 형식 줄 대조까지 거친 것)끼리 비교한다
-        ex = lambda it, ls: sum(i["match"] == "exact" for i in choose(match_all(it, "\n".join(ls)), texts)[0])
-        if ex(panel[0], panel[1] + texts) > ex(base, texts):
+    if panel:  # 최종 결과(표 형식 줄 대조까지 거친 것)끼리 비교한다. 표의 칸을 판넬로 잘못 나누면 CAS·함량 조각이
+        # '확인 필요'로 쏟아지므로 정확 일치에서 확인 필요 수를 뺀 점수로 견준다
+        def score(it, ls):
+            out = choose(match_all(it, "\n".join(ls)), texts)[0]
+            return sum(i["match"] == "exact" for i in out) - sum(i["match"] == "unknown" for i in out)
+        if score(panel[0], panel[1] + texts) > score(base, texts):
             return panel[0], panel[1] + texts, True
     return base, texts, False
 

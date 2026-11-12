@@ -107,6 +107,7 @@ def read_pdf(data: bytes) -> dict:
     try:
         total = len(pdf)
         pages, lines, section, words, model = [], [], [], [], None
+        panel_section, panel_lines = [], []  # 판넬로 다시 묶은 판(전개도 PDF). 마지막에 원래 판과 통째로 견준다
         for i in range(min(total, max_pages())):
             if i and time.monotonic() > deadline:
                 break
@@ -119,6 +120,7 @@ def read_pdf(data: bytes) -> dict:
                     pl = [ln.strip() for ln in text.splitlines() if ln.strip()]
                     lines += pl
                     section += extract_section(pl)
+                    panel_section += extract_section(pl)
                     pages.append({"page": i + 1, "source": "text"})
                     continue
                 w, h = page.get_size()
@@ -131,13 +133,20 @@ def read_pdf(data: bytes) -> dict:
                 break
             model = res.get("model") or model
             lines += [ln.get("text", "") for ln in res.get("lines") or []]
-            sec, _, _ = oc.best_section(res)  # 전개도처럼 판넬이 여럿이면 전성분 판넬만 다시 묶는다
-            section += sec
+            section += res.get("ingredients") or []
+            sec, joined, _ = oc.best_section(res)  # 전개도처럼 판넬이 여럿이면 전성분 판넬만 다시 묶는다
+            panel_section += sec
+            panel_lines += joined
             words += res.get("words") or []
             pages.append({"page": i + 1, "source": "ocr", "angle": round(angle, 1), "calls": calls})
     finally:
         pdf.close()
     items, method = oc.choose(oc.match_all(section, "\n".join(lines)), lines)
+    if panel_section != section:
+        alt, alt_method = oc.choose(oc.match_all(panel_section, "\n".join(panel_lines + lines)), lines)
+        score = lambda it: sum(i["match"] == "exact" for i in it) - sum(i["match"] == "unknown" for i in it)
+        if score(alt) > score(items):
+            items, method = alt, "panel" if alt_method == "section" else alt_method
     read = len(pages)
     return {
         "ingredients": items,
