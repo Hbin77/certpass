@@ -389,3 +389,11 @@ def test_panel_section_reads_only_the_ingredient_panel():
     assert names[:4] == ["정제수", "은행나무잎추출물", "부틸렌글라이콜", "나이아신아마이드"]
     assert "판테놀" in names and "향료" in names
     assert not any("효능" in x or "350" in x or "ppm" in x for x in sec)
+
+
+def test_columns_split_even_when_one_word_bridges_the_gutter():
+    from certcheck.ocr_client import _columns
+    left = [(0, 100)] * 10
+    right = [(115, 200)] * 10
+    bridge = [(90, 120)]  # 옆 칸으로 넘어 읽힌 단어 하나
+    assert _columns(left + right + bridge, 20) == [[0, 100], [115, 200]]

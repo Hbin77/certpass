@@ -349,6 +349,31 @@ def _group_lines(ws: list[dict], h: float) -> list[str]:
     return [" ".join(x["text"] for x in sorted(r["ws"], key=lambda w: w["box"][0])) for r in rows]
 
 
+def _columns(band: list[tuple[int, int]], h: float) -> list[list[int]]:
+    """단어 상자의 x 구간들 → 칸 [[왼, 오], ...]. x마다 걸친 단어 수를 세어, 단어 사이 빈칸보다 넓게(0.5h)
+    거의 비어 있는(걸친 단어 1개 이하) 세로 띠에서 나눈다. 옆 칸으로 넘어 읽힌 단어 하나가 띠를 막아도 나뉜다."""
+    lo, hi = min(a for a, _ in band), max(b for _, b in band)
+    cover = [0] * (hi - lo + 2)
+    for a, b in band:
+        cover[a - lo] += 1
+        cover[b - lo + 1] -= 1
+    cols, start, gap, run = [], None, 0, 0
+    for x in range(hi - lo + 1):
+        run += cover[x]
+        if run > 1:
+            if start is None:
+                start = x
+            elif gap >= 0.5 * h:
+                cols.append([start + lo, x - gap - 1 + lo])
+                start = x
+            gap = 0
+        elif start is not None:
+            gap += 1
+    if start is not None:
+        cols.append([start + lo, hi - gap + lo])
+    return cols
+
+
 def panel_section(words: list[dict]) -> tuple[list[str], list[str]] | None:
     """여러 판넬이면 (전성분 조각, 그 판넬의 줄), 판넬이 하나뿐이거나 '전성분' 표시가 없으면 None."""
     from .ocr_pdf import START, STOP
@@ -359,15 +384,8 @@ def panel_section(words: list[dict]) -> tuple[list[str], list[str]] | None:
     best = None
     for m in (w for w in W if START.search(w.get("text", ""))):
         top = m["box"][1]
-        band = sorted((w["box"][0], w["box"][2]) for w in W if top - 2 * h <= w["box"][1] <= top + 40 * h)
-        cols, cur = [], list(band[0])
-        for a, b in band[1:]:  # 단어 사이 빈칸보다 넓은 세로 빈 띠에서 나눈다
-            if a > cur[1] + 0.7 * h:
-                cols.append(cur)
-                cur = [a, b]
-            else:
-                cur[1] = max(cur[1], b)
-        cols.append(cur)
+        band = [(int(w["box"][0]), int(w["box"][2])) for w in W if top - 2 * h <= w["box"][1] <= top + 40 * h]
+        cols = _columns(band, h)
         if len(cols) < 2:
             continue
         col = next((c for c in cols if c[0] - 1 <= m["box"][0] <= c[1] + 1), None)
