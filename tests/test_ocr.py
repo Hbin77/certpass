@@ -366,3 +366,26 @@ def test_grade_mismatch_detects_other_grade_words():
     v = {"status": "불가", "findings": [], "cert_id": "X"}
     prompt = lc.build_prompt(v, {"id": "X", "name_ko": "X"}, {"ingredients": []}, [])
     assert "'불가' 사유(재처방)를 먼저" in prompt and "다른 등급 이름은 쓰지 마세요" in prompt
+
+
+def test_panel_section_reads_only_the_ingredient_panel():
+    """포장 전개도: 같은 높이에 옆 판넬 글자가 있어도 '전성분' 판넬 안에서만 줄을 묶는다."""
+    from certcheck import ocr_client as oc
+    words = []
+
+    def put(x, y, t):
+        words.append({"box": [x, y, x + 12 * len(t), y + 18], "text": t, "conf": 1.0})
+    left = ["[효능효과]", "피부의", "미백에", "도움을", "줍니다.", "[사용방법]", "세안", "후", "적당량을", "바릅니다."]
+    rows = [["[전성분]", "정제수,", "은행나무잎추출물(350,"], ["600ppm),", "부틸렌글라이콜,", "나이아신아마이드,"],
+            ["판테놀,", "하하이드롤라이즈드콜라겐,", "향료"]]
+    for r, row in enumerate(rows * 4):
+        put(20, 100 + r * 30, left[r % len(left)])
+        x = 400
+        for t in (row if r < 3 else ["설명", "문구"]):
+            put(x, 100 + r * 30, t)
+            x += 12 * len(t) + 6
+    sec, lines = oc.panel_section(words)
+    names = [i["kr"] for i in oc.match_all(sec, "\n".join(lines)) if i["kr"]]
+    assert names[:4] == ["정제수", "은행나무잎추출물", "부틸렌글라이콜", "나이아신아마이드"]
+    assert "판테놀" in names and "향료" in names
+    assert not any("효능" in x or "350" in x or "ppm" in x for x in sec)

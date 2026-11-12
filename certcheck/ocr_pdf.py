@@ -131,7 +131,8 @@ def read_pdf(data: bytes) -> dict:
                 break
             model = res.get("model") or model
             lines += [ln.get("text", "") for ln in res.get("lines") or []]
-            section += res.get("ingredients") or []
+            sec, _, _ = oc.best_section(res)  # 전개도처럼 판넬이 여럿이면 전성분 판넬만 다시 묶는다
+            section += sec
             words += res.get("words") or []
             pages.append({"page": i + 1, "source": "ocr", "angle": round(angle, 1), "calls": calls})
     finally:

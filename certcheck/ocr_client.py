@@ -168,6 +168,21 @@ def rejoin_digit_commas(raw_items: list[str], text: str) -> list[str]:
 HEADING_BITS = re.compile(r"^(사용|주의|보관|제조|내용량|용량|효능|효과|포장|제품\s*정보)")
 
 
+def _ocr_variant(p: dict) -> dict | None:
+    """줄이 바뀌며 생긴 OCR 흔적을 지운 이름이 사전과 정확히 맞으면 그것을 쓴다: 성분명 가운데 빈칸('콜 라겐'),
+    줄 머리 글자 두 번 읽힘('하하이드롤…', '로로즈마리…')."""
+    raw = JUNK.sub("", p["raw"])
+    cands = [re.sub(r"\s+", "", raw)]
+    c = cands[0]
+    if len(c) > 3 and c[0] == c[1]:
+        cands.append(c[1:])
+    for c in cands:
+        hit = lookup(c)
+        if hit:
+            return {"raw": p["raw"], "kr": hit["kr_name"], "inci": hit["inci"], "match": "exact", "score": 100}
+    return None
+
+
 def match_all(raw_items: list[str], text: str = "") -> list[dict]:
     """OCR 전성분 덩어리 목록 → 표준명 맞추기 결과(쪼개기 포함, 같은 성분은 한 번만). text는 숫자 쉼표를 되붙일 원문."""
     out, seen = [], set()
@@ -176,7 +191,9 @@ def match_all(raw_items: list[str], text: str = "") -> list[dict]:
         m = match_name(clean) if clean else None
         parts = [m] if m and m["match"] == "exact" else [match_name(p) for p in segment(raw)]
         for p in parts:
-            if p["match"] == "unknown" and HEADING_BITS.match(p["raw"].strip()):
+            if p["match"] != "exact" and re.search(r"[가-힣]", p["raw"]):
+                p = _ocr_variant(p) or p
+            if p["match"] == "unknown" and (HEADING_BITS.match(p["raw"].strip()) or len(p["raw"]) > 40):
                 continue
             key = p["kr"] or p["raw"]
             if key not in seen:
@@ -312,12 +329,91 @@ def label_info(lines: list[str], names: bool = True) -> dict:
     return out
 
 
+# 포장 전개도·여러 판넬 사진: 서빙은 같은 높이의 글자를 화면 가로 전체로 한 줄로 묶어 옆 판넬 글자가 전성분에 섞인다
+# → 단어 상자로 '전성분' 표시가 있는 판넬(세로 단)을 찾아 그 안에서만 줄을 다시 묶는다
+SEC_END = re.compile(r"RECYCL|FSC|PRINTED\s*WITH|SOY\s*INK|CAUTION|DIRECTIONS", re.I)
+PPM_PAREN = re.compile(r"[(\[]\s*[\d.,\s]+(?:ppm|%)\s*[)\]]", re.I)
+PCT_BITS = re.compile(r"^[\d.,\s]+(?:ppm|%)?\)?$", re.I)  # 줄바꿈으로 떨어져 나온 함량 조각('350,600ppm)')
+
+
+def _group_lines(ws: list[dict], h: float) -> list[str]:
+    rows: list[dict] = []
+    for w in sorted(ws, key=lambda w: (w["box"][1] + w["box"][3]) / 2):
+        cy = (w["box"][1] + w["box"][3]) / 2
+        if rows and abs(cy - rows[-1]["cy"]) < 0.55 * h:
+            r = rows[-1]
+            r["ws"].append(w)
+            r["cy"] += (cy - r["cy"]) / len(r["ws"])
+        else:
+            rows.append({"cy": cy, "ws": [w]})
+    return [" ".join(x["text"] for x in sorted(r["ws"], key=lambda w: w["box"][0])) for r in rows]
+
+
+def panel_section(words: list[dict]) -> tuple[list[str], list[str]] | None:
+    """여러 판넬이면 (전성분 조각, 그 판넬의 줄), 판넬이 하나뿐이거나 '전성분' 표시가 없으면 None."""
+    from .ocr_pdf import START, STOP
+    W = [w for w in words or [] if len(w.get("box") or []) == 4 and w["box"][3] > w["box"][1]]
+    if len(W) < 20:
+        return None
+    h = statistics.median(w["box"][3] - w["box"][1] for w in W)
+    best = None
+    for m in (w for w in W if START.search(w.get("text", ""))):
+        top = m["box"][1]
+        band = sorted((w["box"][0], w["box"][2]) for w in W if top - 2 * h <= w["box"][1] <= top + 40 * h)
+        cols, cur = [], list(band[0])
+        for a, b in band[1:]:  # 단어 사이 빈칸보다 넓은 세로 빈 띠에서 나눈다
+            if a > cur[1] + 0.7 * h:
+                cols.append(cur)
+                cur = [a, b]
+            else:
+                cur[1] = max(cur[1], b)
+        cols.append(cur)
+        if len(cols) < 2:
+            continue
+        col = next((c for c in cols if c[0] - 1 <= m["box"][0] <= c[1] + 1), None)
+        if col is None:
+            continue
+        lines = _group_lines([w for w in W if col[0] - 2 <= (w["box"][0] + w["box"][2]) / 2 <= col[1] + 2
+                              and w["box"][1] >= top - 0.5 * h], h)
+        text = " ".join(lines)
+        st = START.search(text)
+        if not st:
+            continue
+        body = text[st.end():]
+        for stop in (STOP.search(body), SEC_END.search(body)):
+            if stop:
+                body = body[: stop.start()]
+        body = PPM_PAREN.sub("", body).lstrip(" ])>:：,")
+        parts = re.split(r"(?<!\d)\s*[,，、]\s*|\s*[,，、]\s*(?!\d)", body)
+        items = [re.sub(r"[(\[][^)\]]*$", "", x).strip(" .·:;[]") for x in parts]  # 닫히지 않은 함량 괄호 꼬리
+        items = [x for x in items if len(x) >= 2 and not PCT_BITS.match(x)]
+        n = sum(i["match"] == "exact" for i in match_all(items, "\n".join(lines)))
+        if items and (best is None or n > best[0]):
+            best = (n, items, lines)
+    return (best[1], best[2]) if best else None
+
+
+def best_section(res: dict) -> tuple[list[str], list[str], bool]:
+    """(전성분 조각, 대조용 줄, 판넬로 다시 묶었는지). 서빙 결과와 판넬 결과 중 정확 일치가 많은 쪽."""
+    texts = [ln.get("text", "") for ln in res.get("lines") or []]
+    base = res.get("ingredients") or []
+    panel = panel_section(res.get("words") or [])
+    if panel:  # 최종 결과(표 형식 줄 대조까지 거친 것)끼리 비교한다
+        ex = lambda it, ls: sum(i["match"] == "exact" for i in choose(match_all(it, "\n".join(ls)), texts)[0])
+        if ex(panel[0], panel[1] + texts) > ex(base, texts):
+            return panel[0], panel[1] + texts, True
+    return base, texts, False
+
+
 def read_package(image: bytes, content_type: str) -> dict:
     """사진 → OCR 서빙 → 전성분 목록과 표준명 맞추기 결과."""
     res = call_ocr(image, content_type)
     lines = res.get("lines") or []
+    section, joined, by_panel = best_section(res)
     texts = [ln.get("text", "") for ln in lines]
-    items, method = choose(match_all(res.get("ingredients") or [], "\n".join(texts)), texts)
+    items, method = choose(match_all(section, "\n".join(joined)), texts)
+    if by_panel and method == "section":
+        method = "panel"
     return {
         "ingredients": items,
         "found_section": bool(items),
